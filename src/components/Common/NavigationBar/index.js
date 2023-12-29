@@ -12,7 +12,7 @@ import Avatar from "@mui/material/Avatar";
 import { makeStyles } from "@mui/styles";
 //import AlertComponent from "../AlertComponent";
 
-export const REPO_NAME = "kt";
+export const REPO_NAME = "explore";
 
 const pages = [
   {
