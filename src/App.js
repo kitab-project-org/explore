@@ -389,9 +389,9 @@ function App() {
     >
       <ThemeProvider theme={theme}>
         <div className="App">
-          <Router basename="">
+          <Router basename="/">
             <Routes>
-              <Route path="/" element={<HomePage />} />
+              <Route path="" element={<HomePage />} />
               <Route path="/metadata/" element={<CorpusMetadata />} />
               <Route path="/metadata/:version" element={<CorpusMetadata />} />
               <Route path="/insight" element={<Insight />} />
