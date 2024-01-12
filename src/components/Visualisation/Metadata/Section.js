@@ -31,7 +31,7 @@ const Section = ({ data }) => {
           <Tooltip title="Open in metadata app">
             <Link
               sx={{ textDecoration: "none" }}
-              href={data ? `/metadata?search=${data?.versionCode}` : "/"}
+              href={data ? `/explore?search=${data?.versionCode}` : "/"}
               target="_blank"
             >
               {" "}
@@ -60,7 +60,7 @@ const Section = ({ data }) => {
           <Tooltip title="Open in metadata app">
             <Link
               sx={{ textDecoration: "none" }}
-              href={data ? `/metadata?search=${data?.bookTitle?.path}` : "/"}
+              href={data ? `/explore?search=${data?.bookTitle?.path}` : "/"}
               target="_blank"
             >
               {" "}
@@ -91,7 +91,7 @@ const Section = ({ data }) => {
               sx={{ textDecoration: "none" }}
               href={
                 data
-                  ? `/metadata?search=${data?.bookTitle?.path.split(".")[0]}`
+                  ? `/explore?search=${data?.bookTitle?.path.split(".")[0]}`
                   : "/"
               }
               target="_blank"
