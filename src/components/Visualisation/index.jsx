@@ -62,7 +62,7 @@ const VisualisationPage = () => {
     setMainVersionCode,
   } = useContext(Context);
 
-  const [isPairwiseViz, setIsPairwiseViz] = useState(false);
+  const [isPairwiseViz, setIsPairwiseViz] = useState(true);
 
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -150,31 +150,35 @@ const VisualisationPage = () => {
         // get the metadata for book1:
         const book1 = versionMeta.book1;
 
-        setMainVersionCode(book1.version_code);
+        if (book1) {
+          setMainVersionCode(book1.version_code);
 
-        // download msdata (from GitHub):
-        const msdataFile = await getOneBookMsData(releaseCode, book_names[0]);
-        // download stats (from GitHub):
-        const statsFile = await getOneBookReuseStats(
-          releaseCode,
-          book_names[0]
-        );
+          // download msdata (from GitHub):
+          const msdataFile = await getOneBookMsData(releaseCode, book_names[0]);
+          // download stats (from GitHub):
+          const statsFile = await getOneBookReuseStats(
+            releaseCode,
+            book_names[0]
+          );
 
-        // set visualisation data
-        setMultiVizData({
-          book1,
-          msdataFile,
-          statsFile,
-          dataLoading,
-          setDataLoading,
-          setMetaData,
-          releaseCode,
-          getMetadataObject,
-          setChartData,
-          setIsError,
-          setIsFileUploaded,
-          setUrl,
-        });
+          // set visualisation data
+          setMultiVizData({
+            book1,
+            msdataFile,
+            statsFile,
+            dataLoading,
+            setDataLoading,
+            setMetaData,
+            releaseCode,
+            getMetadataObject,
+            setChartData,
+            setIsError,
+            setIsFileUploaded,
+            setUrl,
+          });
+        } else {
+          setIsError(true);
+        }
       } catch (err) {
         setDataLoading({ ...dataLoading, uploading: false });
         setIsError(true);
@@ -200,27 +204,33 @@ const VisualisationPage = () => {
           url = `${passimFolder}/${book_names[0]}/${csvFileName}`;
           CSVFile = await downloadCsvData(url);
         }
-        // remove the loadedCsvFile blob from memory (context):
-        setLoadedCsvFile(null);
 
-        setPairwiseVizData({
-          book1,
-          book2,
-          CSVFile,
-          dataLoading,
-          setDataLoading,
-          setMetaData,
-          releaseCode,
-          getMetadataObject,
-          setChartData,
-          setIsError,
-          setIsFileUploaded,
-          navigate,
-          csvFileName,
-          setUrl,
-        });
+        if (CSVFile !== "404: Not Found") {
+          // remove the loadedCsvFile blob from memory (context):
+          setLoadedCsvFile(null);
 
-        setIsLoading(false);
+          setPairwiseVizData({
+            book1,
+            book2,
+            CSVFile,
+            dataLoading,
+            setDataLoading,
+            setMetaData,
+            releaseCode,
+            getMetadataObject,
+            setChartData,
+            setIsError,
+            setIsFileUploaded,
+            navigate,
+            csvFileName,
+            setUrl,
+          });
+
+          setIsLoading(false);
+        } else {
+          setIsError(true);
+          setIsLoading(false);
+        }
       } catch (err) {
         setDataLoading({ ...dataLoading, uploading: false });
         setIsError(true);
@@ -232,7 +242,7 @@ const VisualisationPage = () => {
       setIsLoading(false);
     }
   };
-
+  console.log(isError);
   // handle loading visualisation data from the URL:
   useEffect(() => {
     const booksInUrl = searchParams.get("books") ? true : false;
