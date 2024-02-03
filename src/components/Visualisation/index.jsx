@@ -105,6 +105,7 @@ const VisualisationPage = () => {
           navigate,
           csvFileName,
           setUrl,
+          isUploading: true,
         });
       } else {
         setDataLoading({ ...dataLoading, uploading: false });
@@ -205,31 +206,72 @@ const VisualisationPage = () => {
           CSVFile = await downloadCsvData(url);
         }
 
-        if (CSVFile !== "404: Not Found") {
-          // remove the loadedCsvFile blob from memory (context):
-          setLoadedCsvFile(null);
+        const storedBooks = localStorage.getItem("books")
+          ? JSON.parse(localStorage.getItem("books"))
+          : null;
 
-          setPairwiseVizData({
-            book1,
-            book2,
-            CSVFile,
-            dataLoading,
-            setDataLoading,
-            setMetaData,
-            releaseCode,
-            getMetadataObject,
-            setChartData,
-            setIsError,
-            setIsFileUploaded,
-            navigate,
-            csvFileName,
-            setUrl,
-          });
+        if (storedBooks) {
+          if (
+            storedBooks?.book1 === book1.version_code &&
+            storedBooks?.book2 === book2.version_code
+          ) {
+            // remove the loadedCsvFile blob from memory (context):
+            setLoadedCsvFile(null);
 
-          setIsLoading(false);
+            setPairwiseVizData({
+              book1,
+              book2,
+              CSVFile,
+              dataLoading,
+              setDataLoading,
+              setMetaData,
+              releaseCode,
+              getMetadataObject,
+              setChartData,
+              setIsError,
+              setIsFileUploaded,
+              navigate,
+              csvFileName,
+              setUrl,
+              storedBooksAvailable: true,
+            });
+
+            setIsLoading(false);
+          } else {
+            localStorage.removeItem("books");
+            localStorage.removeItem("storeVizChartData");
+            setIsError(true);
+            setIsLoading(false);
+          }
         } else {
-          setIsError(true);
-          setIsLoading(false);
+          localStorage.removeItem("books");
+          localStorage.removeItem("storeVizChartData");
+          if (CSVFile !== "404: Not Found") {
+            // remove the loadedCsvFile blob from memory (context):
+            setLoadedCsvFile(null);
+
+            setPairwiseVizData({
+              book1,
+              book2,
+              CSVFile,
+              dataLoading,
+              setDataLoading,
+              setMetaData,
+              releaseCode,
+              getMetadataObject,
+              setChartData,
+              setIsError,
+              setIsFileUploaded,
+              navigate,
+              csvFileName,
+              setUrl,
+            });
+
+            setIsLoading(false);
+          } else {
+            setIsError(true);
+            setIsLoading(false);
+          }
         }
       } catch (err) {
         setDataLoading({ ...dataLoading, uploading: false });
@@ -242,7 +284,6 @@ const VisualisationPage = () => {
       setIsLoading(false);
     }
   };
-  console.log(isError);
   // handle loading visualisation data from the URL:
   useEffect(() => {
     const booksInUrl = searchParams.get("books") ? true : false;

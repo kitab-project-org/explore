@@ -181,6 +181,8 @@ export const setPairwiseVizData = (values) => {
     navigate,
     csvFileName,
     setUrl,
+    storedBooksAvailable,
+    isUploading,
   } = values;
 
   if (book1 && book2) {
@@ -189,6 +191,16 @@ export const setPairwiseVizData = (values) => {
       setMetaData(getMetadataObject(book1, book2, releaseCode));
       setDataLoading({ ...dataLoading, metadata: false });
 
+      const storedBooks = localStorage.getItem("books")
+        ? JSON.parse(localStorage.getItem("books"))
+        : null;
+
+      const storedChartData = localStorage.getItem("storeVizChartData")
+        ? JSON.parse(localStorage.getItem("storeVizChartData"))
+        : [];
+
+      console.log(storedChartData);
+
       const parseTSVData = async () => {
         // parse pairwise csv file:
         Papa.parse(CSVFile, {
@@ -196,6 +208,26 @@ export const setPairwiseVizData = (values) => {
           skipEmptyLines: true,
           complete: (result) => {
             // pass the pairwise data to the Context:
+            if (isUploading) {
+              localStorage.setItem(
+                "books",
+                JSON.stringify({
+                  book1: book1?.version_code,
+                  book2: book2?.version_code,
+                })
+              );
+              localStorage.setItem(
+                "storeVizChartData",
+                JSON.stringify({
+                  tokens: {
+                    first: book1?.release_version?.tok_length,
+                    second: book2?.release_version?.tok_length,
+                  },
+                  dataSets: result.data,
+                })
+              );
+            }
+
             setChartData({
               tokens: {
                 first: book1?.release_version?.tok_length,
@@ -219,7 +251,27 @@ export const setPairwiseVizData = (values) => {
           },
         });
       };
-      parseTSVData();
+      if (storedBooksAvailable) {
+        if (storedBooks) {
+          if (
+            storedBooks?.book1 === book1.version_code &&
+            storedBooks?.book2 === book2.version_code
+          ) {
+            setChartData(storedChartData);
+            setIsError(false);
+            setDataLoading({ ...dataLoading, chart: false });
+            const url = `/visualise/${releaseCode}/?books=${csvFileName.replace(
+              ".csv",
+              ""
+            )}`;
+            setUrl(url);
+            // Load the URL (which will load the chart):
+            navigate(url);
+          }
+        }
+      } else {
+        parseTSVData();
+      }
       setIsFileUploaded(true);
       setDataLoading({
         ...dataLoading,
