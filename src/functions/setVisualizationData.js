@@ -314,76 +314,82 @@ export const setMultiVizData = (values) => {
       // Parse the CSV files and set the chart data:
       const parseCSVData = async (msdataFile, statsFile, book1) => {
         // calculate the last milestone number in the main book:
-        let mainBookMilestones = Math.ceil(
-          book1.release_version.tok_length / 300
-        );
-        let mainBookID = book1.version_code;
-        let mainBookURI = book1.text.text_uri;
 
-        // parse msdata csv file
-        // (contains all text reuse data for book 1, arranged per milestone):
-        let msData, msStats, msBooks, stats, bookIndexDict, bookUriDict;
-        Papa.parse(msdataFile, {
-          header: true,
-          dynamicTyping: true, // converts numeric fields to integers
-          skipEmptyLines: true,
-          complete: (result) => {
-            // parse stats csv file
-            // (contains text reuse stats for book 1, arranged per book2):
-            Papa.parse(statsFile, {
-              header: true,
-              dynamicTyping: true, // should convert numeric fields to integers
-              skipEmptyLines: true,
-              complete: (result2) => {
-                // format statsData and create dictionaries
-                let statsData = result2.data;
-                [stats, bookIndexDict, bookUriDict] = prepareStats(
-                  statsData,
-                  mainBookID,
-                  mainBookURI,
-                  mainBookMilestones
-                );
+        if (book1.release_version) {
+          let mainBookMilestones = Math.ceil(
+            book1.release_version.tok_length / 300
+          );
+          let mainBookID = book1.version_code;
+          let mainBookURI = book1.text.text_uri;
 
-                // format msData and calculate milestone stats:
-                [msData, msStats, msBooks] = prepareMsData(
-                  result.data,
-                  mainBookMilestones,
-                  mainBookID,
-                  bookIndexDict,
-                  bookUriDict
-                );
+          // parse msdata csv file
+          // (contains all text reuse data for book 1, arranged per milestone):
+          let msData, msStats, msBooks, stats, bookIndexDict, bookUriDict;
+          Papa.parse(msdataFile, {
+            header: true,
+            dynamicTyping: true, // converts numeric fields to integers
+            skipEmptyLines: true,
+            complete: (result) => {
+              // parse stats csv file
+              // (contains text reuse stats for book 1, arranged per book2):
+              Papa.parse(statsFile, {
+                header: true,
+                dynamicTyping: true, // should convert numeric fields to integers
+                skipEmptyLines: true,
+                complete: (result2) => {
+                  // format statsData and create dictionaries
+                  let statsData = result2.data;
+                  [stats, bookIndexDict, bookUriDict] = prepareStats(
+                    statsData,
+                    mainBookID,
+                    mainBookURI,
+                    mainBookMilestones
+                  );
 
-                // pass the one-to-many data to the Context:
-                setChartData({
-                  versionCode: book1?.version_code,
-                  tokens: { first: book1?.release_version?.tok_length },
-                  msData: msData,
-                  msStats: msStats,
-                  msBooks: msBooks,
-                  bookStats: stats,
-                  bookIndexDict: bookIndexDict,
-                  bookUriDict: bookUriDict,
-                  /*filteredMsData: msData,
-                filteredMsStats: msStats,
-                filteredBookStats: stats*/
-                  //dataSets: []
-                });
-                setIsError(false);
-                setDataLoading({ ...dataLoading, chart: false });
-                const url = `/visualise/${releaseCode}/?books=${book1?.version_code}_all`;
-                setUrl(url);
-              },
-              error: (error) => {
-                setDataLoading({ ...dataLoading, uploading: false });
-                setIsError(true);
-              },
-            });
-          },
-          error: (error) => {
-            setDataLoading({ ...dataLoading, uploading: false });
-            setIsError(true);
-          },
-        });
+                  // format msData and calculate milestone stats:
+                  [msData, msStats, msBooks] = prepareMsData(
+                    result.data,
+                    mainBookMilestones,
+                    mainBookID,
+                    bookIndexDict,
+                    bookUriDict
+                  );
+
+                  // pass the one-to-many data to the Context:
+                  setChartData({
+                    versionCode: book1?.version_code,
+                    tokens: { first: book1?.release_version?.tok_length },
+                    msData: msData,
+                    msStats: msStats,
+                    msBooks: msBooks,
+                    bookStats: stats,
+                    bookIndexDict: bookIndexDict,
+                    bookUriDict: bookUriDict,
+                    /*filteredMsData: msData,
+                  filteredMsStats: msStats,
+                  filteredBookStats: stats*/
+                    //dataSets: []
+                  });
+                  setIsError(false);
+                  setDataLoading({ ...dataLoading, chart: false });
+                  const url = `/visualise/${releaseCode}/?books=${book1?.version_code}_all`;
+                  setUrl(url);
+                },
+                error: (error) => {
+                  setDataLoading({ ...dataLoading, uploading: false });
+                  setIsError(true);
+                },
+              });
+            },
+            error: (error) => {
+              setDataLoading({ ...dataLoading, uploading: false });
+              setIsError(true);
+            },
+          });
+        } else {
+          setDataLoading({ ...dataLoading, uploading: false });
+          setIsError(true);
+        }
       };
       parseCSVData(msdataFile, statsFile, book1);
       setIsFileUploaded(true);

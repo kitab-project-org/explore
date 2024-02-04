@@ -320,6 +320,12 @@ const VisualisationPage = () => {
           justifyContent="center"
           flexDirection="column"
         >
+          {isPairwiseViz || isNoBook ? (
+            <UploadInput
+              item={{ title: "Upload TSV File" }}
+              handleUpload={handleUpload}
+            />
+          ) : null}
           <Typography variant="h4">No data found to visualize.</Typography>
           <Typography variant="body1" color="grey">
             We may not have text reuse data for these texts, or there might be
