@@ -406,5 +406,3 @@ function App() {
 }
 
 export default App;
-
-const v = "Hello World!";

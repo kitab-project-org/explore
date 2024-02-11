@@ -13,8 +13,8 @@ export const setInitialValues = (values) => {
 
   setDataLoading({
     ...dataLoading,
-    //uploading: true,
-    //metadata: true,
+    uploading: true,
+    metadata: true,
     chart: true,
   });
 

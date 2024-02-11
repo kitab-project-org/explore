@@ -10,9 +10,14 @@ const DownloadSrt = ({ fullData }) => {
   const [query, setQuery] = useState("");
   const releaseCode = fullData?.release_version?.release_code;
   const passim_folder = srtFolders[releaseCode];
-  const versionId = fullData?.version_uri && fullData?.release_version.url
-    .split("/").slice(-1)[0]           // take the last part of the URL
-    .split(".").slice(2).join(".");    // remove the book URI
+  const versionId =
+    fullData?.version_uri &&
+    fullData?.release_version.url
+      .split("/")
+      .slice(-1)[0] // take the last part of the URL
+      .split(".")
+      .slice(2)
+      .join("."); // remove the book URI
 
   const data = [
     {
@@ -36,7 +41,7 @@ const DownloadSrt = ({ fullData }) => {
   return (
     <Box sx={{ width: "100%" }}>
       <AlertComponent forDrawer />
-      
+
       <Box>
         {data.length !== 0 &&
           data.slice(2).map((item, index) => (
@@ -71,7 +76,8 @@ const DownloadSrt = ({ fullData }) => {
       </Box>
 
       <Box>
-        {(data.length !== 0 && oneToAllFolders[releaseCode]) &&
+        {data.length !== 0 &&
+          oneToAllFolders[releaseCode] &&
           data.slice(1, 2).map((item, index) => (
             <Box
               key={index}
@@ -105,8 +111,13 @@ const DownloadSrt = ({ fullData }) => {
           ))}
       </Box>
 
-      <Box py={"30px"}>
-        <Box display="flex" alignItems="center" justifyContent="space-between">
+      <Box>
+        <Box
+          display="flex"
+          alignItems="center"
+          justifyContent="space-between"
+          py={"10px"}
+        >
           <Typography>Pairwise Text Reuse Data:</Typography>
           <TextField
             id="outlined-search"
@@ -133,7 +144,8 @@ const DownloadSrt = ({ fullData }) => {
                 width: "100%",
                 display: "flex",
                 margin: "5px 0px",
-                borderBottom: "1px solid rgba(224, 224, 224, 1)",
+                borderTop: "1px solid rgba(224, 224, 224, 1)",
+                pt: "10px",
               }}
             >
               <Box margin={"5px 0px"} width={"100%"} sx={{ textAlign: "left" }}>
