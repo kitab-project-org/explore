@@ -206,7 +206,7 @@ const DiffGrid = ({ parsedBookAlignment, alignmentOnly }) => {
         >
           <>
             {!alignmentOnly && (
-              <TableRow className={"diffTableRow"}>
+              <TableRow>
                 <NextMilestoneLoader
                   alignmentOnly={alignmentOnly}
                   displayMs={displayMs}
@@ -243,7 +243,7 @@ const DiffGrid = ({ parsedBookAlignment, alignmentOnly }) => {
               </TableRow>
             ))}
             {!alignmentOnly && (
-              <TableRow className={"diffTableRow"}>
+              <TableRow>
                 <NextMilestoneLoader
                   alignmentOnly={alignmentOnly}
                   displayMs={displayMs}
@@ -251,6 +251,7 @@ const DiffGrid = ({ parsedBookAlignment, alignmentOnly }) => {
                   bookNo={isFlipped ? 2 : 1}
                   books={books}
                   previous={false}
+                  bottomButton
                 />
                 <NextMilestoneLoader
                   alignmentOnly={alignmentOnly}
@@ -259,6 +260,7 @@ const DiffGrid = ({ parsedBookAlignment, alignmentOnly }) => {
                   bookNo={isFlipped ? 1 : 2}
                   books={books}
                   previous={false}
+                  bottomButton
                 />
               </TableRow>
             )}

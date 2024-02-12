@@ -276,6 +276,7 @@ const MetadataTable = ({ isHome }) => {
                 width: "100%",
                 overflow: "hidden",
                 minHeight: "400px",
+                paddingBottom: "20px",
               }}
             >
               <Grid>

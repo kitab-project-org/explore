@@ -89,6 +89,8 @@ const TableHeader = ({ columns, classes }) => {
           xs: "column",
           sm: "row",
         },
+        borderRadius: "5px",
+        overflow: "hidden",
       }}
     >
       <TableRow

@@ -1,5 +1,4 @@
 import React from "react";
-import Paper from "@mui/material/Paper";
 import Table from "@mui/material/Table";
 import TableContainer from "@mui/material/TableContainer";
 import TableHeader from "./TableHeader";
@@ -23,12 +22,8 @@ const columns = [
 
 const TableComponent = ({ classes }) => {
   return (
-    <TableContainer component={Paper} dir="rtl">
-      <Table
-        sx={{ display: "flex", flexDirection: "column" }}
-        size="small"
-        stickyHeader
-      >
+    <TableContainer dir="rtl">
+      <Table sx={{ display: "flex", flexDirection: "column" }} size="small">
         <TableHeader columns={columns} classes={classes} />
         <TableBodyComponent classes={classes} />
       </Table>
