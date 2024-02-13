@@ -246,7 +246,14 @@ export const setPairwiseVizData = (values) => {
             navigate(url);
           },
           error: (error) => {
-            setDataLoading({ ...dataLoading, uploading: false });
+            setDataLoading({
+              ...dataLoading,
+              uploading: false,
+              metadata: false,
+              chart: false,
+              books: false,
+              alignments: false,
+            });
             setIsError(true);
           },
         });
@@ -276,8 +283,10 @@ export const setPairwiseVizData = (values) => {
       setDataLoading({
         ...dataLoading,
         uploading: false,
-        chart: false,
         metadata: false,
+        chart: false,
+        books: false,
+        alignments: false,
       });
     } catch (err) {
       setDataLoading({ ...dataLoading, uploading: false, metadata: false });
@@ -370,24 +379,52 @@ export const setMultiVizData = (values) => {
                   filteredBookStats: stats*/
                     //dataSets: []
                   });
+                  setDataLoading({
+                    ...dataLoading,
+                    uploading: false,
+                    metadata: false,
+                    chart: false,
+                    books: false,
+                    alignments: false,
+                  });
                   setIsError(false);
-                  setDataLoading({ ...dataLoading, chart: false });
                   const url = `/visualise/${releaseCode}/?books=${book1?.version_code}_all`;
                   setUrl(url);
                 },
                 error: (error) => {
-                  setDataLoading({ ...dataLoading, uploading: false });
+                  setDataLoading({
+                    ...dataLoading,
+                    uploading: false,
+                    metadata: false,
+                    chart: false,
+                    books: false,
+                    alignments: false,
+                  });
                   setIsError(true);
                 },
               });
             },
             error: (error) => {
-              setDataLoading({ ...dataLoading, uploading: false });
+              setDataLoading({
+                ...dataLoading,
+                uploading: false,
+                metadata: false,
+                chart: false,
+                books: false,
+                alignments: false,
+              });
               setIsError(true);
             },
           });
         } else {
-          setDataLoading({ ...dataLoading, uploading: false });
+          setDataLoading({
+            ...dataLoading,
+            uploading: false,
+            metadata: false,
+            chart: false,
+            books: false,
+            alignments: false,
+          });
           setIsError(true);
         }
       };
@@ -395,11 +432,25 @@ export const setMultiVizData = (values) => {
       setIsFileUploaded(true);
       setDataLoading({ ...dataLoading, uploading: false, chart: false });
     } catch (err) {
-      setDataLoading({ ...dataLoading, uploading: false });
+      setDataLoading({
+        ...dataLoading,
+        uploading: false,
+        metadata: false,
+        chart: false,
+        books: false,
+        alignments: false,
+      });
       setIsError(true);
     }
   } else {
-    setDataLoading({ ...dataLoading, uploading: false });
+    setDataLoading({
+      ...dataLoading,
+      uploading: false,
+      metadata: false,
+      chart: false,
+      books: false,
+      alignments: false,
+    });
     setIsError(true);
   }
 };

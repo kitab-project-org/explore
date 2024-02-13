@@ -34,11 +34,14 @@ const useStyles = makeStyles((theme) => ({
     verticalAlign: "top",
   },
   gridContainer: {
-    [theme.breakpoints.down("sm")]: {
+    [theme.breakpoints.down("md")]: {
       padding: "20px",
     },
-    [theme.breakpoints.up("sm")]: {
-      padding: "0px 100px",
+    [theme.breakpoints.up("md")]: {
+      padding: "0px 40px",
+    },
+    [theme.breakpoints.up("xl")]: {
+      padding: "0px 200px",
     },
   },
 }));

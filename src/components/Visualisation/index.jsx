@@ -108,7 +108,14 @@ const VisualisationPage = () => {
           isUploading: true,
         });
       } else {
-        setDataLoading({ ...dataLoading, uploading: false });
+        setDataLoading({
+          ...dataLoading,
+          uploading: false,
+          metadata: false,
+          chart: false,
+          books: false,
+          alignments: false,
+        });
         setIsError(true);
       }
     }, 1000);
@@ -181,7 +188,14 @@ const VisualisationPage = () => {
           setIsError(true);
         }
       } catch (err) {
-        setDataLoading({ ...dataLoading, uploading: false });
+        setDataLoading({
+          ...dataLoading,
+          uploading: false,
+          metadata: false,
+          chart: false,
+          books: false,
+          alignments: false,
+        });
         setIsError(true);
         setIsLoading(false);
       }
@@ -274,12 +288,26 @@ const VisualisationPage = () => {
           }
         }
       } catch (err) {
-        setDataLoading({ ...dataLoading, uploading: false });
+        setDataLoading({
+          ...dataLoading,
+          uploading: false,
+          metadata: false,
+          chart: false,
+          books: false,
+          alignments: false,
+        });
         setIsError(true);
         setIsLoading(false);
       }
     } else {
-      setDataLoading({ ...dataLoading, uploading: false });
+      setDataLoading({
+        ...dataLoading,
+        uploading: false,
+        metadata: false,
+        chart: false,
+        books: false,
+        alignments: false,
+      });
       setIsError(true);
       setIsLoading(false);
     }
