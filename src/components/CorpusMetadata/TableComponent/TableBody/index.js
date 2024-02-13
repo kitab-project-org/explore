@@ -42,9 +42,6 @@ const TableBodyComponent = ({ classes }) => {
                 ? "#fef3c7"
                 : "white",
             borderBottomWidth: "1px",
-            "&:last-child": {
-              borderBottomWidth: "0px",
-            },
           }}
         >
           <VersionIdCell row={row} classes={classes} />

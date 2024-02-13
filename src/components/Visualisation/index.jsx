@@ -62,7 +62,7 @@ const VisualisationPage = () => {
     setMainVersionCode,
   } = useContext(Context);
 
-  const [isPairwiseViz, setIsPairwiseViz] = useState(false);
+  const [isPairwiseViz, setIsPairwiseViz] = useState(true);
 
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -105,9 +105,17 @@ const VisualisationPage = () => {
           navigate,
           csvFileName,
           setUrl,
+          isUploading: true,
         });
       } else {
-        setDataLoading({ ...dataLoading, uploading: false });
+        setDataLoading({
+          ...dataLoading,
+          uploading: false,
+          metadata: false,
+          chart: false,
+          books: false,
+          alignments: false,
+        });
         setIsError(true);
       }
     }, 1000);
@@ -150,33 +158,44 @@ const VisualisationPage = () => {
         // get the metadata for book1:
         const book1 = versionMeta.book1;
 
-        setMainVersionCode(book1.version_code);
+        if (book1) {
+          setMainVersionCode(book1.version_code);
 
-        // download msdata (from GitHub):
-        const msdataFile = await getOneBookMsData(releaseCode, book_names[0]);
-        // download stats (from GitHub):
-        const statsFile = await getOneBookReuseStats(
-          releaseCode,
-          book_names[0]
-        );
+          // download msdata (from GitHub):
+          const msdataFile = await getOneBookMsData(releaseCode, book_names[0]);
+          // download stats (from GitHub):
+          const statsFile = await getOneBookReuseStats(
+            releaseCode,
+            book_names[0]
+          );
 
-        // set visualisation data
-        setMultiVizData({
-          book1,
-          msdataFile,
-          statsFile,
-          dataLoading,
-          setDataLoading,
-          setMetaData,
-          releaseCode,
-          getMetadataObject,
-          setChartData,
-          setIsError,
-          setIsFileUploaded,
-          setUrl,
-        });
+          // set visualisation data
+          setMultiVizData({
+            book1,
+            msdataFile,
+            statsFile,
+            dataLoading,
+            setDataLoading,
+            setMetaData,
+            releaseCode,
+            getMetadataObject,
+            setChartData,
+            setIsError,
+            setIsFileUploaded,
+            setUrl,
+          });
+        } else {
+          setIsError(true);
+        }
       } catch (err) {
-        setDataLoading({ ...dataLoading, uploading: false });
+        setDataLoading({
+          ...dataLoading,
+          uploading: false,
+          metadata: false,
+          chart: false,
+          books: false,
+          alignments: false,
+        });
         setIsError(true);
         setIsLoading(false);
       }
@@ -200,39 +219,99 @@ const VisualisationPage = () => {
           url = `${passimFolder}/${book_names[0]}/${csvFileName}`;
           CSVFile = await downloadCsvData(url);
         }
-        // remove the loadedCsvFile blob from memory (context):
-        setLoadedCsvFile(null);
 
-        setPairwiseVizData({
-          book1,
-          book2,
-          CSVFile,
-          dataLoading,
-          setDataLoading,
-          setMetaData,
-          releaseCode,
-          getMetadataObject,
-          setChartData,
-          setIsError,
-          setIsFileUploaded,
-          navigate,
-          csvFileName,
-          setUrl,
-        });
+        const storedBooks = localStorage.getItem("books")
+          ? JSON.parse(localStorage.getItem("books"))
+          : null;
 
-        setIsLoading(false);
+        if (storedBooks) {
+          if (
+            storedBooks?.book1 === book1.version_code &&
+            storedBooks?.book2 === book2.version_code
+          ) {
+            // remove the loadedCsvFile blob from memory (context):
+            setLoadedCsvFile(null);
+
+            setPairwiseVizData({
+              book1,
+              book2,
+              CSVFile,
+              dataLoading,
+              setDataLoading,
+              setMetaData,
+              releaseCode,
+              getMetadataObject,
+              setChartData,
+              setIsError,
+              setIsFileUploaded,
+              navigate,
+              csvFileName,
+              setUrl,
+              storedBooksAvailable: true,
+            });
+
+            setIsLoading(false);
+          } else {
+            localStorage.removeItem("books");
+            localStorage.removeItem("storeVizChartData");
+            setIsError(true);
+            setIsLoading(false);
+          }
+        } else {
+          localStorage.removeItem("books");
+          localStorage.removeItem("storeVizChartData");
+          if (CSVFile !== "404: Not Found") {
+            // remove the loadedCsvFile blob from memory (context):
+            setLoadedCsvFile(null);
+
+            setPairwiseVizData({
+              book1,
+              book2,
+              CSVFile,
+              dataLoading,
+              setDataLoading,
+              setMetaData,
+              releaseCode,
+              getMetadataObject,
+              setChartData,
+              setIsError,
+              setIsFileUploaded,
+              navigate,
+              csvFileName,
+              setUrl,
+            });
+
+            setIsLoading(false);
+          } else {
+            setIsError(true);
+            setIsLoading(false);
+          }
+        }
       } catch (err) {
-        setDataLoading({ ...dataLoading, uploading: false });
+        setDataLoading({
+          ...dataLoading,
+          uploading: false,
+          metadata: false,
+          chart: false,
+          books: false,
+          alignments: false,
+        });
         setIsError(true);
         setIsLoading(false);
       }
     } else {
-      setDataLoading({ ...dataLoading, uploading: false });
+      setDataLoading({
+        ...dataLoading,
+        uploading: false,
+        metadata: false,
+        chart: false,
+        books: false,
+        alignments: false,
+      });
       setIsError(true);
       setIsLoading(false);
     }
   };
-
   // handle loading visualisation data from the URL:
   useEffect(() => {
     const booksInUrl = searchParams.get("books") ? true : false;
@@ -269,6 +348,12 @@ const VisualisationPage = () => {
           justifyContent="center"
           flexDirection="column"
         >
+          {isPairwiseViz || isNoBook ? (
+            <UploadInput
+              item={{ title: "Upload TSV File" }}
+              handleUpload={handleUpload}
+            />
+          ) : null}
           <Typography variant="h4">No data found to visualize.</Typography>
           <Typography variant="body1" color="grey">
             We may not have text reuse data for these texts, or there might be

@@ -5,7 +5,13 @@ import { getMilestoneText } from "../../../functions/getMilestoneText";
 
 // add the milestone number and its text contents to the displayMs variable
 // (triggering the display of that milestone)
-const NextMilestoneLoader = ({ alignmentOnly, books, bookNo, previous }) => {
+const NextMilestoneLoader = ({
+  alignmentOnly,
+  books,
+  bookNo,
+  previous,
+  bottomButton,
+}) => {
   const {
     displayMs,
     setDisplayMs,
@@ -85,7 +91,10 @@ const NextMilestoneLoader = ({ alignmentOnly, books, bookNo, previous }) => {
     });
   }
   return (
-    <TableCell align="center">
+    <TableCell
+      align="center"
+      sx={{ borderTop: bottomButton ? "1px solid rgba(224, 224, 224, 1)" : "" }}
+    >
       <Button onClick={loadNextMs}>
         {previous ? "LOAD PREVIOUS MILESTONE" : "LOAD NEXT MILESTONE"}
       </Button>
