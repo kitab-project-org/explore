@@ -54,13 +54,7 @@ To build the file for gh-pages, follow these steps:
    "deploy": "gh-pages -d build",
 
 3. **Build And Publish:**
-   try to build the app with
-
-   ```bash
-   npm run build
-   ```
-
-   then run this code:
+   run this code:
 
    ```bash
    npm run deploy
