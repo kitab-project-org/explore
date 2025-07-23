@@ -40,7 +40,7 @@ To get started with KitabApps, follow these steps:
 
 ## Github Pages Build Process
 
-To build the file for gh-pages, follow these steps:
+To build the file for gh-pages locally, follow these steps:
 
 1. **Install Github Pages:**
 
@@ -69,6 +69,14 @@ To build the file for gh-pages, follow these steps:
 4. **Live Link:**
 
 You will get the live link at this location - https://your-github-username.github.io/repo-name/
+
+## gh-pages - build using actions
+If deploying changes to the app, it is recommended that you use the actions script to do so. Use the following steps:
+1. Ensure that your changes are merged into the main branch
+2. Go to 'Actions'
+3. Go to workflow: 'Deploy to GitHub Pages from main branch'
+4. Click 'run workflow'
+5. The workflow will build the react app into the gh-pages branch of the repository
 
 ## Contributing
 
