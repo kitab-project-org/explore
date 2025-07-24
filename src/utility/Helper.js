@@ -1,11 +1,106 @@
+import { srtFolders, lightSrtFolders} from "../assets/srtFolders"
 import { config } from "../config";
 const { GITHUB_BASE_URL, GITHUB_BASE_RAW_URL } = config;
+
+
+
 
 const pad = (n, width, z) => {
   z = z || "0";
   n = n + "";
   return n.length >= width ? n : new Array(width - n.length + 1).join(z) + n;
 };
+
+const getVersionIDfromURI = (versionURI, includeExt=true) => {
+  /* eslint-disable no-unused-vars */
+  const [author, book, ...version] = versionURI.split(".");
+  /* eslint-enable no-unused-vars */
+  return version.join(".");
+}
+
+const getVersionIDfromURL = (versionURL, includeExt=true) => {
+  const versionURI = versionURL.split("/").pop();
+  return getVersionIDfromURI(versionURI, includeExt);
+}
+
+/** 
+   * build the URL to the pairwise CSV file on the KITAB webserver:
+   * based on the metadata for both books:
+   * 
+   * @param {String} releaseCode OpenITI release version code
+   * @param {Object} b1Data full metadata for book 1
+   * @param {Object} b2Data full metadata for book 2
+   * @param {Boolean} light Download the light or full text reuse data csv
+   * 
+   * @returns String (URL of the pairwise CSV file)
+  */
+  const buildPairwiseCsvURL = async (releaseCode, b1Data, b2Data, light=false) => {
+    // get the IDs (incl. extension) for both books:
+    const b1ID = getVersionIDfromURL(b1Data.release_version.url, true);
+    const b2ID = getVersionIDfromURL(b2Data.release_version.url, true);
+    const baseURL = light ? lightSrtFolders[releaseCode] : srtFolders[releaseCode];
+    // build the URL:
+    return `${baseURL}/${b1ID}/${b1ID}_${b2ID}.csv`;
+  }
+
+/**
+ * Remove the page parameter from a querystring
+ * @param {Object} searchParams querystring object
+ * @returns Object
+ */
+const cleanSearchPagination = (searchParams) => {
+  return Object.fromEntries([...searchParams].filter(([key]) => key !== "page"));
+}
+
+/**
+ * Calculate the x and y coordinates of a tooltip
+ * @param {Event} event The Event object that contains information on where the mouse hovers
+ * @param {Element} tooltipDiv The tooltip element itself
+ * @param {String} tooltipMsg The text content of the tooltip
+ * @param {String} containerID The ID of the container in which the graph is found
+ * @returns Array (x, y)
+ */
+function calculateTooltipPos(event, tooltipDiv, tooltipMsg, containerID){
+  const containerRect = document.getElementById(containerID).getBoundingClientRect();
+  let x = event.pageX - containerRect.left - window.scrollX + 15;
+  let y = event.pageY - containerRect.top - window.scrollY + 10;
+  // 2. Temporarily set the tooltip text so we can measure it
+  const tooltipNode = tooltipDiv.node();
+  tooltipDiv.html(tooltipMsg).style("opacity", 0.9);
+  // 3. Measure the tooltip
+  const tooltipWidth = tooltipNode.offsetWidth;
+  const tooltipHeight = tooltipNode.offsetHeight;
+  const containerWidth = containerRect.width;
+  const viewportHeight = window.innerHeight;
+  // 4. Adjust X: flip to left if overflowing to the right
+  if (x + tooltipWidth > containerWidth) {
+    x = Math.max(0, x - tooltipWidth - 30); // flip to left side if possible
+  }
+  // Adjust Y: flip to above if overflowing to the bottom
+  const pageY = event.pageY; // relative to full document
+  const tooltipBottom = pageY + tooltipHeight + 10;
+  if (tooltipBottom > viewportHeight + window.scrollY) {
+    y = event.pageY - containerRect.top - window.scrollY - tooltipHeight - 10;
+  }
+  return [x, y];
+}
+
+/** Get the highest value for a key in an array of objects
+ * 
+ * @param {Array} arr 
+ * @param {String} key 
+ * @returns Integer
+ */
+function getHighestValueInArrayOfObjects(arr, key){
+  let highest = -Infinity;
+  for (let i=0; i<arr.length; i++){
+    let n = parseInt(arr[i][key]);
+    if (n > highest) {
+      highest = n;
+    }
+  }
+  return highest;
+}
 
 /*
 function to  takes author death date as the parameter to return a padded repo URL
@@ -245,6 +340,9 @@ function bisectLeft(array, value) {
 }
 
 export {
+  getHighestValueInArrayOfObjects,
+  calculateTooltipPos,
+  cleanSearchPagination,
   pad,
   renameKeys,
   deleteKey,
@@ -257,5 +355,8 @@ export {
   cleanImech,
   parseImech,
   cleanBeforeDiff,
-  bisectLeft
+  bisectLeft, 
+  getVersionIDfromURI,
+  getVersionIDfromURL,
+  buildPairwiseCsvURL
 };

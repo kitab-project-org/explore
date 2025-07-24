@@ -11,6 +11,8 @@ import React, { useContext, useEffect } from "react";
 import MetaFilters from "./MetaFilters";
 import { useSearchParams } from "react-router-dom";
 import { Context } from "../../../App";
+import { cleanSearchPagination } from "../../../utility/Helper"
+
 
 const FilterSidebar = () => {
   const { showFilters, analysisPriority, setAnalysisPriority } =
@@ -21,7 +23,8 @@ const FilterSidebar = () => {
   // toggler for primary-secondary metadata
   const handlePrimaryTextToggle = () => {
     setAnalysisPriority(!analysisPriority);
-    const params = Object.fromEntries([...searchParams]);
+    // remove the page parameter from the query string
+    const params = cleanSearchPagination(searchParams);
     if (!analysisPriority === true) {
       setSearchParams({ ...params, version: "all" });
     } else {

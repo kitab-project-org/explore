@@ -7,6 +7,8 @@ import CustomTextInput from "./CustomTextInput";
 import { Button, Drawer } from "@mui/material";
 import { useSearchParams } from "react-router-dom";
 import MultiSlider from "./MultiSlider";
+import { cleanSearchPagination } from "../../../../utility/Helper"
+
 
 const style = {
   p: {
@@ -55,7 +57,8 @@ export default function AdvanceSearch() {
 
   const handleSubmitAdvanceSearch = () => {
     setAdvanceSearch(tempAdvanceSearch);
-    const params = Object.fromEntries([...searchParams]);
+    // remove the page parameter from the query string
+    const params = cleanSearchPagination(searchParams);
     const allSearchParams = {
       ...(params || {}),
       max_tok_count: tempAdvanceSearch?.max_tok_count,

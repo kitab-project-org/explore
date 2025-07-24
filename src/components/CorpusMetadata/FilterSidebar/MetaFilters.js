@@ -5,6 +5,8 @@ import { useSearchParams } from "react-router-dom";
 import { Box } from "@mui/material";
 import { useContext } from "react";
 import { Context } from "../../../App";
+import { cleanSearchPagination } from "../../../utility/Helper"
+
 
 function MetaFilters() {
   const { annotationFilter, setAnnotationFilter } = useContext(Context);
@@ -30,7 +32,8 @@ function MetaFilters() {
       [event.target.name]: event.target.checked,
     });
     if (filters) {
-      const params = Object.fromEntries([...searchParams]);
+      // remove the page parameter from the query string
+      const params = cleanSearchPagination(searchParams);
       setSearchParams({ ...params, annotation_status: filters });
     } else {
       searchParams.delete("annotation_status");

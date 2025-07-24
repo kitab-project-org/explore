@@ -2,6 +2,8 @@ import { Box, Button, Typography, Tooltip } from "@mui/material";
 import React, { useContext, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Context } from "../../../App";
+import { cleanSearchPagination } from "../../../utility/Helper"
+
 
 const FilterNavigation = ({ showFilters }) => {
   const { analysisPriority, setAnalysisPriority } = useContext(Context);
@@ -13,11 +15,13 @@ const FilterNavigation = ({ showFilters }) => {
     if (value === "version") {
       if (searchParams.get("version") === "pri") {
         setAnalysisPriority(true);
-        const params = Object.fromEntries([...searchParams]);
+        // remove the page parameter from the query string
+        const params = cleanSearchPagination(searchParams);
         setSearchParams({ ...params, version: "all" });
       } else {
         setAnalysisPriority(false);
-        const params = Object.fromEntries([...searchParams]);
+        // remove the page parameter from the query string
+        const params = cleanSearchPagination(searchParams);
         setSearchParams({ ...params, version: "pri" });
       }
     }
@@ -31,7 +35,8 @@ const FilterNavigation = ({ showFilters }) => {
           ? (getData = `${getData + item}`)
           : (getData = `${getData + item},`)
       );
-      const params = Object.fromEntries([...searchParams]);
+      // remove the page parameter from the query string
+      const params = cleanSearchPagination(searchParams);
       if (filterAnnotationStatus.length === 1) {
         searchParams.delete("annotation_status");
         setSearchParams(searchParams);

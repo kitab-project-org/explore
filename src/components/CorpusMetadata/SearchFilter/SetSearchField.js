@@ -13,6 +13,8 @@ import { Checkbox } from "@mui/material";
 import { Context } from "../../../App";
 import { Button } from "@mui/material";
 import { Typography } from "@mui/material";
+import { cleanSearchPagination } from "../../../utility/Helper"
+
 
 export default function SetSearchField() {
   const {
@@ -28,7 +30,8 @@ export default function SetSearchField() {
   const handleSearchField = (e) => {
     if (e.target.value) {
       setSearchField(e.target.value);
-      const params = Object.fromEntries([...searchParams]);
+      // remove the page parameter from the query string
+      const params = cleanSearchPagination(searchParams);
       setSearchParams({ ...params, search_by: e.target.value });
     } else {
       setSearchField("");
@@ -41,11 +44,13 @@ export default function SetSearchField() {
     e.preventDefault();
     if (normalizedSearch) {
       setNormalizedSearch(false);
-      const params = Object.fromEntries([...searchParams]);
+      // remove the page parameter from the query string
+      const params = cleanSearchPagination(searchParams);
       setSearchParams({ ...params, normalize: false });
     } else {
       setNormalizedSearch(true);
-      const params = Object.fromEntries([...searchParams]);
+      // remove the page parameter from the query string
+      const params = cleanSearchPagination(searchParams);
       setSearchParams({ ...params, normalize: true });
     }
   };

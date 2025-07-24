@@ -66,7 +66,7 @@ const DownloadData = ({ data, status }) => {
             >
               <IconButton size="large" variant="text" sx={{ fontSize: "15px" }}>
                 <i
-                  className="fa-solid fa-file-csv"
+                  className="fa-solid fa-table-list"
                   style={{ color: "#2863A5" }}
                 ></i>
               </IconButton>

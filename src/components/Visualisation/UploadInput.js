@@ -1,7 +1,7 @@
 import {
   Box,
   CircularProgress,
-  Input,
+  //Input,    // mui Input object has difficulties with multiple files
   InputLabel,
   Typography,
 } from "@mui/material";
@@ -64,11 +64,18 @@ const UploadInput = ({ item, handleUpload }) => {
           </Typography>
         </Box>
       </Box>
-      <Input
+       {/*<Input
         type="file"
         id={item.title}
         sx={{ display: "none" }}
         onChange={(e) => handleUpload(e.target.files[0])}
+      />*/}
+     <input
+        type="file"
+        id={item.title}
+        style={{ display: "none" }}
+        multiple
+        onChange={(e) => handleUpload(e.target.files)}
       />
       {dataLoading?.uploading && (
         <Box

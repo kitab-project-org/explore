@@ -8,6 +8,8 @@ import VisualizationHeader from "../SectionHeader/VisualizationHeader";
 import { extractAlignment } from "../../../functions/alignmentFunctions";
 import { getMilestoneText } from "../../../functions/getMilestoneText";
 import Section from "../Metadata/Section";
+import { getHighestValueInArrayOfObjects } from "../../../utility/Helper";
+
 
 const Visual = (props) => {
   const {
@@ -100,8 +102,23 @@ const Visual = (props) => {
     currentXDomain,
     duration1 = 700;
 
-  const lastMsFirst = Math.ceil(chartData?.tokens?.first / chunkSize);
-  const lastMsSecond = Math.ceil(chartData?.tokens?.second / chunkSize);
+  let lastMsFirst = Math.ceil(chartData?.tokens?.first / chunkSize);
+  let lastMsSecond = Math.ceil(chartData?.tokens?.second / chunkSize);
+  // if the number of tokens is not found from the metadata, 
+  // use the last milestone for which reuse was found as a proxy
+  let showBookEnd1 = true;
+  let showBookEnd2 = true;
+  if (lastMsFirst === 0) {
+    console.log(chartData);
+    lastMsFirst = getHighestValueInArrayOfObjects(chartData.dataSets, "seq1");
+    showBookEnd1 = false;
+  }
+  if (lastMsSecond === 0) {
+    lastMsSecond = getHighestValueInArrayOfObjects(chartData.dataSets, "seq2");
+    showBookEnd2 = false;
+  }
+  console.log(`showBookEnd1: ${showBookEnd1}, showBookEnd2: ${showBookEnd2}`);
+
 
   var maxValues = {
     book1: isFlipped ? lastMsSecond : lastMsFirst, //13000,
@@ -203,11 +220,12 @@ const Visual = (props) => {
       [width, height],
     ]);
     refLinesData = [
-      { x: 1, y: 0, yScale: y0Scale },
-      { x: max.book1, y: 0, yScale: y0Scale },
-      { x: 1, y: barMaxHeight * 2, yScale: y1Scale },
-      { x: max.book2, y: barMaxHeight * 2, yScale: y1Scale },
+      { x: 1, y: 0, yScale: y0Scale, solid: true },
+      { x: max.book1, y: 0, yScale: y0Scale, solid: showBookEnd1 },
+      { x: 1, y: barMaxHeight * 2, yScale: y1Scale, solid: true },
+      { x: max.book2, y: barMaxHeight * 2, yScale: y1Scale, solid: showBookEnd2  },
     ];
+
     hoverLines = [
       { x: barMaxHeight, y: 0, yScale: y0Scale, visible: false },
       { x: barMaxHeight, y: barMaxHeight * 2, yScale: y0Scale, visible: false },
@@ -279,7 +297,7 @@ const Visual = (props) => {
       .enter()
       .append("line")
       .attr("clip-path", clipPath)
-      .attr("class", "max-reference-lines");
+      .attr("class", d => d.solid ? "max-reference-lines" : "max-reference-lines dashed");
   }
 
   function updateChart(duration) {
@@ -837,11 +855,6 @@ const Visual = (props) => {
         <VisualizationHeader
           restoreCanvas={restoreCanvas}
           isPairwiseViz={props.isPairwiseViz}
-          downloadFileName={
-            isFlipped
-              ? `${metaData?.book2?.versionCode}_${metaData?.book1?.versionCode}.png`
-              : `${metaData?.book1?.versionCode}_${metaData?.book2?.versionCode}.png`
-          }
         />
       </SectionHeaderLayout>
       <Box

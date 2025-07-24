@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import * as d3 from "d3";
 import "../../../index.css";
-import { bisectLeft } from "../../../utility/Helper";
+import { bisectLeft, calculateTooltipPos } from "../../../utility/Helper";
 
 
 
@@ -25,7 +25,6 @@ const BottomBar = (props) => {
     const tooltipDiv = d3.select(".vizTooltip");
     const barSvg = d3.select(".bottom-bar");
     
-
     // build X axis scale:
     let xScale = d3.scaleLinear()
       .domain([0, props.bookStats.length+2])  // each book will have its own space on the X axis
@@ -35,7 +34,6 @@ const BottomBar = (props) => {
     let yScale = d3.scaleLinear()
       .domain([maxTotalChMatch, 0])
       .range([0, height]);
-
 
     // Add X axis:
     let allYears = props.bookStats.map(d => d.date);
@@ -122,19 +120,11 @@ const BottomBar = (props) => {
                 let tooltipMsg = d.book;
                 tooltipMsg += "<br/>Total characters matched: " + d3.format(",")(d.ch_match);
                 tooltipMsg += "<br/>(Click bar to see pairwise visualisation)";
-                // calculate position on the page:
-                /*let chartBoxRect = document.getElementById("chartBox")
-                  .getBoundingClientRect();*/
-                let chartBoxRect = document.getElementById("upperContainer")
-                  .getBoundingClientRect();
-                let bottomBarRect = document.getElementById("bottom-bar")
-                  .getBoundingClientRect();
-                let top = (bottomBarRect.top-chartBoxRect.top);
-                console.log([top]);
-                // build the tooltip:
+                // position the tooltip so that it remains in sight:
+                const [x, y] = calculateTooltipPos(event, tooltipDiv, tooltipMsg, "multiVis");
                 tooltipDiv.html(tooltipMsg)
-                    .style("left", (event.pageX - 100) + "px")
-                    .style("top", top + 400 + "px");  
+                  .style("left", `${x}px`)
+                  .style("top", `${y}px`);
             })
             .on("mouseout", function(event, d) {
                 // hide the tooltip:

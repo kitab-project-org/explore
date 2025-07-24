@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import * as d3 from "d3";
 import "../../../index.css";
+import { calculateTooltipPos } from "../../../utility/Helper";
 
 
 
@@ -89,8 +90,6 @@ const SideBar = (props) => {
             .style("stroke", "#3FB8AF")
             // add tooltip:
             .on("mouseover", function(event, d) {
-                /*console.log("Milestone "+d.ms_id);
-                console.log(tooltipDiv);*/
                 // make the tooltip visible:
                 tooltipDiv.transition()
                     .duration(200)
@@ -98,14 +97,11 @@ const SideBar = (props) => {
                 // create the text for the tooltip:
                 let tooltipMsg = "Milestone "+d.ms_id+":";
                 tooltipMsg += "<br/>Total characters matched: " + d3.format(",")(d.ch_match_total);
-                
-                // calculate position on the page:
-                //console.log(d3.select(this) );
-                // build the tooltip:
+                // position the tooltip so that it remains in sight:
+                const [x, y] = calculateTooltipPos(event, tooltipDiv, tooltipMsg, "multiVis");
                 tooltipDiv.html(tooltipMsg)
-                    .style("left", event.pageX-100 + "px")
-                    .style("top", 375 + parseInt(d3.select(this).attr("y")) + "px")
-                    .style("width", "200px");  
+                  .style("left", `${x}px`)
+                  .style("top", `${y}px`); 
             })
             .on("mouseout", function(event, d) {
                 // hide the tooltip:

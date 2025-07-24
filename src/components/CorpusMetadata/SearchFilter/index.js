@@ -15,6 +15,7 @@ import SetSearchField from "./SetSearchField";
 import { Context } from "../../../App";
 import AdvanceSearch from "./AdvanceSearch";
 import { Button } from "@mui/material";
+import { cleanSearchPagination } from "../../../utility/Helper"
 
 const SearchFilters = ({ handleResetFilters, getQuery }) => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -30,7 +31,8 @@ const SearchFilters = ({ handleResetFilters, getQuery }) => {
   // change search query
   const handleSearch = (e) => {
     e.preventDefault();
-    const params = Object.fromEntries([...searchParams]);
+    // remove the page parameter from the query string
+    const params = cleanSearchPagination(searchParams);
     if (text) {
       setSearchParams({ ...params, search: text });
     } else {

@@ -3,6 +3,7 @@ import React from "react";
 import { useContext } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Context } from "../../App";
+import { cleanSearchPagination } from "../../utility/Helper"
 
 const PaginationComponent = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -16,7 +17,8 @@ const PaginationComponent = () => {
 
   // change rows per page from pagination dropdown
   const handleChangeRowsPerPage = (event) => {
-    const params = Object.fromEntries([...searchParams]);
+    // remove the page parameter from the query string
+    const params = cleanSearchPagination(searchParams);
     setSearchParams({ ...params, rowsPerPage: +event.target.value });
   };
 

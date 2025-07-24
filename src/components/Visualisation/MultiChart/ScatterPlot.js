@@ -4,6 +4,7 @@ import { Context } from "../../../App";
 import * as d3 from "d3";
 import { extractAlignment } from "../../../functions/alignmentFunctions";
 import { getMilestoneText } from "../../../functions/getMilestoneText";
+import { calculateTooltipPos } from "../../../utility/Helper";
 
 
 const ScatterPlot = (props) => {
@@ -258,6 +259,7 @@ const ScatterPlot = (props) => {
         .attr("transform", "rotate(-90)")
         .text("Milestones in "+props.mainBookURI);
 
+
     // add/update data:
     scatterPlot
       .selectAll("circle")
@@ -288,10 +290,11 @@ const ScatterPlot = (props) => {
                   tooltipMsg += `<br/>Characters matched: ${d.ch_match}`;
                   tooltipMsg += "<br/>(Click dot to compare milestones)"
                 }
-                // build the tooltip:
+                // position the tooltip (making sure it does not extend outside view):
+                const [x, y] = calculateTooltipPos(event, tooltipDiv, tooltipMsg, "multiVis");
                 tooltipDiv.html(tooltipMsg)
-                  .style("left", (event.pageX) +25 + "px")
-                  .style("top", 270+parseInt(d3.select(this).attr("cy"))+"px");
+                  .style("left", `${x}px`)
+                  .style("top", `${y}px`);
               })
               .on("mouseout", function(event, d) {
                 // hide the tooltip:

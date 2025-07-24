@@ -5,6 +5,7 @@ import React from "react";
 import { useContext } from "react";
 import { Context } from "../../../../../App";
 import { useSearchParams } from "react-router-dom";
+import { cleanSearchPagination } from "../../../../../utility/Helper"
 
 const SortingComponent = ({ ascending, descending }) => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -24,7 +25,8 @@ const SortingComponent = ({ ascending, descending }) => {
   // handle sort filter values
   const handleSortingFilter = (value) => {
     setOrderingOrder(value);
-    const params = Object.fromEntries([...searchParams]);
+    // remove the page parameter from the query string
+    const params = cleanSearchPagination(searchParams);
     setSearchParams({ ...params, ordering: value });
   };
 

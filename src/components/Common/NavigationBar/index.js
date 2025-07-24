@@ -67,7 +67,7 @@ const Navigationbar = () => {
     },
     {
       label: "Visualisation",
-      link: `${!REPO_NAME ? "" : `/${REPO_NAME}`}/#/visualise`,
+      link: `${!REPO_NAME ? "" : `/${REPO_NAME}`}/#/visualise/${releaseCode}/`,
     },
   ];
 

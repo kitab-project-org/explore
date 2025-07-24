@@ -1,24 +1,28 @@
-# KitabApps - Historical Arabic Books Library
+# KITAB explore 
 
-![KitabApps Logo](https://placekitten.com/800/400) _(Replace this with your project logo or relevant image)_
+A web portal for the KITAB project.
 
-KitabApps is a comprehensive library of historical Arabic books, providing a rich collection of literary and scholarly works. This project aims to preserve and make accessible a diverse range of Arabic texts from different historical periods.
+The portal gives access to the OpenITI metadata and the KITAB text reuse data and visualisations.
+
+![Kitab Logo](public/logo192.png) 
+
 
 ## Features
 
-- **Extensive Collection:** Browse through a vast repository of historical Arabic books.
-- **Search Functionality:** Easily search for specific books or topics of interest.
-- **User-Friendly Interface:** Intuitive design for a seamless user experience.
-- **Responsive:** Accessible on various devices, ensuring a consistent experience.
+- **Extensive Collection:** Browse through a vast repository of historical Arabic books from the OpenITI corpus.
+- **Metata Search Functionality:** Search for specific works by author, title and other metadata.
+- **Explore Text Reuse Data:** visualize the text reuse relations between two books, or between one book and all other books in the corpus
+- **Download:** Download OpenITI text files and KITAB text reuse data.
+
 
 ## Getting Started
 
-To get started with KitabApps, follow these steps:
+To get started with KITAB explore, follow these steps:
 
 1. **Clone the Repository:**
 
    ```bash
-   git clone https://github.com/sohailmerchant/kitabapps.git
+   git clone https://github.com/kitab-project-org/explore.git
    ```
 
 2. **Install Dependencies:**
@@ -83,7 +87,7 @@ We welcome contributions to enhance the library and improve its features. To con
 ## Issues
 
 If you encounter any issues or have suggestions, please open an issue. We appreciate your feedback!
-License - https://github.com/sohailmerchant/kitabapps/issues/new
+License - https://github.com/kitab-project-org/explore/issues/new
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 

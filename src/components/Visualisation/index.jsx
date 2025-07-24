@@ -39,6 +39,75 @@ const buildCsvFilename = (book1Meta, book2Meta) => {
   return parts.join("_") + ".csv";
 };
 
+const buildPlaceholderMeta = (bookID) => {
+  return {
+    "id": 0,
+    "version_code": bookID ? bookID : "NOT FOUND",
+    "version_uri": "NOT_FOUND",
+    "language": "undefined",
+    "text": {
+        "text_uri": "NOT_FOUND",
+        "title_ar_prefered": "NOT_FOUND",
+        "title_lat_prefered": "NOT_FOUND",
+        "titles_ar": "NOT_FOUND",
+        "titles_lat": "NOT_FOUND",
+        "tags": "NOT_FOUND",
+        "author": [
+            {
+                "id": 0,
+                "author_uri": "NOT_FOUND",
+                "author_ar": "NOT_FOUND",
+                "author_ar_prefered": "NOT_FOUND",
+                "author_lat": "NOT_FOUND",
+                "author_lat_prefered": "NOT_FOUND",
+                "name_elements": [],
+                "date": 0,
+                "date_AH": 0,
+                "date_CE": 0,
+                "date_str": "NOT_FOUND",
+                "tags": "NOT_FOUND",
+                "bibliography": "NOT_FOUND",
+                "notes": "NOT_FOUND",
+                "related_persons": [],
+                "related_texts": [],
+                "related_places": []
+            }
+        ],
+        "bibliography": "NOT_FOUND",
+        "related_persons": [],
+        "related_texts": [],
+        "related_places": []
+    },
+    "edition": {
+        "id": 0,
+        "editor": "NOT_FOUND",
+        "edition_place": "NOT_FOUND",
+        "publisher": "NOT_FOUND",
+        "edition_date": "NOT_FOUND",
+        "ed_info": "NOT_FOUND",
+        "pdf_url": "NOT_FOUND",
+        "worldcat_url": "NOT_FOUND"
+    },
+    "part_of": null,
+    "github_issues": [],
+    "release_version": {
+      "release_code": "NOT_FOUND",
+      "release_date": "NOT_FOUND",
+      "zenodo_link": "NOT_FOUND",
+      "char_length": 0,
+      "tok_length": 0,
+      "url": "NOT_FOUND",
+      "analysis_priority": "NOT_FOUND",
+      "annotation_status": "NOT_FOUND",
+      "tags": "NOT_FOUND",
+      "notes": "NOT_FOUND",
+      "parts": [],
+      "n_reuse_instances": 0,
+      "n_reuse_versions": 0
+    }
+  };
+}
+
 const VisualisationPage = () => {
   const {
     books,
@@ -79,16 +148,40 @@ const VisualisationPage = () => {
       setBooks,
     });
     setDataLoading({ ...dataLoading, uploading: true });
+    //console.log("UPLOAD:");
+    //console.log(upload); // upload is a Filelist object
+    if (upload.length === 1 ) {
+      // only 1 file uploaded => this should be a pairwise visualisation!
+      setIsPairwiseViz(true);
 
-    const csvFileName = upload?.name;
-    const book_names = csvFileName.split("_");
+      upload = upload[0]; 
+      const CSVFile = upload;
+      const csvFileName = upload?.name;
+      const book_names = csvFileName.split("_");
 
-    setTimeout(async () => {
-      if (book_names.length === 2) {
+      setTimeout(async () => {
+        // try to get the metadata of both books from the API (using the filename):
         const bookMeta = await getVersionMeta(releaseCode, book_names);
-        const book1 = bookMeta.book1;
-        const book2 = bookMeta.book2;
-        const CSVFile = upload;
+        let book1, book2;
+        if (book_names.length === 2) {
+          // use both filename parts as identifiers of the books:
+          book1 = bookMeta.book1;
+          book2 = bookMeta.book2;
+
+          // if a book was not found in the metadata api, create an object with default values:
+          if (book1.version_code === undefined){
+            console.log("No metadata found for book 1");
+            book1 = buildPlaceholderMeta(book_names[0]);
+          };
+          if (book2.version_code === undefined){
+            console.log("No metadata found for book 2");
+            book2 = buildPlaceholderMeta(book_names[1].replace(".csv", ""));
+          };
+        } else {
+          // load this data in the pairwise visualisation with default book names:
+          book1 = buildPlaceholderMeta(book_names[0].replace(".csv", "")+"_book1");
+          book2 = buildPlaceholderMeta(book_names[0].replace(".csv", "")+"_book2");
+        }
 
         setPairwiseVizData({
           book1,
@@ -106,11 +199,41 @@ const VisualisationPage = () => {
           csvFileName,
           setUrl,
         });
-      } else {
-        setDataLoading({ ...dataLoading, uploading: false });
-        setIsError(true);
-      }
-    }, 1000);
+      /*} else {
+
+          setDataLoading({ ...dataLoading, uploading: false });
+          setIsError(true);
+        }*/
+      }, 1000);
+
+    } else {
+      console.log("UPLOADING ONE-TO-MANY DATA?");
+      /*if (book_names[1].replace(".csv", "") == "all") {
+        // load this data in the one-to-many visualisation: 
+        book1 = bookMeta.book1;
+        // if the book was not found in the metadata api, create an object with default values:
+        if (book1.version_code === undefined){
+          console.log("No metadata found for book 1");
+          book1 = buildPlaceholderMeta(book_names[0]);
+        };
+
+        setMultiVizData({
+          book1,
+          CSVFile,
+          statsFile,
+          dataLoading,
+          setDataLoading,
+          setMetaData,
+          releaseCode,
+          getMetadataObject,
+          setChartData,
+          setIsError,
+          setIsFileUploaded,
+          setUrl,
+        });
+      }*/
+    }
+    
   };
 
   const [isLoading, setIsLoading] = useState(true);
