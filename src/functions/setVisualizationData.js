@@ -247,8 +247,8 @@ export const setPairwiseVizData = (values) => {
                 bw2,
                 ew1,
                 ew2,
-                s1,   // will be undefined for "light" text reuse data files
-                s2,   // will be undefined for "light" text reuse data files
+                s1: s1 || "text unavailable",   // will be undefined for "light" text reuse data files
+                s2: s2 || "text unavailable",   // will be undefined for "light" text reuse data files
                 seq1, 
                 seq2
               }));;
