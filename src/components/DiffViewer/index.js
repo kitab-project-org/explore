@@ -38,7 +38,7 @@ const DiffViewerComponent = () => {
         alignItems={"center"}
         mb={"20px"}
       >
-        <Typography variant="h4">Diff viewer</Typography>
+        <Typography variant="h4">Diff Viewer</Typography>
         <Typography>
           View code on{" "}
           <Link
