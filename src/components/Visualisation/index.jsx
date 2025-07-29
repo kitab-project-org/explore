@@ -439,10 +439,10 @@ const VisualisationPage = () => {
                 <CircularInterminate />
               ) : null}
 
-              {!dataLoading?.books && books ? (
-                <Books />
+              {dataLoading?.books ? (
+                <CircularInterminate />
               ) : (
-                books && <CircularInterminate />
+                (books?.book1?.ms) && <Books />
               )}
 
               <div id={"belowBooks"} />
