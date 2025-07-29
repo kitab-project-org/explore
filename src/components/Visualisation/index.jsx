@@ -388,6 +388,10 @@ const VisualisationPage = () => {
           justifyContent="center"
           flexDirection="column"
         >
+          <UploadInput
+              item={{ title: "Upload TSV File" }}
+              handleUpload={handleUpload}
+          />
           <Typography variant="h4">No data found to visualize.</Typography>
           <Typography variant="body1" color="grey">
             We may not have text reuse data for these texts, or there might be
