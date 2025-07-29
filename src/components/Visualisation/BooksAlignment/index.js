@@ -75,7 +75,7 @@ const BooksAlignment = () => {
     };
     getData();
   }, [setBooksAlignment, booksAlignment, bookIntoRows]);
-
+  console.log(books);
   return (
     <>
       <SectionHeader
@@ -109,13 +109,13 @@ const BooksAlignment = () => {
                 {isFlipped
                   ? books?.book2?.ms && (
                       <span>
-                        Book 2: {books?.book2?.title}{" "}
+                        Book 2: {books?.book2?.title !== "NOT_FOUND" ? books?.book2?.title : books?.book2?.versionCode}{" "}
                         {`(milestone ${books?.book2?.ms})`}
                       </span>
                     )
                   : books?.book1?.ms && (
                       <span>
-                        Book 1: {books?.book1?.title}{" "}
+                        Book 1: {books?.book1?.title !== "NOT_FOUND" ? books?.book1?.title : books?.book1?.versionCode}{" "}
                         {`(milestone ${books?.book1?.ms})`}
                       </span>
                     )}
