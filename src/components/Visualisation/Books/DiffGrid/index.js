@@ -20,15 +20,19 @@ const DiffGrid = ({ parsedBookAlignment, alignmentOnly }) => {
   const { isFlipped, books, displayMs, setDisplayMs } = useContext(Context);
 
   const [open, setOpen] = useState(false);
+  
+  // display the versionCode instead of title for books that are not associated with title metadata:
+  const book1Title = books?.book1?.title !== "NOT_FOUND" ? books?.book1?.title : books?.book1?.versionCode;
+  const book2Title = books?.book2?.title !== "NOT_FOUND" ? books?.book2?.title : books?.book2?.versionCode;
 
   let columns = [
     {
       field: "book1",
-      headerName: `${books.book1.title} (milestone ${books.book1.ms})`,
+      headerName: `${book1Title} (milestone ${books.book1.ms})`,
     },
     {
       field: "book2",
-      headerName: `${books.book2.title} (milestone ${books.book2.ms})`,
+      headerName: `${book2Title} (milestone ${books.book2.ms})`,
     },
   ];
   columns = isFlipped ? columns.reverse() : columns;
