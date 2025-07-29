@@ -565,6 +565,12 @@ function parseDiffHtml(diffHtml, intoRows, arChars, refine_n) {
  *  @return {Array}            (diffHtml, aHtml, bHtml: the original wikEdDiff output + split into two separate strings)
  */
 async function kitabDiff(a, b, intoRows = false, arChars = 20, refine_n = 3) {
+  if (a === b){
+    const diffHtml = `<pre class="wikEdDiffFragment" style="white-space: pre-wrap;">${a}</pre>`;
+    const aHtml = `<span class="common">${a}</span>`;
+    const bHtml = `<span class="common">${b}</span>`;
+    return [diffHtml, aHtml, bHtml];
+  }
   // create the diff using the WikEdDiff algorithm:
   var wikEdDiff = new WikEdDiff();
 
