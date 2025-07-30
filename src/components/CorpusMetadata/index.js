@@ -75,6 +75,13 @@ const MetadataTable = ({ isHome }) => {
     setBooksAlignment
   } = useContext(Context);
 
+  
+  // reset the books and booksAlignment variables,
+  // so that when moving from the visualisation page to the 
+  // metadata page, the visualisation data is forgotten;
+  // otherwise, the wrong data may be passed to visualization
+  // when moving from metadata to visualisation again.
+  // NB: This effect runs only once, on mounting of the metadata page.
   useEffect(() => {
     console.log("resetting books variable");
     setBooks({});
@@ -99,6 +106,7 @@ const MetadataTable = ({ isHome }) => {
       bc2: 0,
       ec2: 0,
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // update orders

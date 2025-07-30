@@ -23,6 +23,7 @@ export async function getTextReuseBooksTSV(release_code, book1, book2) {
   
 // Download csv data from a webserver:
 export async function downloadCsvData(url) {
+  console.log("Downloading CSV data from "+url);
   try {
     const res = await fetch(url, { mode: "cors" });
     const data = await res.text();
@@ -46,13 +47,13 @@ export async function getOneBookMsData(openitiVersion, id1) {
 
 // Download text reuse stats for one version:
 export async function getOneBookReuseStats(openitiVersion, id1) {
-    try {
-      id1 = id1.split("-")[0];
-      const statsUrl = `${ONE_TO_ALL_URL}v${openitiVersion}/stats/${openitiVersion}_${id1}_stats.csv`
-      const stats = await downloadCsvData(statsUrl);
-      return stats;
-    } catch (error) {
-      return error;
-    }
+  try {
+    id1 = id1.split("-")[0];
+    const statsUrl = `${ONE_TO_ALL_URL}v${openitiVersion}/stats/${openitiVersion}_${id1}_stats.csv`
+    const stats = await downloadCsvData(statsUrl);
+    return stats;
+  } catch (error) {
+    return error;
   }
+}
   
