@@ -16,9 +16,9 @@ const TextReuseTable = ({ b1Metadata, normalizedQuery, handleRedirectToChart, b1
   const [isLoading, setIsLoading] = useState(false);
   const [isError, setIsError] = useState(false);
   const [total, setTotal] = useState(0);
-  const [useGithubUrl, setUseGithubUrl] = useState(false);
-  const [fullDataExists, setFullDataExists] = useState(false);
-  const [liteDataExists, setLiteDataExists] = useState(false);
+  const [useGithubUrl, setUseGithubUrl] = useState(null);
+  const [fullDataExists, setFullDataExists] = useState(null);
+  const [liteDataExists, setLiteDataExists] = useState(null);
 
   // Check the server response to see if the full and lite data exists
   useEffect(() => {
@@ -27,16 +27,18 @@ const TextReuseTable = ({ b1Metadata, normalizedQuery, handleRedirectToChart, b1
     // If we have book1 - check what kind of data can be fetched (is the server live or are we defaulting to GitHub?)
     if (b1Metadata && b1Metadata.version_uri) {      
       const releaseCode = JSON.parse(localStorage.getItem("release_code"));
-      const checkServerResponse = async (book1) => {
-        const csvObj = await checkPairwiseCsvResponse(releaseCode, book1);
+      const checkServerResponse = async (book1) => {        
+        const csvObj = await checkPairwiseCsvResponse(releaseCode, book1);        
         if (csvObj.githubUrl) {
           // If the GitHub URL is true, we are using GitHub as a fallback
           setUseGithubUrl(true);
           setLiteDataExists(true);
+          setFullDataExists(false);
         } else {
           // If the GitHub URL is false, we are using the server
           setFullDataExists(csvObj.pairwiseUrl !== null);
           setLiteDataExists(csvObj.pairwiseLiteUrl !== null);
+          setUseGithubUrl(false);
         }
         console.log(csvObj);
       }
@@ -292,6 +294,9 @@ const TextReuseTable = ({ b1Metadata, normalizedQuery, handleRedirectToChart, b1
                     display={"flex"}
                     alignItems={"center"}
                   >
+                  { useGithubUrl === null || fullDataExists === null || liteDataExists === null ? (<CircularProgress size={"15px"} />)
+                    : (
+                    <>
                     { useGithubUrl || liteDataExists ? (
                     <Tooltip placement="top" title={"Visualization"}>
                       <Typography>
@@ -354,7 +359,8 @@ const TextReuseTable = ({ b1Metadata, normalizedQuery, handleRedirectToChart, b1
 
                       </Typography>
                     </Tooltip>
-                    ) : null
+                    ) : null}
+                    </>)
                   }
                   </Box>
                 </Box>
