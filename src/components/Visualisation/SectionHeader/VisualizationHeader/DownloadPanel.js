@@ -1,6 +1,8 @@
-import { useContext, useRef, useEffect } from "react";
-import { Box, Button, TextField, Typography, Tooltip } from "@mui/material";
+import { useContext, useEffect } from "react";
+import { Box, Button, Typography, Tooltip } from "@mui/material";
 import * as d3 from "d3";
+import IncludeMetaDropdown from "./IncludeMetaDropdown";
+import OutputDimensions from "./OutputDimensions";
 import { Context } from "../../../../App";
 
 
@@ -8,52 +10,28 @@ const DownloadPanel = ( {isPairwiseViz, downloadFileName} ) => {
   const { 
     downloadPNG, 
     tickFontSize, 
-    setTickFontSize,
-    outputImageWidth,
-    setOutputImageWidth,
-    dpi, 
-    setDpi,
     includeURL,
     setIncludeURL
   } = useContext(Context);
-  const tickInputRef = useRef(null);
-  const widthInputRef = useRef(null);
-  const dpiInputRef = useRef(null);
-  const svgSelector = isPairwiseViz ? '#svgChart' : '#scatter-chart';
+  
+  const svgSelector = isPairwiseViz ? 'svgChart' : 'scatterChart';
 
-  const handleInputChange = (e) => {
-    setTickFontSize(parseInt(e.target.value) || 12);
-  };
-
-  const handleWidthInputChange = (e) => {
-    setOutputImageWidth(parseInt(e.target.value) || 120);
-  }
-
-  const handleDpiInputChange = (e) => {
-    setDpi(parseInt(e.target.value) || 300);
-  }
-
-  const handleIncludeURL = () => {
+  const handleIncludeUrlChange = (e) => {
     setIncludeURL((prev) => !prev);
   }
 
   // Apply font size when it changes
     useEffect(() => {
       // TODO: fix the font size for one-to-many chart!
-      console.log(`${svgSelector} .tick text`);
-      d3.selectAll(`${svgSelector} .tick text`).style("font-size", `${tickFontSize}px`);
-    }, [tickFontSize, svgSelector]);
+      console.log("Updating font size");
+      d3.selectAll(`#chartBox .tick text`).style("font-size", `${tickFontSize}px`);
+      /*const selectors = [`#chartBox`, ".bottom-bar", ".side-bar"];
+      selectors.map((item) => {
+        console.log(item); 
+        d3.selectAll(`${item} .tick text`).style("font-size", `${tickFontSize}px`);
+      })*/
+    }, [tickFontSize]);
 
-  const handleDownload = () => {
-    if (isPairwiseViz) {
-      downloadPNG(downloadFileName, "svgChart", includeURL);
-    } else {
-      downloadPNG(downloadFileName, "scatter-chart", includeURL);
-    }
-  };
-  console.log("downloadFileName: "+downloadFileName);
-  console.log("isPairwiseViz: "+isPairwiseViz);
-  
 
   return (
     <>
@@ -72,77 +50,14 @@ const DownloadPanel = ( {isPairwiseViz, downloadFileName} ) => {
           borderRadius: "5px",
           position: "relative",
           borderTop: "1px solid white",
+          padding: "5px"
         }}
       > 
-        <Typography>Download options:</Typography>
-        <Tooltip placement="top" title={"Set the width of the output image"}>
-          <Box display="flex" alignItems="center">
-            <Typography>Width:</Typography>
-            <TextField
-              inputRef={widthInputRef}
-              type="text"
-              value={outputImageWidth}
-              onChange={handleWidthInputChange}
-              size="small"
-              variant="standard"
-              sx={{
-                width: 40,
-                ml: 1,
-                "& .MuiInputBase-input": {
-                  padding: "6px 8px",
-                  fontSize: "0.85rem",
-                },
-              }}
-            />
-            <Typography>mm</Typography>
-          </Box>
-        </Tooltip>
-        <Tooltip placement="top" title={"Set the resolution of the output image"}>
-          <Box display="flex" alignItems="center">
-            <Typography>Resolution:</Typography>
-            <TextField
-              inputRef={dpiInputRef}
-              type="text"
-              value={dpi}
-              onChange={handleDpiInputChange}
-              size="small"
-              variant="standard"
-              sx={{
-                width: 40,
-                ml: 1,
-                "& .MuiInputBase-input": {
-                  padding: "6px 8px",
-                  fontSize: "0.85rem",
-                },
-              }}
-            />
-            <Typography>dpi</Typography>
-          </Box>
-        </Tooltip>
-        <Tooltip placement="top" title={"Change the size of the X and Y axis tick labels"}>
-          <Box display="flex" alignItems="center">
-            <Typography>Axis labels size:</Typography>
-            <TextField
-              inputRef={tickInputRef}
-              type="number"
-              value={tickFontSize}
-              onChange={handleInputChange}
-              size="small"
-              variant="standard"
-              sx={{
-                width: 60,
-                ml: 1,
-                "& .MuiInputBase-input": {
-                  padding: "6px 8px",
-                  fontSize: "0.85rem",
-                },
-              }}
-            />
-            <Typography>px</Typography>
-          </Box>
-        </Tooltip>
+        <Typography sx={{ fontWeight: 'bold' }}>Download options:</Typography>
+        <OutputDimensions/>
+        <IncludeMetaDropdown/>
         <Tooltip placement="top" title={"Include URL of this visualization in the downloaded image?"}>
-          <Button onClick={handleIncludeURL}>
+          <Button onClick={handleIncludeUrlChange}>
             <Box display="flex" alignItems="center">
               <Typography
                 ariant="body2"
@@ -161,11 +76,12 @@ const DownloadPanel = ( {isPairwiseViz, downloadFileName} ) => {
           </Button>
         </Tooltip>
         <Button
-          onClick={() => handleDownload()}
+          onClick={() => downloadPNG(downloadFileName, svgSelector, includeURL)}
           color="primary"
-          variant="text"
+          variant="outlined"
           rel="noreferrer"
           target="_blank"
+          style={{textTransform: 'none'}}
         >
           Download PNG
         </Button>

@@ -13,6 +13,7 @@ import { setInitialValues } from "../../functions/setInitialValues";
 import { getVersionMeta } from "../../functions/getVersionMeta";
 import { setPairwiseVizData, setMultiVizData } from "../../functions/setVisualizationData";
 import { downloadCsvData, getOneBookReuseStats, getOneBookMsData } from "../../services/TextReuseData";
+import { getMetaLabel, wrapText } from "../../utility/Helper";
 // import { lightSrtFolders, srtFoldersGitHub } from "../../assets/srtFolders";
 import { Context } from "../../App";
 import { checkPairwiseCsvResponse } from "../../utility/Helper";
@@ -126,6 +127,7 @@ const VisualisationPage = () => {
     setDataLoading,
     flipTimeLoading,
     setBooksAlignment,
+    metaData,
     setMetaData,
     setChartData,
     // loadedCsvFile,
@@ -141,6 +143,13 @@ const VisualisationPage = () => {
     setUrl,
     defaultReleaseCode,
     setMainVersionCode,
+    setVisMargins, 
+    defaultMargins, 
+    includeURL, 
+    includeMetaInDownload, 
+    metaPositionInDownload,
+    axisLabelFontSize,
+    tickFontSize
   } = useContext(Context);
 
   const [isPairwiseViz, setIsPairwiseViz] = useState(false);
@@ -148,6 +157,56 @@ const VisualisationPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { version } = useParams();
+
+  useEffect(() => {
+    const updateMargins = () => {
+      const margins = { ...defaultMargins };
+      const charHeight = Math.max(axisLabelFontSize, tickFontSize);
+      const lineHeight = 1.3 * charHeight;
+      if (includeURL) {
+        console.log("Making space for URL");
+        margins.top += lineHeight;
+        //margins.top += tickFontSize;
+        console.log(margins);
+      } else {
+        console.log("No space for URL");
+        console.log(margins);
+      }
+      // update the margins of the graph:
+      if (includeMetaInDownload !== "no") {
+        if (metaPositionInDownload === "left") {
+          // in order to put the metadata along the Y axis,
+          // we may need to break it into lines. 
+          // Calculate into how many lines we will have to break 
+          // the longest of the labels:
+          const b1Label = getMetaLabel(metaData.book1, includeMetaInDownload);
+          const b2Label = getMetaLabel(metaData.book2, includeMetaInDownload);
+          const longestLabel = [b1Label, b2Label].sort((a, b) =>{
+            return b.length - a.length
+          })[0];
+          const avgCharWidth = charHeight * 0.55;
+          const maxChars = Math.floor(200/avgCharWidth);
+          const nLines = wrapText(longestLabel, maxChars).length;
+          // add margin space for the required number of lines:
+          margins.left += nLines * lineHeight;
+        } else {
+          margins.top += lineHeight;
+        }
+      }
+      setVisMargins(margins);
+      console.log(margins);
+    };
+    updateMargins();
+  }, [
+    setVisMargins, 
+    defaultMargins, 
+    includeURL, 
+    includeMetaInDownload, 
+    metaPositionInDownload,
+    axisLabelFontSize,
+    tickFontSize,
+    metaData
+  ]);
 
   const handleUpload = async (upload) => {
     setInitialValues({

@@ -1,6 +1,6 @@
 import { useContext } from "react";
 import { Box, Typography } from "@mui/material";
-import ToggleButton from "./ToggleButton";
+//import ToggleButton from "./ToggleButton";
 import BAExtra from "./BookAlignmentHeader/BAExtra";
 import DownloadPanel from "./VisualizationHeader/DownloadPanel";
 import { Context } from "../../../App";
@@ -49,9 +49,9 @@ const SectionHeaderLayout = ({ item, children, toggle, setToggle }) => {
           </Typography>
         </Box>
         <Box sx={{ flexGrow: 1 }}>{children}</Box>
-        <Box display="flex" alignItems="center" justifyContent="flex-end">
+        {/*<Box display="flex" alignItems="center" justifyContent="flex-end">
           <ToggleButton setToggle={setToggle} toggle={toggle} />
-        </Box>
+        </Box>*/}
       </Box>
       {item.title === "Books" && showOptions && <BAExtra />}
       {item.title === "Pairwise Visualization" && showDownloadOptions && <DownloadPanel 

@@ -1,12 +1,14 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useContext } from "react";
 import * as d3 from "d3";
 import "../../../index.css";
 import { calculateTooltipPos } from "../../../utility/Helper";
+import { Context } from "../../../App";
 
 
 
 const SideBar = (props) => {
   const ref = useRef();
+  const { tickFontSize } = useContext(Context); // add axisLabelFontSize
 
   // initialize the svg on mount:
   useEffect(() => {
@@ -45,15 +47,17 @@ const SideBar = (props) => {
         .tickFormat(d3.format('.2s'))
         .ticks(4)
         .tickSize(2)
+        .tickPadding(5)
       );
     // Add X axis label:  see https://stackoverflow.com/a/11194968/4045481
     barSvg.selectAll(".xLabel").remove();
     barSvg.append("text")
       .attr("class", "xLabel")
-      .attr("text-anchor", "end")
-      .attr("x", 150)
+      .attr("text-anchor", "middle")
+      .attr("x", 170-tickFontSize)  // replace with axisLabelFontSize
       .attr("dx", "-4em")
       /*.attr("y", height + 25)*/
+      .style("font-size", `${tickFontSize}px`) // replace with axisLabelFontSize
       .text("Characters reused");
 
     // Add Y axis:
@@ -64,6 +68,10 @@ const SideBar = (props) => {
         .tickFormat((d) => '')  // remove tick marks in D3 v4: see https://stackoverflow.com/a/12994876/4045481
         .tickSize(0)
       );
+
+    // update the tick font size
+    barSvg
+      .selectAll(`.tick text`).style("font-size", `${tickFontSize}px`);  
 
     let barPlot = barSvg.append('g')
       .attr("class", "side-bar-plot");
@@ -121,7 +129,8 @@ const SideBar = (props) => {
         )
       )    
     
-  }, [props.msStats, props.height, props.mainBookMilestones, props.width]);
+  }, [props.msStats, props.height, props.mainBookMilestones, props.width, 
+      tickFontSize]); // axisLabelFontSize
   
   return (
     <svg 

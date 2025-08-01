@@ -14,12 +14,6 @@ import { Context } from "../../../App";
 const MultiVisual = (props) => {
   console.log("RENDERING MULTI CHART");
 
-  // set the dimensions and margins of the graph
-
-  var margin = { top: 10, right: 30, bottom: 20, left: 60 };
-  var width = 1000 - margin.left - margin.right;
-  var height = 600 - margin.top - margin.bottom;
-
   const {
     metaData,
     chartData,
@@ -27,6 +21,7 @@ const MultiVisual = (props) => {
     setYScale,
     colorScale,
     selfReuseOnly,
+    visMargins,
     //setChartData,
     /*Books,
     setBooks,
@@ -44,6 +39,10 @@ const MultiVisual = (props) => {
     //colors,
     //setColors
   } = useContext(Context);
+
+  // TODO: let user set width/height (with resizable component or input field?)
+  var width = 1000 - visMargins.left - visMargins.right;
+  var height = 600 - visMargins.top - visMargins.bottom;
 
   const book1 = metaData.book1;
   const mainBookURI = book1.bookTitle.path;
@@ -241,7 +240,7 @@ const MultiVisual = (props) => {
                 msdata={msData}
                 maxChMatch={maxChMatch}
                 minChMatch={minChMatch}
-                margin={margin}
+                margin={visMargins}
                 width={width}
                 height={height}
                 dotSize={dotSize}
@@ -254,7 +253,7 @@ const MultiVisual = (props) => {
               style={{
                 float: "right",
                 position: "absolute",
-                left: `${width + margin.left + margin.right + 20}px`,
+                left: `${width + visMargins.left + visMargins.right + 20}px`,
               }}
             >
               <SideBar
@@ -262,12 +261,12 @@ const MultiVisual = (props) => {
                 msStats={msStats}
                 width={100}
                 height={height}
-                margin={margin}
+                margin={visMargins}
               />
             </div>
           </div>
           <BottomBar
-            margin={{ top: 0, right: 30, bottom: 30, left: 60 }}
+            margin={{ ...visMargins, top: 0 }}
             width={width}
             height={100}
             bookStats={bookStats}

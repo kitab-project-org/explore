@@ -469,6 +469,65 @@ function bisectLeft(array, value) {
 	return low;
 }
 
+
+/*
+ * wrap a string into lines based on a maximum 
+ * number of characters per line
+*/
+function wrapText(text, maxChars) {
+  const lines = [];
+  let currentWord = "";
+  let currentLine = "";
+
+  for (let i=0; i<text.length; i++) {
+    const char = text[i];
+    currentWord += char
+    // use space or hyphen to delimit a word:
+    if (char === " " || char === "-") {
+      // If adding this word would exceed the limit
+      if ((currentLine + " " + currentWord).trim().length > maxChars) {
+        lines.push(currentLine.trim());
+        // Push the current line and start a new one
+        currentLine = currentWord;
+      } else {
+        // Otherwise, add the word to the current line
+        currentLine += currentWord;
+      }
+      currentWord = "";
+    } 
+  }
+
+  // Push the last word and line:
+  if (currentWord){
+    currentLine += currentWord;
+  }
+  if (currentLine) {
+    lines.push(currentLine.trim());
+  }
+
+  return lines;
+}
+
+/*
+ * get the metadata label to be displayed
+ * in the pairwise visualisation
+ */
+function getMetaLabel(d, metaType) {
+  switch (metaType) {
+    case "author":
+      return d?.bookAuthor;
+    case "title":
+      return d?.bookTitle?.label;
+    case "author+title":
+      return `${d?.bookAuthor}, ${d?.bookTitle?.label}`;
+    case "versionCode":
+      return d?.versionCode;
+    default:
+      console.log("unexpected value: "+metaType);
+  }
+}
+
+
 export {
   getHighestValueInArrayOfObjects,
   calculateTooltipPos,
@@ -489,7 +548,9 @@ export {
   getVersionIDfromURI,
   getVersionIDfromURL,
   buildPairwiseCsvURL,
+  wrapText,
   loadChartFromUrl,
+  getMetaLabel,
   checkPairwiseCsvResponse,
   enableMockFetch
 };

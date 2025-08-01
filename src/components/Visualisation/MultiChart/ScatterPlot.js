@@ -26,8 +26,15 @@ const ScatterPlot = (props) => {
     setDisplayMs,
     colors,
     colorScale,
-    setColorScale
+    setColorScale,
+    tickFontSize,
+    showDownloadOptions,
+    includeURL,
+    url
+    //axisLabelFontSize
   } = useContext(Context);
+
+  const width = props.width + 2*tickFontSize;
 
 
   // create the color scale, based on the ch_match values:
@@ -208,7 +215,7 @@ const ScatterPlot = (props) => {
     // create X and Y scaling functions:
     let xScale = d3.scaleLinear()
       .domain([0, props.bookStats.length+2])  // each book will have its own space on the X axis
-      .range([ 0, props.width ]);
+      .range([ 0, width ]); // props.width ]);
     let yScale = d3.scaleLinear()
       .domain([props.mainBookMilestones+1,0])   // flip the axis!
       .range([props.height, 0]);
@@ -220,6 +227,7 @@ const ScatterPlot = (props) => {
       .append("g")
         .attr("class", "xAxis")
         .attr("transform", "translate(0," + props.height + ")")
+        .style("font-size", `${tickFontSize}px`)
         .call(d3.axisBottom(xScale)
           .tickFormat((d) => '')  // remove tick marks in D3 v4: see https://stackoverflow.com/a/12994876/4045481
           .tickSize(0)
@@ -240,8 +248,11 @@ const ScatterPlot = (props) => {
     scatterPlot
       .append("g")
         .attr("class", "yAxis")
+        .style("font-size", `${tickFontSize}px`)
         .call(d3.axisLeft(yScale)
         .tickSize(2)
+        .tickPadding(5)
+
         // remove zero tick:
         .tickFormat((val,i) => { return val===0 ? null : val})
     );
@@ -254,11 +265,27 @@ const ScatterPlot = (props) => {
       .append("text")
         .attr("class", "yLabel")
         .attr("text-anchor", "end")
-        .attr("y", 6)
+        .attr("y", tickFontSize)  // replace with axisLabelFontSize
         .attr("dy", "-4em")
         .attr("transform", "rotate(-90)")
+        .style("font-size", `${tickFontSize}px`)  // replace with axisLabelFontSize
         .text("Milestones in "+props.mainBookURI);
 
+    if (showDownloadOptions){
+      if (includeURL) {
+        scatterPlot.append("text")
+          .attr("x", props.left)             
+          .attr("y", -tickFontSize)  // replace with axisLabelFontSize
+          .attr("text-anchor", "left")  
+          .style("font-size", `${tickFontSize}px`)  // replace with axisLabelFontSize
+          .style("text-decoration", "underline")  
+          .text(window.location.origin + url);
+      }
+    }
+
+    // update the tick font size
+    scatterPlot
+      .selectAll(`.tick text`).style("font-size", `${tickFontSize}px`);
 
     // add/update data:
     scatterPlot
@@ -332,9 +359,9 @@ const ScatterPlot = (props) => {
     >
 
       <svg 
-        id={"scatter-chart"}
+        id={"scatterChart"}
         ref={ref}
-        width={props.width + props.margin.left + props.margin.right}
+        width={width + props.margin.left + props.margin.right}
         height={props.height + props.margin.top + props.margin.bottom}
       />
       <div ref={bottomOfGraph}/>
