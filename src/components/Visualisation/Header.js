@@ -1,7 +1,5 @@
-import React from "react";
-import { Box, Button, Typography } from "@mui/material";
+import { Box, Button, Tooltip, Typography } from "@mui/material";
 import VersionDropdown from "../Common/VersionDropdown";
-import { Tooltip } from "@mui/material";
 
 const Header = (props) => {
   //console.log("Rendering visualisation header");

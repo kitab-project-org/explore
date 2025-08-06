@@ -1,24 +1,18 @@
+import { useContext, useState } from "react";
 import { Box } from "@mui/material";
-import React, { useContext, useState } from "react";
-import { Context } from "../../../App";
 import * as d3 from "d3";
-import SectionHeaderLayout from "../SectionHeader/SectionHeaderLayout";
-import VisualizationHeader from "../SectionHeader/VisualizationHeader";
 import ScatterPlot from "./ScatterPlot";
 import BottomBar from "./BottomBar";
 import SideBar from "./SideBar";
 import MultiFilter from "./MultiFilter";
+import SectionHeaderLayout from "../SectionHeader/SectionHeaderLayout";
+import VisualizationHeader from "../SectionHeader/VisualizationHeader";
 import { getHighestValueInArrayOfObjects } from "../../../utility/Helper";
+import { Context } from "../../../App";
 
 
 const MultiVisual = (props) => {
   console.log("RENDERING MULTI CHART");
-
-  // set the dimensions and margins of the graph
-
-  var margin = { top: 10, right: 30, bottom: 20, left: 60 };
-  var width = 1000 - margin.left - margin.right;
-  var height = 600 - margin.top - margin.bottom;
 
   const {
     metaData,
@@ -27,23 +21,12 @@ const MultiVisual = (props) => {
     setYScale,
     colorScale,
     selfReuseOnly,
-    //setChartData,
-    /*Books,
-    setBooks,
-    bookSectionRef,
-    focusMilestone1,
-    focusMilestone2,
-    setBooksAlignment,
-    isFlipped,
-    dataLoading,
-    setDataLoading,
-    setFocusedDataIndex,
-    setDisplayMs,
-    focusedDataIndex,
-    setFlipTimeLoading,*/
-    //colors,
-    //setColors
+    visMargins,
   } = useContext(Context);
+
+  // TODO: let user set width/height (with resizable component or input field?)
+  var width = 1000 - visMargins.left - visMargins.right;
+  var height = 600 - visMargins.top - visMargins.bottom;
 
   const book1 = metaData.book1;
   const mainBookURI = book1.bookTitle.path;
@@ -52,33 +35,19 @@ const MultiVisual = (props) => {
 
   const downloadFileName = `${book1?.versionCode}_all.png`;
 
-  /*const infernoReversed = [
-    "#fcffa4",
-    "#f7d13d",
-    "#fb9b06",
-    "#ed6925",
-    "#cf4446",
-    "#a52c60",
-    "#781c6d",
-    "#4a0c6b",
-    "#1b0c41",
-    "#000004"
-  ];*/
-
   // extract relevant objects from chartData:
   let {
     versionCode,
     tokens,
     msData,
     msStats,
-    //msBooks,
     bookStats,
-    //bookIndexDict,
     bookUriDict,
+    maxTotalChMatch
   } = chartData;
-  /*console.log("CHARTDATA:");
+
   console.log(chartData);
-  console.log(bookStats);*/
+
   
   const [dateRange, setDateRange] = useState([0, 1500]);
   let maxbc = getHighestValueInArrayOfObjects(bookStats, "ch_match");
@@ -238,10 +207,11 @@ const MultiVisual = (props) => {
                 mainBookURI={mainBookURI}
                 versionCode={versionCode}
                 bookStats={bookStats}
+                maxTotalChMatch={maxTotalChMatch}
                 msdata={msData}
                 maxChMatch={maxChMatch}
                 minChMatch={minChMatch}
-                margin={margin}
+                margin={visMargins}
                 width={width}
                 height={height}
                 dotSize={dotSize}
@@ -254,7 +224,7 @@ const MultiVisual = (props) => {
               style={{
                 float: "right",
                 position: "absolute",
-                left: `${width + margin.left + margin.right + 20}px`,
+                left: `${width + visMargins.left + visMargins.right + 20}px`,
               }}
             >
               <SideBar
@@ -262,14 +232,14 @@ const MultiVisual = (props) => {
                 msStats={msStats}
                 width={100}
                 height={height}
-                margin={margin}
+                margin={visMargins}
               />
             </div>
           </div>
           <BottomBar
-            margin={{ top: 0, right: 30, bottom: 30, left: 60 }}
+            margin={{ ...visMargins, top: 0 }}
             width={width}
-            height={100}
+            height={120}
             bookStats={bookStats}
             mainBookURI={mainBookURI}
             dateRange={dataDateRange}

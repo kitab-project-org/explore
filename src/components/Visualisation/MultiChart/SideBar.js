@@ -1,16 +1,17 @@
-import React, { useEffect, useRef } from "react";
+import { useEffect, useRef, useContext } from "react";
 import * as d3 from "d3";
 import "../../../index.css";
-import { calculateTooltipPos } from "../../../utility/Helper";
-
+import { calculateTooltipPos, wrapTextToSvgWidth } from "../../../utility/Helper";
+import { Context } from "../../../App";
 
 
 const SideBar = (props) => {
   const ref = useRef();
+  const { tickFontSize, axisLabelFontSize } = useContext(Context); // add axisLabelFontSize
 
   // initialize the svg on mount:
   useEffect(() => {
-    const t = `translate(0, ${props.margin.top})`;
+    const t = `translate(${tickFontSize}, ${props.margin.top})`;
     d3.select(ref.current)
       .html("")
       .append("g")
@@ -23,7 +24,6 @@ const SideBar = (props) => {
     console.log("updating side bar");
     const tooltipDiv = d3.select(".vizTooltip");
     const barSvg = d3.select(".side-bar");
-    
 
     // build X axis scale:
     let maxTotalChMatch = d3.max(props.msStats, d => d.ch_match_total);
@@ -42,19 +42,25 @@ const SideBar = (props) => {
       .attr("class", "xAxis")
       .attr("transform", "translate(0," + props.height + ")")
       .call(d3.axisBottom(xScale)
-        .tickFormat(d3.format('.2s'))
-        .ticks(4)
+        .tickFormat(d3.format('.0s'))
+        .ticks(2)
         .tickSize(2)
+        .tickPadding(5)
       );
     // Add X axis label:  see https://stackoverflow.com/a/11194968/4045481
     barSvg.selectAll(".xLabel").remove();
-    barSvg.append("text")
-      .attr("class", "xLabel")
-      .attr("text-anchor", "end")
-      .attr("x", 150)
-      .attr("dx", "-4em")
-      /*.attr("y", height + 25)*/
-      .text("Characters reused");
+    const lineHeight = axisLabelFontSize * 1.3;
+    const labelLines = wrapTextToSvgWidth("Characters reused", 120, axisLabelFontSize);
+    let ySpace = -axisLabelFontSize;
+    labelLines.reverse().forEach((line) => {
+      barSvg.append("text")
+        .attr("class", "xLabel")
+        .attr("text-anchor", "left")
+        .attr("y", ySpace)
+        .style("font-size", `${axisLabelFontSize}px`) 
+        .text(line);
+      ySpace -= lineHeight;
+    });
 
     // Add Y axis:
     barSvg.selectAll(".yAxis").remove();
@@ -64,6 +70,10 @@ const SideBar = (props) => {
         .tickFormat((d) => '')  // remove tick marks in D3 v4: see https://stackoverflow.com/a/12994876/4045481
         .tickSize(0)
       );
+
+    // update the tick font size
+    barSvg
+      .selectAll(`.tick text`).style("font-size", `${tickFontSize}px`);  
 
     let barPlot = barSvg.append('g')
       .attr("class", "side-bar-plot");
@@ -121,7 +131,8 @@ const SideBar = (props) => {
         )
       )    
     
-  }, [props.msStats, props.height, props.mainBookMilestones, props.width]);
+  }, [props.msStats, props.height, props.mainBookMilestones, props.width, 
+      tickFontSize, axisLabelFontSize, props.margin.top]);
   
   return (
     <svg 

@@ -2,6 +2,7 @@ import { useCallback, useContext, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   Box,
+  Button,
   Grid,
   IconButton,
   TextField,
@@ -11,10 +12,10 @@ import {
 import FilterAltOffIcon from "@mui/icons-material/FilterAltOff";
 import FilterClose from "@mui/icons-material/FilterListOff";
 import FilterOpen from "@mui/icons-material/FilterList";
+
+import AdvanceSearch from "./AdvanceSearch";
 import SetSearchField from "./SetSearchField";
 import { Context } from "../../../App";
-import AdvanceSearch from "./AdvanceSearch";
-import { Button } from "@mui/material";
 import { cleanSearchPagination } from "../../../utility/Helper"
 
 const SearchFilters = ({ handleResetFilters, getQuery }) => {

@@ -170,7 +170,7 @@ export async function getVersionMetadataById(release_code, version_id) {
   }
 }
 
-// get all pairwise text reuse data by version id
+// get all pairwise text reuse data by version id from the API
 export async function getAllPairwiseData(
   release_code,
   version_uri,

@@ -1,14 +1,14 @@
 import { Box, Typography } from "@mui/material";
-import React, { useContext, useEffect, useState } from "react";
-import { Context } from "../../../App";
-import * as d3 from "d3";
+import { useContext, useEffect, useState } from "react";
+import Section from "../Metadata/Section";
 import MSToggler from "../SectionHeader/MSToggler";
 import SectionHeaderLayout from "../SectionHeader/SectionHeaderLayout";
 import VisualizationHeader from "../SectionHeader/VisualizationHeader";
+import { Context } from "../../../App";
 import { extractAlignment } from "../../../functions/alignmentFunctions";
 import { getMilestoneText } from "../../../functions/getMilestoneText";
-import Section from "../Metadata/Section";
-import { getHighestValueInArrayOfObjects } from "../../../utility/Helper";
+import { getHighestValueInArrayOfObjects, wrapTextToSvgWidth, getMetaLabel } from "../../../utility/Helper";
+import * as d3 from "d3";
 
 
 const Visual = (props) => {
@@ -31,6 +31,17 @@ const Visual = (props) => {
     downloadedTexts,
     setDownloadedTexts,
     releaseCode,
+    setTextAvailable,
+    visMargins, 
+    includeURL, 
+    includeMetaInDownload, 
+    metaPositionInDownload, 
+    url,
+    axisLabelFontSize,
+    tickFontSize,
+    showDownloadOptions,
+    defaultMargins,
+    yTickWidth
   } = useContext(Context);
 
   const [toggle, setToggle] = useState(false);
@@ -53,6 +64,8 @@ const Visual = (props) => {
     },
   });
 
+  //console.log(chartData);
+
   var clipPathId = "clipDrawing";
   var clipPath = "url('#clipDrawing')";
 
@@ -63,7 +76,8 @@ const Visual = (props) => {
     clipRect,
     x0ScaleNode,
     x1ScaleNode,
-    outerHeight = 530,
+    startOuterHeight = 530,
+    outerHeight,
     outerWidth,
     innerHeight,
     innerWidth,
@@ -80,18 +94,9 @@ const Visual = (props) => {
     hoverStrokeWidth = 3,
     selectedLine = null;
 
-  var margin = {
-      top: 40,
-      right: 20,
-      bottom: 20,
-      left: 60,
-    },
-    padding = {
-      top: 40,
-      right: 0,
-      bottom: 40,
-      left: 40,
-    };
+  // set the dimensions and margins of the graph
+  //var margin =  { top: 40, right: 20, bottom: 20, left: 60 };
+  var padding = { top: 40, right: 0,  bottom: 40, left: 40 };
 
   var book1Bars, connections, book2Bars, brushG;
   var xScale, xScaleIdentity, x0Axis, x1Axis;
@@ -117,7 +122,7 @@ const Visual = (props) => {
     lastMsSecond = getHighestValueInArrayOfObjects(chartData.dataSets, "seq2");
     showBookEnd2 = false;
   }
-  console.log(`showBookEnd1: ${showBookEnd1}, showBookEnd2: ${showBookEnd2}`);
+  //console.log(`showBookEnd1: ${showBookEnd1}, showBookEnd2: ${showBookEnd2}`);
 
 
   var maxValues = {
@@ -184,24 +189,35 @@ const Visual = (props) => {
 
   function setLayout() {
     outerWidth = chartBox.offsetWidth;
-    innerWidth = outerWidth - margin.left - margin.right;
-    innerHeight = outerHeight - margin.top - margin.bottom;
+    innerWidth = outerWidth - visMargins.left - visMargins.right;
+    //const minMargin = Math.max(axisLabelFontSize, tickFontSize);
+    outerHeight = startOuterHeight + visMargins.top + visMargins.bottom - defaultMargins.top - defaultMargins.bottom;
+    //outerHeight = startOuterHeight
+    innerHeight = outerHeight - visMargins.top - visMargins.bottom;
     width = innerWidth - padding.left - padding.right;
     height = innerHeight - 20;
+    //height = innerHeight;
+    console.log(`outerWidth: ${outerWidth}`);
+    console.log(`innerWidth: ${innerWidth}`);
+    console.log(`outerHeight: ${outerHeight}`);
+    console.log(`innerHeight: ${innerHeight}`);
+    console.log(`width: ${width}`);
+    console.log(`height: ${height}`);
+    console.log(visMargins);
 
     svgD3.attr("width", outerWidth - 30).attr("height", outerHeight);
 
     drawingG.attr(
       "transform",
-      "translate(" + margin.left + "," + margin.top + ")"
+      "translate(" + visMargins.left + "," + visMargins.top + ")"
     );
     brushG.attr(
       "transform",
-      "translate(" + margin.left + "," + margin.top + ")"
+      "translate(" + visMargins.left + "," + visMargins.top + ")"
     );
     marksG.attr(
       "transform",
-      "translate(" + margin.left + "," + margin.top + ")"
+      "translate(" + visMargins.left + "," + visMargins.top + ")"
     );
     book2Bars.attr("transform", "translate(0,300)");
 
@@ -230,7 +246,101 @@ const Visual = (props) => {
       { x: barMaxHeight, y: 0, yScale: y0Scale, visible: false },
       { x: barMaxHeight, y: barMaxHeight * 2, yScale: y0Scale, visible: false },
     ];
+
+    // update the tick font size: 
+    d3.selectAll("#chartBox .axis .tick text")
+      .style("font-size", `${tickFontSize}px`);
+
+    // update the margins of the graph:
+
+    if (showDownloadOptions){
+      const charHeight = axisLabelFontSize;
+      const lineHeight = charHeight * 1.3;
+      if (includeURL) {
+        svgD3.append("text")
+          .attr("x", visMargins.left)             
+          .attr("y", lineHeight)
+          .attr("text-anchor", "left")  
+          .style("font-size", `${axisLabelFontSize}px`)
+          .style("text-decoration", "underline")  
+          .text(window.location.origin + url);
+      } 
+      if (includeMetaInDownload !== "no") {
+        // get the metadata to be displayed for each book:
+        const b1 = isFlipped ? metaData?.book2 : metaData?.book1;
+        const b2 = isFlipped ? metaData?.book1 : metaData?.book2;
+        let textContentb1 = getMetaLabel(b1, includeMetaInDownload);
+        let textContentb2 = getMetaLabel(b2, includeMetaInDownload);
+        
+        if (metaPositionInDownload === "left") {
+          // in order to put the metadata along the Y axis,
+          // we may need to break it into lines. 
+
+          const labelLinesb1 = wrapTextToSvgWidth(textContentb1, 200, axisLabelFontSize);
+          const labelLinesb2 = wrapTextToSvgWidth(textContentb2, 200, axisLabelFontSize);
+
+          // Add b1 metadata at the top of the Y axis:
+          // define the starting space between the axis and the label
+          // (space = visMargins.left would put the text on the axis)
+          let space = visMargins.left - yTickWidth - lineHeight;
+          labelLinesb1.reverse().forEach((line) => {
+            // define the point where the text ends ("text-anchor", "end"): 
+            const x = space
+            const y = visMargins.top;  // center the rotation at the top of the Y axis
+            svgD3.append("text")
+              .attr("class", "yLabel")
+              .attr("text-anchor", "end") // text will end at x,y
+              .attr("x", x) 
+              .attr("y", y) 
+              // rotate the text around its end point:
+              .attr("transform", `rotate(-90, ${x}, ${y})`)
+              .style("font-size", `${axisLabelFontSize}px`) 
+              .text(line);
+            space -= lineHeight;  // move the 
+          });
+
+          // Add b2 metadata at the bottom of the Y axis:
+          space = visMargins.left - yTickWidth - lineHeight;
+          labelLinesb2.reverse().forEach((line) => {
+            // define the point where the text should start: 
+            const x = space
+            const y = visMargins.top + 450;  // center the rotation at the top of the Y axis
+            svgD3.append("text")
+              .attr("class", "yLabel")
+              .attr("text-anchor", "start") // text will start at x,y
+              .attr("x", x) 
+              .attr("y", y) 
+              // rotate the text around its starting point:
+              .attr("transform", `rotate(-90, ${x}, ${y})`)
+              .style("font-size", `${axisLabelFontSize}px`) 
+              .text(line);
+            space -= lineHeight; // move the next line to the left
+          });
+
+        } else {
+
+          // Add b1 metadata at the top:
+          svgD3.append("text")
+            .attr("x", visMargins.left)             
+            //.attr("y", includeURL ? 2.5*lineHeight : lineHeight)
+            .attr("y", includeURL ? 3*axisLabelFontSize : axisLabelFontSize)
+            .attr("text-anchor", "left")  
+            .style("font-size", `${axisLabelFontSize}px`)
+            .text(textContentb1);
+
+          // add b2 metadata at the bottom:
+          svgD3.append("text")
+            .attr("x", visMargins.left)             
+            //.attr("y", outerHeight-lineHeight*2)
+            .attr("y", outerHeight-0.9*visMargins.bottom)
+            .attr("text-anchor", "left")  
+            .style("font-size", `${axisLabelFontSize}px`)
+            .text(textContentb2);
+        }      
+      }
+    } 
   }
+
 
   function drawChart() {
     // - Hover Lines ::
@@ -376,7 +486,8 @@ const Visual = (props) => {
       .attr("x", -5)
       .attr("y", -5)
       .attr("transform", "rotate(-90)")
-      .style("text-anchor", "end");
+      .style("text-anchor", "end")
+      .style("font-size", `${tickFontSize}px`);
 
     // - render X Axis of Book2 ::
     x1Axis.tickValues(
@@ -389,7 +500,8 @@ const Visual = (props) => {
       .attr("x", 5)
       .attr("y", 2)
       .attr("transform", "rotate(-90)")
-      .style("text-anchor", "start");
+      .style("text-anchor", "start")
+      .style("font-size", `${tickFontSize}px`);
 
     // - render Reference Lines Min and Max ::
     marksG
@@ -698,90 +810,136 @@ const Visual = (props) => {
 
     // Get the relevant milestones
     // (from the already downloaded milestones or from GitHub)
-    setDataLoading({ ...dataLoading, books: true });
-    let ms1Text = await getMilestoneText(
-      releaseCode,
-      versionCode1,
-      d1.seq1,
-      downloadedTexts,
-      setDownloadedTexts
-    );
-    //console.log(ms1Text)
-    //console.log(`getMilestoneText(${releaseCode}, ${versionCode2}, ${d1.ms2})`);
-    let ms2Text = await getMilestoneText(
-      releaseCode,
-      versionCode2,
-      d1.seq2,
-      downloadedTexts,
-      setDownloadedTexts
-    );
-    //console.log(ms2Text)
+    
+    // check if there is a link for the original text:
+    if (metaData?.book1?.url === "NOT_FOUND" || metaData?.book1?.url === undefined || metaData?.book1 === undefined ) {
+      // if there isn't, we can't get text from an external source, 
+      // only from the uploaded csv file itself
+      console.log("no metadata => can't get milestone text from API!");
+      setTextAvailable(false);
 
-    setDataLoading({ ...dataLoading, books: false });
+      setBooks({
+        book1: {
+          versionCode: versionCode1,
+          title: metaData?.book1?.bookTitle?.label,
+          content: [],
+          ms: d1?.seq1,
+        },
+        book2: {
+          versionCode: versionCode2,
+          title: metaData?.book2?.bookTitle?.label,
+          content: [],
+          ms: d1?.seq2,
+        },
+      });
 
-    let b1Downloaded =
-      downloadedTexts[releaseCode][versionCode1]["downloadedMs"];
-    let b2Downloaded =
-      downloadedTexts[releaseCode][versionCode2]["downloadedMs"];
-    /*console.log("SETBOOKS");
-    console.log(b1Downloaded);
-    console.log(b2Downloaded);*/
+      // reset the milestones to be displayed in the reader:
+      setDisplayMs({ book1: {}, book2: {} });
 
-    setBooks({
-      book1: {
-        versionCode: versionCode1,
-        title: metaData?.book1?.bookTitle?.label,
-        content: b1Downloaded?.msTexts,
-        ms: d1?.seq1,
-      },
-      book2: {
-        versionCode: versionCode2,
-        title: metaData?.book2?.bookTitle?.label,
-        content: b2Downloaded,
-        ms: d1?.seq2,
-      },
-    });
+      setBooksAlignment({
+        s1: d1?.s1,
+        s2: d1?.s2,
+        bw1: d1?.bw1,
+        ew1: d1?.ew1,
+        bw2: d1?.bw2,
+        ew2: d1?.ew2,
+        bc1: d1?.b1,
+        ec1: d1?.e1,
+        bc2: d1?.b2,
+        ec2: d1?.b2,
+        beforeAlignment1: "",
+        afterAlignment1: "",
+        beforeAlignment2: "",
+        afterAlignment2: "",
+      });
 
-    // reset the milestones to be displayed in the reader:
-    setDisplayMs({ book1: {}, book2: {} });
+    } else {
+      setTextAvailable(true);
+      setDataLoading({ ...dataLoading, books: true });
+      let ms1Text = await getMilestoneText(
+        releaseCode,
+        versionCode1,
+        d1.seq1,
+        downloadedTexts,
+        setDownloadedTexts
+      );
+      //console.log(ms1Text)
+      //console.log(`getMilestoneText(${releaseCode}, ${versionCode2}, ${d1.ms2})`);
+      let ms2Text = await getMilestoneText(
+        releaseCode,
+        versionCode2,
+        d1.seq2,
+        downloadedTexts,
+        setDownloadedTexts
+      );
+      //console.log(ms2Text)
 
-    // extract the alignment text from the milestone
-    // if it is not in the csv data:
-    let [s1, startChar1, endChar1] = extractAlignment(
-      ms1Text,
-      d1?.bw1,
-      d1?.ew1,
-      "word"
-    );
-    let [s2, startChar2, endChar2] = extractAlignment(
-      ms2Text,
-      d1?.bw2,
-      d1?.ew2,
-      "word"
-    );
+      setDataLoading({ ...dataLoading, books: false });
+      let b1Downloaded =
+        downloadedTexts[releaseCode][versionCode1]["downloadedMs"];
+      let b2Downloaded =
+        downloadedTexts[releaseCode][versionCode2]["downloadedMs"];
+      /*console.log("SETBOOKS");
+      console.log(b1Downloaded);
+      console.log(b2Downloaded);*/
 
-    let beforeAlignment1 = ms1Text.slice(0, startChar1);
-    let afterAlignment1 = ms1Text.slice(endChar1, ms1Text.length);
-    let beforeAlignment2 = ms2Text.slice(0, startChar2);
-    let afterAlignment2 = ms2Text.slice(endChar2, ms2Text.length);
+      setBooks({
+        book1: {
+          versionCode: versionCode1,
+          title: metaData?.book1?.bookTitle?.label,
+          content: b1Downloaded?.msTexts,
+          ms: d1?.seq1,
+        },
+        book2: {
+          versionCode: versionCode2,
+          title: metaData?.book2?.bookTitle?.label,
+          content: b2Downloaded,
+          ms: d1?.seq2,
+        },
+      });
 
-    setBooksAlignment({
-      s1: s1,
-      s2: s2,
-      bw1: d1?.bw1,
-      ew1: d1?.ew1,
-      bw2: d1?.bw2,
-      ew2: d1?.ew2,
-      bc1: startChar1,
-      ec1: endChar1,
-      bc2: startChar2,
-      ec2: endChar2,
-      beforeAlignment1: beforeAlignment1,
-      afterAlignment1: afterAlignment1,
-      beforeAlignment2: beforeAlignment2,
-      afterAlignment2: afterAlignment2,
-    });
+      // reset the milestones to be displayed in the reader:
+      setDisplayMs({ book1: {}, book2: {} });
 
+      // extract the alignment text from the milestone
+      // if it is not in the csv data:
+      let [s1, startChar1, endChar1] = extractAlignment(
+        ms1Text,
+        d1?.bw1,
+        d1?.ew1,
+        "word"
+      );
+      let [s2, startChar2, endChar2] = extractAlignment(
+        ms2Text,
+        d1?.bw2,
+        d1?.ew2,
+        "word"
+      );
+
+      let beforeAlignment1 = ms1Text.slice(0, startChar1);
+      let afterAlignment1 = ms1Text.slice(endChar1, ms1Text.length);
+      let beforeAlignment2 = ms2Text.slice(0, startChar2);
+      let afterAlignment2 = ms2Text.slice(endChar2, ms2Text.length);
+
+      setBooksAlignment({
+        s1: s1,
+        s2: s2,
+        bw1: d1?.bw1,
+        ew1: d1?.ew1,
+        bw2: d1?.bw2,
+        ew2: d1?.ew2,
+        bc1: startChar1,
+        ec1: endChar1,
+        bc2: startChar2,
+        ec2: endChar2,
+        beforeAlignment1: beforeAlignment1,
+        afterAlignment1: afterAlignment1,
+        beforeAlignment2: beforeAlignment2,
+        afterAlignment2: afterAlignment2,
+      });
+    }
+
+    
     if (d1 === selectedLine) return;
 
     selectedLine && clearSelectedLine();
@@ -842,6 +1000,12 @@ const Visual = (props) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isFlipped]);
 
+  // redraw the chart when the margins change
+  useEffect(() => {
+    normalChart();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visMargins, axisLabelFontSize, tickFontSize, showDownloadOptions, includeURL]);
+
   return (
     <>
       <SectionHeaderLayout
@@ -855,11 +1019,6 @@ const Visual = (props) => {
         <VisualizationHeader
           restoreCanvas={restoreCanvas}
           isPairwiseViz={props.isPairwiseViz}
-          downloadFileName={
-            isFlipped
-              ? `KITAB_explore_${releaseCode}_${metaData?.book2?.versionCode}_${metaData?.book1?.versionCode}.png`
-              : `KITAB_explore_${releaseCode}_${metaData?.book1?.versionCode}_${metaData?.book2?.versionCode}.png`
-          }
         />
       </SectionHeaderLayout>
       <Box

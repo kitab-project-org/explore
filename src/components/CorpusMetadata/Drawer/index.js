@@ -1,18 +1,23 @@
+import { useContext, useEffect, useState } from "react";
+import { 
+  AppBar, 
+  Box,
+  Drawer,
+  IconButton, 
+  Stack, 
+  Tab,
+  Tabs,
+  Tooltip,
+  Typography } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import GetAppOutlinedIcon from "@mui/icons-material/GetAppOutlined";
-import { AppBar, IconButton, Stack, Typography } from "@mui/material";
-import Box from "@mui/material/Box";
-import Drawer from "@mui/material/Drawer";
-import Tab from "@mui/material/Tab";
-import Tabs from "@mui/material/Tabs";
-import Tooltip from "@mui/material/Tooltip";
 import PropTypes from "prop-types";
-import { useContext, useEffect, useState } from "react";
-import { getSidePanelData } from "../../../services/CorpusMetaData";
+
 import AuthorDetails from "./AuthorDetails";
 import TextReuse from "./TextReuse";
 import TextDetails from "./TextDetails";
 import VersionDetails from "./VersionDetails";
+import { getSidePanelData } from "../../../services/CorpusMetaData";
 import { Context } from "../../../App";
 
 export default function LeftSidePanel() {
@@ -24,6 +29,8 @@ export default function LeftSidePanel() {
     setIsOpenDrawer,
   } = useContext(Context);
   const [fullData, setFullData] = useState({});
+  const [fullDataLoading, setFullDataLoading] = useState(false);
+
 
   // download metadata function
   const handleDownloadJsonClick = () => {
@@ -83,7 +90,11 @@ export default function LeftSidePanel() {
       setFullData(data ? data : {});
     };
     if (isOpenDrawer) {
+      // reset the fullData first:
+      setFullData({});
+      setFullDataLoading(true);
       fetchData();
+      setFullDataLoading(false);
     }
   }, [versionDetail, isOpenDrawer]);
 
@@ -193,7 +204,7 @@ export default function LeftSidePanel() {
                 {fullData && <VersionDetails fullData={fullData} />}
               </TabPanel>
               <TabPanel value={tabIndex} index={3}>
-                {fullData && <TextReuse fullData={fullData} />}
+                {fullData && <TextReuse fullData={fullData} fullDataLoading={fullDataLoading}/>}
               </TabPanel>
             </Box>
           </Box>

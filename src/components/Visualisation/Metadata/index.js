@@ -1,10 +1,10 @@
+import { useContext, useState } from "react";
 import { Box } from "@mui/material";
+
 import Section from "./Section";
-import { useContext } from "react";
-import { Context } from "../../../App";
-import SectionHeaderLayout from "../SectionHeader/SectionHeaderLayout";
 import MetadataHeader from "../SectionHeader/MetadataHeader";
-import { useState } from "react";
+import SectionHeaderLayout from "../SectionHeader/SectionHeaderLayout";
+import { Context } from "../../../App";
 
 const BookMetadata = () => {
   console.log("Rendering BookMetaData section");

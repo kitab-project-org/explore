@@ -1,8 +1,8 @@
+import { useContext } from "react";
 import { Box } from "@mui/material";
-import React, { useContext } from "react";
-import { Context } from "../../../../App";
 import Contents from "../Contents";
 import ContentHeader from "../ContentHeader";
+import { Context } from "../../../../App";
 
 const Book = ({ leftWidth, handler, chartSpecificBar, parsedBookAlignment, isLeft, alignmentOnly }) => {
   const { books, isFlipped, metaData } = useContext(Context);

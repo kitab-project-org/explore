@@ -1,27 +1,35 @@
-import React, { useContext, useEffect, useState } from "react";
-import { Context } from "../../App";
+import { useContext, useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Box, Typography } from "@mui/material";
 import Header from "./Header";
 import UploadInput from "./UploadInput";
 import Visual from "./Chart";
 import MultiVisual from "./MultiChart";
-import { getVersionMeta } from "../../functions/getVersionMeta";
-import LoaderIcon from "../Common/LoaderIcon";
 import Books from "./Books";
 import CircularInterminate from "./CircularIndeterminate";
+import LoaderIcon from "../Common/LoaderIcon";
 import { getMetadataObject } from "../../functions/getMetadataObject";
 import { setInitialValues } from "../../functions/setInitialValues";
-import {
-  setPairwiseVizData,
-  setMultiVizData,
-} from "../../functions/setVisualizationData";
-import {
-  downloadCsvData,
-  getOneBookReuseStats,
-  getOneBookMsData,
-} from "../../services/TextReuseData";
-import { lightSrtFolders, srtFoldersGitHub } from "../../assets/srtFolders";
+import { getVersionMeta } from "../../functions/getVersionMeta";
+import { setPairwiseVizData, setMultiVizData } from "../../functions/setVisualizationData";
+import { downloadCsvData, getOneBookReuseStats, getOneBookMsData } from "../../services/TextReuseData";
+import { getMetaLabel, measureSvgText, wrapTextToSvgWidth, checkPairwiseCsvResponse } from "../../utility/Helper";
+// import { lightSrtFolders, srtFoldersGitHub } from "../../assets/srtFolders";
+import { Context } from "../../App";
+
+
+// Check the metadata response from a URL - return an array of failed books
+const checkVersionMeta = (versionMeta, bookNames) => {
+  const failedBooks = [];
+  for (const [key, value] of Object.entries(versionMeta)) {
+    if (value instanceof Error || value?.message?.includes("Unexpected token")) {
+      const failedIndex = key.replace("book", "") - 1;
+      let failedBook = bookNames[failedIndex];
+      failedBooks.push(failedBook);
+    }
+  }
+  return failedBooks;
+}
 
 // construct the text reuse csv filename based on metadata of both books:
 const buildCsvFilename = (book1Meta, book2Meta) => {
@@ -116,9 +124,10 @@ const VisualisationPage = () => {
     setDataLoading,
     flipTimeLoading,
     setBooksAlignment,
+    metaData,
     setMetaData,
     setChartData,
-    loadedCsvFile,
+    // loadedCsvFile,
     setLoadedCsvFile,
     releaseCode,
     chartData,
@@ -126,9 +135,19 @@ const VisualisationPage = () => {
     setIsFileUploaded,
     isError,
     setIsError,
+    errorType,
+    setErrorType,
     setUrl,
     defaultReleaseCode,
     setMainVersionCode,
+    setVisMargins, 
+    defaultMargins, 
+    includeURL, 
+    includeMetaInDownload, 
+    metaPositionInDownload,
+    axisLabelFontSize,
+    tickFontSize, 
+    setYTickWidth
   } = useContext(Context);
 
   const [isPairwiseViz, setIsPairwiseViz] = useState(false);
@@ -136,6 +155,150 @@ const VisualisationPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { version } = useParams();
+
+  // update the margins of the graphs, based on 
+  // * label font size
+  // * tick font size
+  // * presence of metadata
+  // * presence of url
+  useEffect(() => {
+    const updateMargins = () => {
+      
+      // use the size of the axis and/or tick labels as default margins:
+      const margins = { top: 10, bottom: 10, left: 10, right: 10};
+
+      // calculate the height of a label line, based on the label font size:
+      const charHeight = axisLabelFontSize; // A for risers, g for descenders; does not matter, in fact
+      const lineHeight = 1.3 * charHeight;
+
+      // LEFT MARGIN: TICK LABELS + PADDING:
+      // The left margin consists of: 
+      // * the default margin: 10
+      // * the padding between the Y axis and the tick labels: 5
+      // * the space taken by the largest tick label
+      // * if axis labels are displayed: the height of the largest label 
+      //                                 (may be multiple lines if wrapped)
+
+
+      // 1. add space for some padding before and after the tick labels and the bar:
+      const tickPadding =  5; // 5 is used as padding between axis and tick label
+      margins.left += tickPadding;
+
+      // 2. adjust the left margin to the size of the largest tick label: 
+      if (isPairwiseViz) {
+        // in pairwise viz, the largest tick label is 300:
+        const tickWidth300 = measureSvgText("300", tickFontSize).width;
+        margins.left += tickWidth300;
+        setYTickWidth(tickWidth300);
+      } else {
+        // in one-to-many viz, there are two sets of tick labels: 
+        // milestone numbers (top) and total number of reused characters (bottom)
+        
+        // milestone numbers: 
+        const lastMs = Math.ceil(chartData?.tokens?.first / 300)
+        const lastMsWidth = measureSvgText(lastMs, tickFontSize).width;
+
+        // total number of reused characters in a book:
+        const highestBookReuse = chartData?.maxTotalChMatch;
+        const highestBookReuseWidth = measureSvgText(highestBookReuse, tickFontSize).width;
+
+        const largestTickWidth = Math.max(lastMsWidth, highestBookReuseWidth);
+        margins.left += largestTickWidth;        
+        setYTickWidth(largestTickWidth);
+      }
+
+      // LEFT MARGIN: AXIS LABELS:
+
+      if (isPairwiseViz && includeMetaInDownload !== "no") {        
+        if (metaPositionInDownload === "left") {
+          // in order to put the metadata along the Y axis,
+          // we may need to break it into lines. 
+
+          // Calculate into how many lines we will have to break 
+          // (the longest of) the labels:
+          const b1Label = getMetaLabel(metaData.book1, includeMetaInDownload);
+          const b2Label = getMetaLabel(metaData.book2, includeMetaInDownload);
+          const longestLabel = [b1Label, b2Label].sort((a, b) =>{
+            return b.length - a.length
+          })[0];
+
+          const nLines = wrapTextToSvgWidth(longestLabel, 200, axisLabelFontSize).length;
+
+          // add margin space for the required number of lines:
+          margins.left += nLines * lineHeight;
+
+          // add some additional padding: 
+          margins.left += lineHeight / 2;
+        } 
+      } 
+      if (!isPairwiseViz) {
+        // adjust the left margin in a one-to-many visualization
+        // if the bottom bar's label needs to be split:
+        const nLines = wrapTextToSvgWidth("Characters reused", 120, axisLabelFontSize).length;
+        margins.left += nLines*lineHeight;
+        // add some additional padding: 
+        margins.left += lineHeight / 2;
+      }
+
+      // TOP MARGIN: 
+
+      // make space for the URL at the top of the graph, if user wants to include it:
+      if (includeURL) {
+        margins.top += 1.5*lineHeight;
+      }
+
+      // update the top margin of the pairwise graph in case user wants to include metadata there:
+      if (isPairwiseViz && includeMetaInDownload !== "no" && metaPositionInDownload !== "left") {
+        margins.top += lineHeight;
+      }
+
+      // update the top margin of the one-to-many graph if the sidebar's X label needs to be wrapped:
+      if (!isPairwiseViz){
+        const nLines = wrapTextToSvgWidth("Characters reused", 120, axisLabelFontSize).length;
+        margins.top += nLines * lineHeight;
+      }
+
+      // BOTTOM MARGIN: 
+
+      // update the top margin of the pairwise graph in case user wants to include metadata there:
+      if (isPairwiseViz && includeMetaInDownload !== "no" && metaPositionInDownload !== "left") {
+        margins.bottom += 2*lineHeight;
+      } 
+      
+      if (!isPairwiseViz) {
+        // adjust the bottom margin based on the tick font size: 
+        margins.bottom += tickFontSize;
+
+        // adjust the bottom margin of the one-to-many viz 
+        // based on label font size (taking into account that it may be wrapped):
+        let bottomLabelText = "Books for which passim detected text reuse with "
+        bottomLabelText += metaData?.book1?.bookTitle?.path || "";
+        bottomLabelText += " (chronologically arranged)";
+        const nLabelLines = wrapTextToSvgWidth(
+          bottomLabelText, 
+          1000 - margins.left - margins.right, 
+          axisLabelFontSize
+        ).length;
+        margins.bottom += nLabelLines * lineHeight;
+      }
+
+      setVisMargins(margins);
+      console.log(margins);
+    };
+    updateMargins();
+  }, [
+    chartData,
+    setVisMargins, 
+    defaultMargins, 
+    includeURL, 
+    includeMetaInDownload, 
+    metaPositionInDownload,
+    axisLabelFontSize,
+    tickFontSize,
+    metaData, 
+    isPairwiseViz,
+    setYTickWidth
+  ]);
 
   const handleUpload = async (upload) => {
     setInitialValues({
@@ -150,7 +313,9 @@ const VisualisationPage = () => {
     setDataLoading({ ...dataLoading, uploading: true });
     //console.log("UPLOAD:");
     //console.log(upload); // upload is a Filelist object
-    if (upload.length === 1 ) {
+    console.log(upload[0]);
+    if (upload.length === 1 && !(upload[0].name.includes("_all"))) {
+    //if (upload.length === 1) {
       // only 1 file uploaded => this should be a pairwise visualisation!
       setIsPairwiseViz(true);
 
@@ -263,8 +428,15 @@ const VisualisationPage = () => {
 
     // download the version metadata of all books in the URL booksParam:
     const versionMeta = await getVersionMeta(releaseCode, book_names);
+    // check if there are errors in the returned metadata
+    const failedBooks = checkVersionMeta(versionMeta, book_names);
+    if (failedBooks.length > 0) {
+      setDataLoading({ ...dataLoading, uploading: false });
+      setIsError(true);
+      setErrorType(["Some book Ids in your pairwise URL do not match books in the KITAB corpus. Please check your URL and try again.", "Failed Ids: " + failedBooks.join(", ")]);
+      setIsLoading(false);
 
-    if (book_names.length === 1 || book_names[1] === "all") {
+    } else if (book_names.length === 1 || book_names[1] === "all") {
       try {
         // ONE TO ALL VISUALISATION
         setIsPairwiseViz(false);
@@ -301,57 +473,98 @@ const VisualisationPage = () => {
       } catch (err) {
         setDataLoading({ ...dataLoading, uploading: false });
         setIsError(true);
+        setErrorType(["There was an error loading the data for the book: " + book_names[0] + ".", "Please check your URL and try again."]);
         setIsLoading(false);
       }
     } else if (book_names.length === 2) {
-      try {
+      // try {
         // PAIRWISE VISUALISATION
         setIsPairwiseViz(true);
         const book1 = versionMeta.book1;
         const book2 = versionMeta.book2;
-        // first, try to download the text reuse data from the KITAB web server:
         const csvFileName = buildCsvFilename(book1, book2);
-        let passimFolder = lightSrtFolders[releaseCode];
-        let url = `${passimFolder}/${book_names[0]}/${csvFileName}`;
+        
+        // Use helper function to build and check csv URL
+        const pairwiseCsvResponse = await checkPairwiseCsvResponse(
+          releaseCode, book1, book2, false)
+        
+        if (pairwiseCsvResponse.pairwiseLiteUrl !== null) {
+          // If the pairwise URL is valid, proceed with loading the data
+          const CSVFile = await downloadCsvData(pairwiseCsvResponse.pairwiseLiteUrl);
+          // remove the loadedCsvFile blob from memory (context):
+          setLoadedCsvFile(null);
 
-        // download the pairwise passim data if it was not downloaded/uploaded yet:
-        let CSVFile = loadedCsvFile || (await downloadCsvData(url));
+          setPairwiseVizData({
+            book1,
+            book2,
+            CSVFile,
+            dataLoading,
+            setDataLoading,
+            setMetaData,
+            releaseCode,
+            getMetadataObject,
+            setChartData,
+            setIsError,
+            setIsFileUploaded,
+            navigate,
+            csvFileName,
+            setUrl,
+          });
 
-        // if this fails: try to download it from GitHub:
-        if (CSVFile instanceof Error) {
-          passimFolder = srtFoldersGitHub[releaseCode];
-          url = `${passimFolder}/${book_names[0]}/${csvFileName}`;
-          CSVFile = await downloadCsvData(url);
-        }
-        // remove the loadedCsvFile blob from memory (context):
-        setLoadedCsvFile(null);
+          setIsLoading(false);
 
-        setPairwiseVizData({
-          book1,
-          book2,
-          CSVFile,
-          dataLoading,
-          setDataLoading,
-          setMetaData,
-          releaseCode,
-          getMetadataObject,
-          setChartData,
-          setIsError,
-          setIsFileUploaded,
-          navigate,
-          csvFileName,
-          setUrl,
-        });
+        } else {
+          // If the pairwise URL is not found then set error state
+          setDataLoading({ ...dataLoading, uploading: false });
+          setIsError(true);
+          setErrorType(["The pairwise text reuse data for the book ids: " + book_names.join(", ") + " could not be found.", "There may not be text reuse data for this pair."]);
+          setIsLoading(false);
+        } 
 
-        setIsLoading(false);
-      } catch (err) {
-        setDataLoading({ ...dataLoading, uploading: false });
-        setIsError(true);
-        setIsLoading(false);
-      }
+    //     // first, try to download the text reuse data from the KITAB web server:
+    //     const csvFileName = buildCsvFilename(book1, book2);
+    //     let passimFolder = lightSrtFolders[releaseCode];
+    //     let url = `${passimFolder}/${book_names[0]}/${csvFileName}`;
+
+    //     // download the pairwise passim data if it was not downloaded/uploaded yet:
+    //     let CSVFile = loadedCsvFile || (await downloadCsvData(url));
+
+    //     // if this fails: try to download it from GitHub:
+    //     if (CSVFile instanceof Error) {
+    //       passimFolder = srtFoldersGitHub[releaseCode];
+    //       url = `${passimFolder}/${book_names[0]}/${csvFileName}`;
+    //       CSVFile = await downloadCsvData(url);
+    //     }
+    //     // remove the loadedCsvFile blob from memory (context):
+    //     setLoadedCsvFile(null);
+
+    //     setPairwiseVizData({
+    //       book1,
+    //       book2,
+    //       CSVFile,
+    //       dataLoading,
+    //       setDataLoading,
+    //       setMetaData,
+    //       releaseCode,
+    //       getMetadataObject,
+    //       setChartData,
+    //       setIsError,
+    //       setIsFileUploaded,
+    //       navigate,
+    //       csvFileName,
+    //       setUrl,
+    //     });
+
+    //     setIsLoading(false);
+    //   } catch (err) {
+    //     setDataLoading({ ...dataLoading, uploading: false });
+    //     setIsError(true);
+    //     setIsLoading(false);
+    //   }
     } else {
       setDataLoading({ ...dataLoading, uploading: false });
       setIsError(true);
+      setErrorType(['You have not supplied a valid URL.', ''])
       setIsLoading(false);
     }
   };
@@ -394,11 +607,10 @@ const VisualisationPage = () => {
         >
           <Typography variant="h4">No data found to visualize.</Typography>
           <Typography variant="body1" color="grey">
-            We may not have text reuse data for these texts, or there might be
-            another problem.
+            {errorType[0]}
           </Typography>
           <Typography variant="body1" color="grey">
-            [Please make sure the file name is correct]
+            {errorType[1]}
           </Typography>
         </Box>
       ) : (

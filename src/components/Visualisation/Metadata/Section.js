@@ -1,8 +1,7 @@
 import { Box, Link, Tooltip, Typography } from "@mui/material";
-import React from "react";
 import { useContext } from "react";
-import { Context } from "../../../App";
 import { REPO_NAME } from "../../Common/NavigationBar";
+import { Context } from "../../../App";
 
 const Section = ({ data }) => {
   const { releaseCode, toggleSidePanel } = useContext(Context);

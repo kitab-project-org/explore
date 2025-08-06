@@ -1,7 +1,6 @@
-import { Button } from "@mui/material";
-import { Tooltip } from "@mui/material";
-import { Context } from "../../../App";
-import React, { useContext } from "react";
+import { useContext } from "react";
+import { Button, Tooltip } from "@mui/material";
+import { Context } from "../../../../App";
 
 const FlipButton = () => {
   const { isFlipped, setIsFlipped, setFlipTimeLoading } = useContext(Context);

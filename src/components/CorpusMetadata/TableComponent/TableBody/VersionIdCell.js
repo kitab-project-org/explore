@@ -6,7 +6,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import React, { useContext } from "react";
+import { useContext } from "react";
 import { downloadGitHubRawFile } from "./MoreCell";
 import { Context } from "../../../../App";
 import CopyToClipboard from "../../../Common/CopyToClipboard";
@@ -37,13 +37,13 @@ const VersionIdCell = ({ row, classes }) => {
           xs: "100%",
           md: "15%",
         },
+        border: "none",
         display: {
           xs: "flex",
           md: "block",
         },
-        justifyContent: "flex-right",
+        justifyContent: "space-between",
         alignItems: "center",
-        border: "none",
         boxSizing: "border-box",
       }}
     >

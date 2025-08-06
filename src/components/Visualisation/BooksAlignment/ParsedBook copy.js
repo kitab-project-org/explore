@@ -1,5 +1,4 @@
 import { Box } from "@mui/material";
-import React from "react";
 import { useContext } from "react";
 import { Context } from "../../../App";
 

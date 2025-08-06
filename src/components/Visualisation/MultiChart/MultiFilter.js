@@ -1,8 +1,7 @@
-import React from "react";
 import { Box } from "@mui/material";
-import DateFilter from "./filters/DateFilter";
 import AlignmentsFilter from "./filters/AlignmentsFilter";
 import BookCharsFilter from "./filters/BookCharsFilter";
+import DateFilter from "./filters/DateFilter";
 import SelfReuseFilter from "./filters/SelfReuseFilter";
 
 

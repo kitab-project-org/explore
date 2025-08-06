@@ -1,10 +1,5 @@
-import { Grid } from "@mui/material";
-import { Typography } from "@mui/material";
-import { IconButton } from "@mui/material";
-import { Box } from "@mui/material";
-import { Modal } from "@mui/material";
-import React from "react";
 import { useContext } from "react";
+import { Box, Grid, IconButton, Modal, Typography } from "@mui/material";
 import { Context } from "../../../App";
 
 const WikiEdDiffModal = ({ data }) => {

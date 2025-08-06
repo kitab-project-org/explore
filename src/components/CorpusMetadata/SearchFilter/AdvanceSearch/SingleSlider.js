@@ -1,10 +1,8 @@
-import * as React from "react";
-import Box from "@mui/material/Box";
-import Slider from "@mui/material/Slider";
-import { Typography } from "@mui/material";
+import { useState } from "react";
+import { Typography, Box, Slider } from "@mui/material";
 
 export default function SingleSlider({ max, handler, label, value }) {
-  const [value2, setValue2] = React.useState(value ? value : 0);
+  const [value2, setValue2] = useState(value ? value : 0);
 
   // set slider value
   const handleChange2 = (event, newValue) => {

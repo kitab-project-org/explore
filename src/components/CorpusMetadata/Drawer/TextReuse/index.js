@@ -1,12 +1,11 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Box, Typography } from "@mui/material";
 import { Link } from "react-router-dom";
 import TextReuseData from "./TextReuseData/index.js";
 import { TextField } from "@mui/material";
 import { srtFolders, oneToAllFolders } from "../../../../assets/srtFolders";
-import AlertComponent from "../../../Common/AlertComponent.js";
 
-const DownloadSrt = ({ fullData }) => {
+const DownloadSrt = ({ fullData, fullDataLoading }) => {
   const [query, setQuery] = useState("");
   const releaseCode = fullData?.release_version?.release_code;
   const passim_folder = srtFolders[releaseCode];
@@ -35,7 +34,6 @@ const DownloadSrt = ({ fullData }) => {
 
   return (
     <Box sx={{ width: "100%" }}>
-      <AlertComponent forDrawer />
       
       <Box>
         {data.length !== 0 &&
@@ -121,7 +119,7 @@ const DownloadSrt = ({ fullData }) => {
             }}
           />
         </Box>
-        <TextReuseData fullData={fullData} query={query} setQuery={setQuery} />
+        <TextReuseData fullData={fullData} query={query} setQuery={setQuery} fullDataLoading={fullDataLoading}/>
       </Box>
 
       <Box>

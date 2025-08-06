@@ -1,5 +1,4 @@
 import { Box, TableCell, TableHead, TableRow } from "@mui/material";
-import React from "react";
 import SortingComponent from "./SortingButtons/SortingComponent";
 
 const TableHeader = ({ columns, classes }) => {

@@ -1,8 +1,7 @@
-import React from "react";
-import { IconButton, Link, Box, Tooltip } from "@mui/material";
 import { useContext } from "react";
-import { Context } from "../../../../App";
+import { IconButton, Link, Box, Tooltip } from "@mui/material";
 import ColorKeys from "../../BooksAlignment/ColorKeys";
+import { Context } from "../../../../App";
 
 const BookAlignmentHeader = () => {
   const { booksAlignment, showOptions, setShowOptions } = useContext(Context);

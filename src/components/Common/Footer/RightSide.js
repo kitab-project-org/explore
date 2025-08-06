@@ -1,5 +1,4 @@
 import { Box, Link, Typography } from "@mui/material";
-import React from "react";
 import ISMCImage from "../../../assets/footer/ismc.jpg";
 import ERCImage from "../../../assets/footer/flag.jpg";
 

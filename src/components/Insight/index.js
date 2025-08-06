@@ -1,15 +1,11 @@
-import * as React from "react";
+import { useContext, useEffect, useRef, useState } from "react";
+import { Box, Grid, Paper, Typography } from "@mui/material";
 import { experimentalStyled as styled } from "@mui/material/styles";
-import Box from "@mui/material/Box";
-import Paper from "@mui/material/Paper";
-import Grid from "@mui/material/Grid";
-import { Typography } from "@mui/material";
-import { convertNumberToMillions } from "../../utility/Helper";
-import { getCorpusInsightData } from "../../services/CorpusMetaData";
 import TopTenBooks from "./BarChart";
 import VersionDropdown from "../Common/VersionDropdown";
-import { useContext } from "react";
 import { Context } from "../../App";
+import { convertNumberToMillions } from "../../utility/Helper";
+import { getCorpusInsightData } from "../../services/CorpusMetaData";
 
 const Item = styled(Paper)(({ theme }) => ({
   backgroundColor: theme.palette.mode === "dark" ? "#1A2027" : "#fff",
@@ -21,9 +17,9 @@ const Item = styled(Paper)(({ theme }) => ({
 
 export default function InsightComponent() {
   const { releaseCode } = useContext(Context);
-  const chartBox = React.useRef();
-  const [insightData, setInsightData] = React.useState({});
-  const [leargestTenBooks, setLeargestTenBooks] = React.useState([]);
+  const chartBox = useRef();
+  const [insightData, setInsightData] = useState({});
+  const [leargestTenBooks, setLeargestTenBooks] = useState([]);
 
   const data = [
     {
@@ -103,7 +99,7 @@ export default function InsightComponent() {
     },
   ];
 
-  React.useEffect(() => {
+  useEffect(() => {
     const fetchData = async () => {
       const response = await getCorpusInsightData(releaseCode);
       setInsightData(response);

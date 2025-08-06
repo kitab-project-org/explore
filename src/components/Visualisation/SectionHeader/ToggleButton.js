@@ -1,6 +1,4 @@
-import { Button } from "@mui/material";
-import { Tooltip } from "@mui/material";
-import React from "react";
+import { Button, Tooltip } from "@mui/material";
 
 const ToggleButton = ({ toggle, setToggle }) => {
   return (

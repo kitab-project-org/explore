@@ -1,4 +1,5 @@
 import Papa from "papaparse";
+import { getHighestValueInArrayOfObjects } from "../utility/Helper"
 
 // turn a list of keys into a function that selects objects based on those keys:
 function itemGetter(keys) {
@@ -189,19 +190,98 @@ export const setPairwiseVizData = (values) => {
       setMetaData(getMetadataObject(book1, book2, releaseCode));
       setDataLoading({ ...dataLoading, metadata: false });
 
+      /**
+       * parse tsv data into an array of objects
+       * 
+       * Checks if the csv data is in new or old passim format,
+       * converts the new format into old format,
+       * removes unused key-value pairs,
+       * and sets the chart data:
+       * 
+       * old		          	old(light)			new
+       * b1			          b1						begin1
+       * b2			          b2						begin2
+       * bw1			          bw1						x
+       * bw2		          	bw2						x
+       * e1		          	e1						end1
+       * e2		          	e2						end2
+       * ew1		          	ew1						x
+       * ew2		          	ew2						x
+       * seq1	          	seq1					seq1
+       * seq2	          	seq2					seq2
+       * s1		          	x						  s1
+       * s2		          	x						  s2
+       * id1		          	x						  id1
+       * first1          	x						  x
+       * uid1	          	x						  uid
+       * len1	          	x						  x
+       * tok1	          	x						  x
+       * gid1	          	x						  gid
+       * id2			          x						  id2
+       * first2	          x						  x
+       * uid2		          x						  uid2
+       * len2		          x						  x
+       * tok2		          x						  x
+       * gid2		          x						  gid2
+       * matches	          x						  matches
+       * score		          x						  x
+       * ch_match		    	x						  ch_match
+       * align_len			    x						  align_len
+       * matches_percent		x						  matches_percentage
+       * w_match			      x						  w_match
+       * series_b1			    x						  series_b1
+       * series_b2			    x						  series_b2
+       */
       const parseTSVData = async () => {
         // parse pairwise csv file:
         Papa.parse(CSVFile, {
           header: true,
           skipEmptyLines: true,
+          dynamicTyping: true, // should convert numeric fields to integers
           complete: (result) => {
+            const old_format = result.data[0].hasOwnProperty("bw2");
+            let cleanedData;
+            if (old_format) {
+              cleanedData = result.data.map(({bw1, bw2, ew1, ew2, s1, s2, seq1, seq2, ...rest}) => ({
+                bw1,
+                bw2,
+                ew1,
+                ew2,
+                s1,   // will be undefined for "light" text reuse data files
+                s2,   // will be undefined for "light" text reuse data files
+                seq1, 
+                seq2
+              }));;
+            } else {
+              let origData = result.data;
+              // calculate the highest end character for book1 and book2:
+              const book1EndMax = getHighestValueInArrayOfObjects(origData, "end");
+              const book2EndMax = getHighestValueInArrayOfObjects(origData, "end2");
+              // use the largest of these as 100% milestone length
+              const msMax = Math.max(book1EndMax, book2EndMax);
+              // recalculate the relevant values:
+              cleanedData = origData.map(({begin, begin2, end, end2, s1, s2, seq, seq2, ...rest}) => ({
+                b1: begin,
+                b2: begin2,
+                e1: end,
+                e2: end2,
+                bw1: parseInt(begin * 300 / msMax),  // estimated token offsets
+                bw2: parseInt(begin2 * 300 / msMax),
+                ew1: parseInt(end * 300 / msMax),
+                ew2: parseInt(end2 * 300 / msMax),
+                s1, 
+                s2, 
+                seq1: seq,
+                seq2
+              }));
+            } 
             // pass the pairwise data to the Context:
             setChartData({
               tokens: {
                 first: book1?.release_version?.tok_length,
                 second: book2?.release_version?.tok_length,
               },
-              dataSets: result.data,
+              dataSets: cleanedData,
             });
             setIsError(false);
             setDataLoading({ ...dataLoading, chart: false });
@@ -251,7 +331,7 @@ export const setMultiVizData = (values) => {
     setChartData,
     setIsError,
     setIsFileUploaded,
-    setUrl,
+    setUrl
   } = values;
   if (book1) {
     try {
@@ -309,6 +389,7 @@ export const setMultiVizData = (values) => {
                   msStats: msStats,
                   msBooks: msBooks,
                   bookStats: stats,
+                  maxTotalChMatch: getHighestValueInArrayOfObjects(stats, "ch_match"),
                   bookIndexDict: bookIndexDict,
                   bookUriDict: bookUriDict,
                   /*filteredMsData: msData,
@@ -316,6 +397,7 @@ export const setMultiVizData = (values) => {
                 filteredBookStats: stats*/
                   //dataSets: []
                 });
+                console.log(getHighestValueInArrayOfObjects(stats, "ch_match"));
                 setIsError(false);
                 setDataLoading({ ...dataLoading, chart: false });
                 const url = `/visualise/${releaseCode}/?books=${book1?.version_code}_all`;

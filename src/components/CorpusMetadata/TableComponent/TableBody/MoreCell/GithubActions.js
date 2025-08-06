@@ -1,5 +1,5 @@
+import { useState } from "react";
 import { Box, IconButton, MenuItem, Tooltip } from "@mui/material";
-import React, { useState } from "react";
 import GitHubIcon from "@mui/icons-material/GitHub";
 import AutorenewIcon from "@mui/icons-material/Autorenew";
 import FormatListBulletedIcon from "@mui/icons-material/FormatListBulleted";

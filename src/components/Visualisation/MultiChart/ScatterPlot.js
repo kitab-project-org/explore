@@ -1,10 +1,10 @@
+import { useEffect, useRef, useContext } from "react";
 import { Box } from "@mui/material";
-import React, { useEffect, useRef, useContext } from "react";
-import { Context } from "../../../App";
 import * as d3 from "d3";
+import { Context } from "../../../App";
 import { extractAlignment } from "../../../functions/alignmentFunctions";
 import { getMilestoneText } from "../../../functions/getMilestoneText";
-import { calculateTooltipPos } from "../../../utility/Helper";
+import { calculateTooltipPos, wrapTextToSvgWidth } from "../../../utility/Helper";
 
 
 const ScatterPlot = (props) => {
@@ -26,8 +26,18 @@ const ScatterPlot = (props) => {
     setDisplayMs,
     colors,
     colorScale,
-    setColorScale
+    setColorScale,
+    tickFontSize,
+    axisLabelFontSize,
+    showDownloadOptions,
+    includeURL,
+    url,
+    visMargins,
+    yTickWidth
+    //axisLabelFontSize
   } = useContext(Context);
+
+  const width = props.width;
 
 
   // create the color scale, based on the ch_match values:
@@ -58,7 +68,8 @@ const ScatterPlot = (props) => {
   
   // initialize the svg on mount:
   useEffect(() => {
-    let t = `translate(${props.margin.left}, ${props.margin.top})`;
+    //let t = `translate(${props.margin.left}, ${props.margin.top})`;
+    let t = `translate(${visMargins.left}, ${visMargins.top})`;
     d3.select(ref.current)
       .html("")
       .append("g")
@@ -69,7 +80,8 @@ const ScatterPlot = (props) => {
       .attr("width", "100%")
       .attr("height", "100%")
       .attr("fill", "lightgrey");*/
-  },[props.margin.left, props.margin.top]);
+  }, [visMargins]);
+  //},[props.margin.left, props.margin.top]);
 
   // create the axes etc. for every change of relevant variables:
   useEffect(() => {
@@ -208,7 +220,7 @@ const ScatterPlot = (props) => {
     // create X and Y scaling functions:
     let xScale = d3.scaleLinear()
       .domain([0, props.bookStats.length+2])  // each book will have its own space on the X axis
-      .range([ 0, props.width ]);
+      .range([ 0, width ]); // props.width ]);
     let yScale = d3.scaleLinear()
       .domain([props.mainBookMilestones+1,0])   // flip the axis!
       .range([props.height, 0]);
@@ -220,11 +232,13 @@ const ScatterPlot = (props) => {
       .append("g")
         .attr("class", "xAxis")
         .attr("transform", "translate(0," + props.height + ")")
+        .style("font-size", `${tickFontSize}px`)
         .call(d3.axisBottom(xScale)
           .tickFormat((d) => '')  // remove tick marks in D3 v4: see https://stackoverflow.com/a/12994876/4045481
           .tickSize(0)
         );
 
+    
     /*// Add X axis label:  see https://stackoverflow.com/a/11194968/4045481
     let xLabelText = "Books for which passim detected text reuse with "+props.mainBookURI+" (chronologically arranged)";
     scatterPlot.append("text")
@@ -240,8 +254,11 @@ const ScatterPlot = (props) => {
     scatterPlot
       .append("g")
         .attr("class", "yAxis")
+        .style("font-size", `${tickFontSize}px`)
         .call(d3.axisLeft(yScale)
         .tickSize(2)
+        .tickPadding(5)
+
         // remove zero tick:
         .tickFormat((val,i) => { return val===0 ? null : val})
     );
@@ -250,15 +267,46 @@ const ScatterPlot = (props) => {
     //d3.select(ref.current)
     scatterPlot
       .selectAll(".yLabel").remove()
-    scatterPlot
-      .append("text")
+    
+    const lineHeight = 1.3*axisLabelFontSize;
+    const bookLabel = "Milestones in "+props.mainBookURI;
+    const labelLines = wrapTextToSvgWidth(
+      bookLabel, 
+      props.height-visMargins.top, 
+      axisLabelFontSize
+    );
+    let space = -yTickWidth;
+    labelLines.reverse().forEach((line) => {
+      // define the point where the text ends ("text-anchor", "end"): 
+      const x = space;
+      const y = 0;  // center the rotation at the top of the Y axis
+      scatterPlot.append("text")
         .attr("class", "yLabel")
-        .attr("text-anchor", "end")
-        .attr("y", 6)
-        .attr("dy", "-4em")
-        .attr("transform", "rotate(-90)")
-        .text("Milestones in "+props.mainBookURI);
+        .attr("text-anchor", "end") // text will end at x,y
+        .attr("x", x) 
+        .attr("y", y) 
+        // rotate the text around its end point:
+        .attr("transform", `rotate(-90, ${x}, ${y})`)
+        .style("font-size", `${axisLabelFontSize}px`) 
+        .text(line);
+      space -= lineHeight;  // move the next line to the left
+    });
 
+    if (showDownloadOptions){
+      if (includeURL) {
+        d3.select("#scatterChart").append("text")
+          .attr("x", visMargins.left)             
+          .attr("y", axisLabelFontSize)
+          .attr("text-anchor", "left")  
+          .style("font-size", `${axisLabelFontSize}px`)
+          .style("text-decoration", "underline")  
+          .text(window.location.origin + url);
+      }
+    }
+
+    // update the tick font size
+    scatterPlot
+      .selectAll(`.tick text`).style("font-size", `${tickFontSize}px`);
 
     // add/update data:
     scatterPlot
@@ -332,10 +380,10 @@ const ScatterPlot = (props) => {
     >
 
       <svg 
-        id={"scatter-chart"}
+        id={"scatterChart"}
         ref={ref}
-        width={props.width + props.margin.left + props.margin.right}
-        height={props.height + props.margin.top + props.margin.bottom}
+        width={width + visMargins.left + visMargins.right}
+        height={props.height + visMargins.top + tickFontSize}
       />
       <div ref={bottomOfGraph}/>
     </Box>

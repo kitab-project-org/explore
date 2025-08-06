@@ -1,11 +1,9 @@
-import { Box } from "@mui/material";
-import React from "react";
+import { Box, Button, Typography } from "@mui/material";
 import { useContext } from "react";
-import { Context } from "../../../../App";
-import Highlights from "../../BooksAlignment/Highlights";
 import Normalization from "./Normalization";
-import { Button } from "@mui/material";
-import { Typography } from "@mui/material";
+import Highlights from "../../BooksAlignment/Highlights";
+import { Context } from "../../../../App";
+
 
 const BAExtra = () => {
   const { 

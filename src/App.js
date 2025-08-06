@@ -1,14 +1,15 @@
-import "./App.css";
+import { createContext, useRef, useState } from "react";
+import { HashRouter as Router, Routes, Route } from "react-router-dom";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { green, red } from "@mui/material/colors";
-import { HashRouter as Router, Routes, Route } from "react-router-dom";
+import * as saveSvgAsPng from "save-svg-as-png";
+
+import "./App.css";
 import Insight from "./pages/Insight";
 import Visualisation from "./pages/Visualisation";
 import CorpusMetadata from "./pages/CorpusMetadata";
-import { createContext, useRef, useState } from "react";
 import DiffViewer from "./pages/DiffViewer";
 import LeftSidePanel from "./components/CorpusMetadata/Drawer";
-import * as saveSvgAsPng from "save-svg-as-png";
 
 const theme = createTheme({
   palette: {
@@ -135,7 +136,12 @@ function App() {
   const bookSectionRef = useRef();
   const [isFileUploaded, setIsFileUploaded] = useState(false);
   const [showTickSizeInput, setShowTickSizeInput] = useState(false);
-  const [tickFontSize, setTickFontSize] = useState(12);
+  const [tickFontSize, setTickFontSize] = useState(16);
+  const [axisLabelFontSize, setAxisLabelFontSize] = useState(16);
+  const [outputImageWidth, setOutputImageWidth] = useState(120);
+  const [dpi, setDpi] = useState(300);
+  const [includeMetaInDownload, setIncludeMetaInDownload] = useState("no");
+  const [metaPositionInDownload, setMetaPositionInDownload] = useState("left");
   const [isFlipped, setIsFlipped] = useState(false);
   const [flipTimeLoading, setFlipTimeLoading] = useState(false);
   const focusMilestone1 = useRef();
@@ -168,8 +174,15 @@ function App() {
   const [selectedLine, setSelectedLine] = useState({});
   const [showWikiEdDiff, setWikiEdDiff] = useState(false);
   const [isError, setIsError] = useState(false);
+  const [errorType, setErrorType] =  useState(["We may not have text reuse data for these texts, or there might be another problem.", "Error Type: Unknown"])
   const [showOptions, setShowOptions] = useState(false);
+  const [showDownloadOptions, setShowDownloadOptions] = useState(false);
   const [url, setUrl] = useState("");
+  const [includeURL, setIncludeURL] = useState(false);
+  const [defaultMargins, setDefaultMargins] = useState({ top: 40, right: 20, bottom: 20, left: 60 });
+  const [visMargins, setVisMargins] = useState({ top: 40, right: 20, bottom: 20, left: 60 });
+  const [yTickWidth, setYTickWidth] = useState(0);
+  const [textAvailable, setTextAvailable] = useState(true);
   const [highlightMode, setHighlightMode] = useState("diff");
   const [nSharedChars, setNSharedChars] = useState(50);
   const [nRefineChars, setNRefineChars] = useState(3);
@@ -228,35 +241,47 @@ function App() {
     setIsOpenDrawer(true);
   };
 
-  const downloadPNG = (downloadFileName, svgId, includeURL=false) => {
+  const downloadPNG = (downloadFileName, svgId) => {
     //const downloadFileName = `${metaData?.book1?.versionCode}_${metaData?.book2?.versionCode}.png`;
     const svg = document.getElementById(svgId);
     const newSvg = svg.cloneNode(true);
 
-    if (includeURL) {
-      // create a text element in the svg that shows the URL:
-      var textElement = document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        "text"
-      );
-      textElement.setAttribute(
-        "x",
-        svg.clientWidth - (window.location.origin + url).length * 7.5
-      ); // X-coordinate
-      textElement.setAttribute("y", 20); // Y-coordinate
-      textElement.setAttribute("font-size", "14px"); // Font size
-      textElement.setAttribute("fill", "black"); // Fill color
-      // Create a text node with the URL
-      var textNode = document.createTextNode(window.location.origin + url);
-      // Append the text node to the <text> element
-      textElement.appendChild(textNode);
-      // Append the <text> element to the SVG
-      newSvg.appendChild(textElement);
+    let scale = 3; // default scale: 300 % 
+
+    if (outputImageWidth) {  // context variable!
+      const inchPerMM = 1 / 25.4;
+      const svgPixelWidth = svg.clientWidth;
+      const outputWidthInInches = outputImageWidth * inchPerMM;
+      const targetPixelWidth = outputWidthInInches * (dpi || 300); // dpi is also a context variable; use 300 if dpi is undefined
+      scale = targetPixelWidth / svgPixelWidth / window.devicePixelRatio;
+      console.log("window.devicePixelRatio: "+window.devicePixelRatio)
+
+      /*
+       NB: the save-svg-as-png library gets the width of the svg in one of these ways:
+       * - svg.viewBox.baseVal["width"] : returns 0 in our case
+       * - newSvg.getAttribute("width") : returns same value as svg.clientWidth
+       * - svg.getBoundingClientRect()["width"] : returns same value as svg.clientWidth
+       * - window.getComputedStyle(svg).getPropertyValue("width") : returns same value as svg.clientWidth
+      
+      console.log('svg.viewBox.baseVal["width"]: '+svg.viewBox.baseVal["width"]);
+      console.log('newSvg.getAttribute("width"): '+newSvg.getAttribute("width"));
+      console.log('svg.getBoundingClientRect()["width"]: '+svg.getBoundingClientRect()["width"]);
+      console.log('window.getComputedStyle(svg).getPropertyValue("width") '+window.getComputedStyle(svg).getPropertyValue("width"));
+      
+      
+      console.log(`requested image width: ${outputImageWidth} mm`);
+      console.log(`requested dpi: ${dpi}`);
+      console.log(`svg width: ${svgPixelWidth}`);
+      console.log(`svg bounding box width: ${svg.getBBox().width}`);
+      console.log(`Output width: ${outputWidthInInches} inch`);
+      console.log(`Output width: ${targetPixelWidth} pixels`);
+      console.log(`Scale: ${scale}`);
+      */
     }
 
     // save the png:
     saveSvgAsPng.saveSvgAsPng(newSvg, downloadFileName, {
-      scale: 3, // 300 %
+      scale: scale, 
       backgroundColor: "white",
     });
   };
@@ -319,6 +344,16 @@ function App() {
         setShowTickSizeInput,
         tickFontSize, 
         setTickFontSize,
+        axisLabelFontSize, 
+        setAxisLabelFontSize,
+        outputImageWidth,
+        setOutputImageWidth,
+        dpi, 
+        setDpi,
+        includeMetaInDownload,
+        setIncludeMetaInDownload,
+        metaPositionInDownload,
+        setMetaPositionInDownload,
         isFlipped,
         setIsFlipped,
         flipTimeLoading,
@@ -344,10 +379,24 @@ function App() {
         setFocusedDataIndex,
         isError,
         setIsError,
+        errorType,
+        setErrorType,
         showOptions,
         setShowOptions,
+        showDownloadOptions, 
+        setShowDownloadOptions,
+        textAvailable, 
+        setTextAvailable,
+        includeURL, 
+        setIncludeURL,
         url,
         setUrl,
+        visMargins, 
+        setVisMargins,
+        yTickWidth, 
+        setYTickWidth,
+        defaultMargins,
+        setDefaultMargins,
         highlightMode,
         setHighlightMode,
         nSharedChars,

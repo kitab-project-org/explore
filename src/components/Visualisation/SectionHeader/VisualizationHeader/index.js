@@ -1,20 +1,13 @@
+import { useContext } from "react";
 import { Box, Button, IconButton, Link, Tooltip } from "@mui/material";
-import React, { useContext } from "react";
-import { Context } from "../../../App";
 import FlipButton from "./FlipButton";
-import TickFontSizeControl from "./TickFontSizeControl";
-import ScatterLegend from "../MultiChart/ScatterLegend";
+import ScatterLegend from "../../MultiChart/ScatterLegend";
+import { Context } from "../../../../App";
 
 
-const VisualizationHeader = ({ restoreCanvas, isPairwiseViz, downloadFileName, colorScale, width }) => {
-  const { downloadPNG } = useContext(Context);
-  const handleDownload = () => {
-    if (isPairwiseViz) {
-      downloadPNG(downloadFileName, "svgChart");
-    } else {
-      downloadPNG(downloadFileName, "scatter-chart");
-    }
-  };
+const VisualizationHeader = ({ restoreCanvas, isPairwiseViz, colorScale, width }) => {
+    const { showDownloadOptions, setShowDownloadOptions } = useContext(Context);
+  
   return (
     <Box sx={{ postion: "relative" }}>
       <Box display="flex" justifyContent="space-between">
@@ -26,9 +19,7 @@ const VisualizationHeader = ({ restoreCanvas, isPairwiseViz, downloadFileName, c
           target="_blank"
         >
           <IconButton
-            sx={{
-              color: "#2862a5",
-            }}
+            sx={{color: "#2862a5"}}
           >
             <i
               className="fa-regular fa-circle-question"
@@ -73,9 +64,9 @@ const VisualizationHeader = ({ restoreCanvas, isPairwiseViz, downloadFileName, c
             </Button>
           </Tooltip>
           {isPairwiseViz ? <FlipButton /> : ""}
-          <Tooltip title="Download Chart as PNG" placement="top">
+          <Tooltip title="Download Chart and select download options" placement="top">
             <Button
-              onClick={handleDownload}
+              onClick={() => setShowDownloadOptions(!showDownloadOptions)}
               color="primary"
               variant="outlined"
               rel="noreferrer"
@@ -97,7 +88,6 @@ const VisualizationHeader = ({ restoreCanvas, isPairwiseViz, downloadFileName, c
               <i className="fa-solid fa-cloud-arrow-down"></i>
             </Button>
           </Tooltip>
-          {isPairwiseViz ? <TickFontSizeControl svgSelector="#svgChart" /> : ""}
         </Box>
       </Box>
     </Box>

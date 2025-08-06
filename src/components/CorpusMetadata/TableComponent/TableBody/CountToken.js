@@ -1,6 +1,4 @@
-import { Typography } from "@mui/material";
-import { TableCell } from "@mui/material";
-import React from "react";
+import { Typography, TableCell } from "@mui/material";
 
 const CountToken = ({ classes, row }) => {
   return (

@@ -1,15 +1,14 @@
-import * as React from "react";
+import { useEffect, useContext } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   Radio,
   RadioGroup,
   FormControlLabel,
   FormControl,
   Tooltip,
+  Box,
+  Checkbox
 } from "@mui/material";
-import { useSearchParams } from "react-router-dom";
-import { useEffect } from "react";
-import { Box } from "@mui/material";
-import { Checkbox } from "@mui/material";
 import { Context } from "../../../App";
 import { Button } from "@mui/material";
 import { Typography } from "@mui/material";
@@ -24,7 +23,7 @@ export default function SetSearchField() {
     setNormalizedSearch,
     advanceSearchModal,
     setAdvanceSearchModal,
-  } = React.useContext(Context);
+  } = useContext(Context);
   const [searchParams, setSearchParams] = useSearchParams();
 
   const handleSearchField = (e) => {

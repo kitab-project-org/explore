@@ -1,7 +1,7 @@
-import React, { useContext } from "react";
-import { Context } from "../../../App";
+import { useContext } from "react";
 import { TableCell, Button } from "@mui/material";
 import { getMilestoneText } from "../../../functions/getMilestoneText";
+import { Context } from "../../../App";
 
 // add the milestone number and its text contents to the displayMs variable
 // (triggering the display of that milestone)

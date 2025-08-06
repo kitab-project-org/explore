@@ -1,7 +1,6 @@
-import React, { useEffect } from "react";
-//import { Box, Typography } from "@mui/material";
-import { Legend } from "../../Common/colorLegend";
+import { useEffect } from "react";
 import { Box, Tooltip } from "@mui/material";
+import { Legend } from "../../Common/colorLegend";
 
 
 export default function ScatterLegend({colorScale, width, margin}) {

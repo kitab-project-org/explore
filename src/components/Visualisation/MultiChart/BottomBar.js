@@ -1,13 +1,17 @@
-import React, { useEffect, useRef } from "react";
+import { useEffect, useRef, useContext } from "react";
 import * as d3 from "d3";
 import "../../../index.css";
-import { bisectLeft, calculateTooltipPos } from "../../../utility/Helper";
-
+import { bisectLeft, calculateTooltipPos, wrapTextToSvgWidth } from "../../../utility/Helper";
+import { Context } from "../../../App";
 
 
 const BottomBar = (props) => {
   const ref = useRef();
+  const { tickFontSize, axisLabelFontSize, yTickWidth } = useContext(Context);
   let height = props.height - props.margin.top - props.margin.bottom;
+  let width = props.width;
+  console.log("BOOK STATS PASSED TO BOTTOMBAR:");
+  console.log(props.bookStats);
 
   // initialize the svg on mount:
   useEffect(() => {
@@ -28,9 +32,10 @@ const BottomBar = (props) => {
     // build X axis scale:
     let xScale = d3.scaleLinear()
       .domain([0, props.bookStats.length+2])  // each book will have its own space on the X axis
-      .range([ 0, props.width ]);
+      .range([ 0, width ]);
     // build Y axis scale:
     let maxTotalChMatch = d3.max(props.bookStats, d => d.ch_match);
+    //let maxTotalChMatch = props.maxTotalChMatch;
     let yScale = d3.scaleLinear()
       .domain([maxTotalChMatch, 0])
       .range([0, height]);
@@ -49,8 +54,6 @@ const BottomBar = (props) => {
         }
         prev = i;
     }
-    console.log(tickIndices);
-    console.log(tickLabelDict);
     barSvg.selectAll(".xAxis").remove();
     barSvg.append("g")
       .attr("class", "xAxis")
@@ -58,42 +61,80 @@ const BottomBar = (props) => {
       .call(d3.axisBottom(xScale)
         .tickValues(tickIndices)
         .tickFormat((val,i) => { return tickLabelDict[val]})
-        .tickPadding(0)
+        .tickPadding(2)
       );
-    // Add X axis label:  see https://stackoverflow.com/a/11194968/4045481
+    
+    // Add X axis label: 
+    barSvg.selectAll(".xLabel").remove();
+    const lineHeight = axisLabelFontSize * 1.3;
+    const xLabelText = "Books for which passim detected text reuse with "+props.mainBookURI+" (chronologically arranged)";
+    const xLabelLines = wrapTextToSvgWidth(
+      xLabelText, 
+      width, 
+      axisLabelFontSize
+    );
+    let space = height + props.margin.top + props.margin.bottom;
+    xLabelLines.forEach((line) => {
+      // define the point where the text ends ("text-anchor", "end"): 
+      const x = width;
+      const y = space;
+      barSvg.append("text")
+        .attr("class", "xLabel")
+        .attr("text-anchor", "end") // text will end at x,y
+        .attr("x", x) 
+        .attr("y", y) 
+        .style("font-size", `${axisLabelFontSize}px`) 
+        .text(line);
+      space += lineHeight;  // move the 
+    });
+
+    /*// Add X axis label:  see https://stackoverflow.com/a/11194968/4045481
+    const lineHeight = axisLabelFontSize * 1.3;
     let xLabelText = "Books for which passim detected text reuse with "+props.mainBookURI+" (chronologically arranged)";
     barSvg.selectAll(".xLabel").remove();
     barSvg.append("text")
       .attr("class", "xLabel")
       .attr("text-anchor", "end")
-      .attr("x", props.width)
-      .attr("y", height + 25)
-      .text(xLabelText);
+      .attr("x", width)
+      .attr("y", height + props.margin.top + props.margin.bottom)
+      .style("font-size", `${axisLabelFontSize}px`)
+      .text(xLabelText);*/
 
     // Add Y axis:
     barSvg.selectAll(".yAxis").remove();
     barSvg.append("g")
       .attr("class", "yAxis")
       .call(d3.axisLeft(yScale)
-        .tickFormat(d3.format('.2s'))
-        .ticks(4)
+        .tickFormat(d3.format('.0s'))
+        .ticks(3)
         .tickSize(2)
       );
     // Add Y axis label:
     barSvg.selectAll(".yLabel").remove();
-    barSvg.append("text")
-      .attr("class", "yLabel")
-      .attr("text-anchor", "end")
-      .attr("y", 6)
-      .attr("dy", "-4em")
-      .attr("transform", "rotate(-90)")
-      .text("Characters reused");      
+    
+    // set the Y axis label (wrapping it if necessary):
+    const labelLines = wrapTextToSvgWidth("Characters reused", 100, axisLabelFontSize);
+    let ySpace = -yTickWidth;
+    labelLines.reverse().forEach((line) => {
+      barSvg.append("text")
+        .attr("class", "yLabel")
+        .attr("text-anchor", "end")
+        .attr("y", ySpace)
+        .attr("transform", "rotate(-90)")
+        .style("font-size", `${axisLabelFontSize}px`) 
+        .text(line);
+      ySpace -= lineHeight;
+    });
+      
+    // update the tick font size
+    barSvg
+      .selectAll(`.tick text`).style("font-size", `${tickFontSize}px`);
 
     let barPlot = barSvg.append('g')
       .attr("class", "bottom-bar-plot");
     
     // add/update data:
-    let barWidth = Math.min(3, props.width/props.bookStats.length);
+    let barWidth = Math.min(3, width/props.bookStats.length);
     barPlot
       .selectAll("rect")
       .data(props.bookStats, d => d)
@@ -162,7 +203,7 @@ const BottomBar = (props) => {
     <svg 
       ref={ref}
       id="bottom-bar"
-      width={props.width + props.margin.left + props.margin.right}
+      width={width + props.margin.left + props.margin.right}
       height={props.height + props.margin.top + props.margin.bottom}
     />
   );

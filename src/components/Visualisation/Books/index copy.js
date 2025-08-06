@@ -1,12 +1,12 @@
+import { useContext, useState, useEffect } from "react";
 import { Box, Button } from "@mui/material";
-import React, { useContext, useState, useEffect } from "react";
-import { Context } from "../../../App";
 import ExpandView from "./ExpandView";
 import Book from "./Book";
 import CircularInterminate from "../CircularIndeterminate";
 import WikiEdDiffModal from "../BooksAlignment/WikiEdDiffModal";
 import { kitabDiff } from "../../../assets/js/kitabDiff";
 import { cleanImech } from "../../../utility/Helper";
+import { Context } from "../../../App";
 
 
 const Books = ({ chartSpecificBar }) => {
@@ -20,7 +20,7 @@ const Books = ({ chartSpecificBar }) => {
     bookIntoRows
   } = useContext(Context);
 
-  const [open, setOpen] = React.useState(false);
+  const [open, setOpen] = useState(false);
   const [wikiDiffBook, setWikiDiffBook] = useState("");
   const [parsedBookAlignment, setParsedBookAlignment] = useState({
     s1: "",

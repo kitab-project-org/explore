@@ -1,14 +1,12 @@
-import React, { useEffect, useRef, useState } from "react";
-import { useContext } from "react";
-import { Context } from "../../../App";
-import { Box } from "@mui/material";
-import { kitabDiff } from "../../../assets/js/kitabDiff";
-import WikiEdDiffModal from "./WikiEdDiffModal";
-import { Typography } from "@mui/material";
+import { useContext, useEffect, useRef, useState } from "react";
+import { Box, Typography } from "@mui/material";
 import ParsedBook from "./ParsedBook";
+import WikiEdDiffModal from "./WikiEdDiffModal";
 import SectionHeader from "../SectionHeader";
 import BookAlignmentHeader from "../SectionHeader/BookAlignmentHeader";
+import { kitabDiff } from "../../../assets/js/kitabDiff";
 import { cleanImech } from "../../../utility/Helper";
+import { Context } from "../../../App";
 
 const BooksAlignment = () => {
   // ??

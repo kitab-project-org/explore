@@ -1,4 +1,3 @@
-import React from "react";
 import { getGHRepo } from "../../../../utility/Helper";
 import { displayNamesText } from "../ColumnDisplayName";
 import { Box } from "@mui/material";

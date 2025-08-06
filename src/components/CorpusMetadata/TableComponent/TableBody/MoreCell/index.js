@@ -1,9 +1,7 @@
-import { ButtonGroup, Checkbox, TableCell, Tooltip } from "@mui/material";
-import React, { useContext } from "react";
-//import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
+import { useContext } from "react";
+import { ButtonGroup, Checkbox, TableCell, Tooltip, Typography } from "@mui/material";
 import GtihubActions from "./GithubActions";
 import { Context } from "../../../../../App";
-import { Typography } from "@mui/material";
 
 // download raw github file
 export function downloadGitHubRawFile(row) {

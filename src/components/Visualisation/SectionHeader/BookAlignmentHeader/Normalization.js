@@ -1,6 +1,5 @@
-import { Box, Button, Typography, Tooltip } from "@mui/material";
-import React from "react";
 import { useContext } from "react";
+import { Box, Button, Typography, Tooltip } from "@mui/material";
 import { Context } from "../../../../App";
 
 const Normalization = () => {

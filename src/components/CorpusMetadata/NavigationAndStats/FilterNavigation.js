@@ -1,6 +1,6 @@
-import { Box, Button, Typography, Tooltip } from "@mui/material";
-import React, { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { Box, Button, Typography, Tooltip } from "@mui/material";
 import { Context } from "../../../App";
 import { cleanSearchPagination } from "../../../utility/Helper"
 

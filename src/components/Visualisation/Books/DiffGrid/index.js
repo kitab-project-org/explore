@@ -1,25 +1,25 @@
-import React, { useContext } from "react";
-import { Context } from "../../../../App";
-import ExpandView from "../../Books/ExpandView";
+import { useContext, useState } from "react";
 import {
+  IconButton,
   TableContainer,
   Table,
   TableRow,
   TableHead,
   TableBody,
   TableCell,
+  Tooltip
 } from "@mui/material";
 import NextMilestoneLoader from "../NextMilestoneLoader";
-import "../../../../index.css";
+import ExpandView from "../../Books/ExpandView";
 import { imechToHtml } from "../../../../utility/Helper";
-import { IconButton } from "@mui/material";
-import { Tooltip } from "@mui/material";
-import { useState } from "react";
+import { Context } from "../../../../App";
+import "../../../../index.css";
+
 
 const DiffGrid = ({ parsedBookAlignment, alignmentOnly }) => {
   const { isFlipped, books, displayMs, setDisplayMs } = useContext(Context);
 
-  const [open, setOpen] = React.useState(false);
+  const [open, setOpen] = useState(false);
 
   let columns = [
     {

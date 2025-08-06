@@ -1,12 +1,18 @@
-import { Box, Typography } from "@mui/material";
-import React from "react";
-import ToggleButton from "./ToggleButton";
-import BAExtra from "./BookAlignmentHeader/BAExtra";
 import { useContext } from "react";
+import { Box, Typography } from "@mui/material";
+//import ToggleButton from "./ToggleButton";
+import BAExtra from "./BookAlignmentHeader/BAExtra";
+import DownloadPanel from "./VisualizationHeader/DownloadPanel";
 import { Context } from "../../../App";
 
 const SectionHeaderLayout = ({ item, children, toggle, setToggle }) => {
-  const { showOptions } = useContext(Context);
+  const { 
+    showOptions, 
+    showDownloadOptions,
+    isFlipped,
+    releaseCode,
+    metaData,
+  } = useContext(Context);
   return (
     <Box mb="20px">
       <Box
@@ -43,11 +49,25 @@ const SectionHeaderLayout = ({ item, children, toggle, setToggle }) => {
           </Typography>
         </Box>
         <Box sx={{ flexGrow: 1 }}>{children}</Box>
-        <Box display="flex" alignItems="center" justifyContent="flex-end">
+        {/*<Box display="flex" alignItems="center" justifyContent="flex-end">
           <ToggleButton setToggle={setToggle} toggle={toggle} />
-        </Box>
+        </Box>*/}
       </Box>
       {item.title === "Books" && showOptions && <BAExtra />}
+      {item.title === "Pairwise Visualization" && showDownloadOptions && <DownloadPanel 
+        isPairwiseViz={true}
+        downloadFileName={
+          isFlipped
+            ? `KITAB_explore_${releaseCode}_${metaData?.book2?.versionCode}_${metaData?.book1?.versionCode}.png`
+            : `KITAB_explore_${releaseCode}_${metaData?.book1?.versionCode}_${metaData?.book2?.versionCode}.png`
+        }
+      />}
+      {item.title === "One-to-Many Visualization" && showDownloadOptions && <DownloadPanel 
+        isPairwiseViz={false}
+        downloadFileName={
+          `KITAB_explore_${releaseCode}_${metaData?.book1?.versionCode}_all.png`
+        }
+      />}
     </Box>
   );
 };

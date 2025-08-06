@@ -1,3 +1,4 @@
+import { useContext} from "react";
 import {
   FormControl,
   FormControlLabel,
@@ -5,7 +6,6 @@ import {
   Radio,
   RadioGroup,
 } from "@mui/material";
-import React, { useContext} from "react";
 import { Context } from "../../../App";
 
 const CustomFormControlLabel = ({ value, label }) => {

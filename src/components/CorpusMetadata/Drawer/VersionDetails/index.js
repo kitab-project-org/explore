@@ -1,10 +1,8 @@
-import React from "react";
-import { displayNamesVersion } from "../ColumnDisplayName";
-import { Box, Tooltip } from "@mui/material";
+import { Box, Tooltip, Typography } from "@mui/material";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 import { Link } from "react-router-dom";
+import { displayNamesVersion } from "../ColumnDisplayName";
 import CopyToClipboard from "../../../Common/CopyToClipboard";
-import { Typography } from "@mui/material";
 
 const VersionDetails = ({ fullData }) => {
   // function for set color of the annotation status

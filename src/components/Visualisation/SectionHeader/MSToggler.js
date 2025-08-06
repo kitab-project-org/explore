@@ -1,9 +1,6 @@
-import { Box } from "@mui/material";
-import React, { useEffect, useRef, useState } from "react";
-import { useContext } from "react";
+import { Box, IconButton, MenuItem } from "@mui/material";
+import { useContext, useEffect, useRef, useState } from "react";
 import { Context } from "../../../App";
-import { MenuItem } from "@mui/material";
-import { IconButton } from "@mui/material";
 
 const MSToggler = ({ isTop, isBook1, selectLineOnClicked, mouseOver }) => {
   const { chartData, focusedDataIndex, setFocusedDataIndex } =

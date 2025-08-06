@@ -1,9 +1,6 @@
-import FormLabel from "@mui/material/FormLabel";
-import FormControl from "@mui/material/FormControl";
-import Switch from "@mui/material/Switch";
-import { useSearchParams } from "react-router-dom";
-import { Box } from "@mui/material";
 import { useContext } from "react";
+import { useSearchParams } from "react-router-dom";
+import { Box, FormControl, FormLabel, Switch } from "@mui/material";
 import { Context } from "../../../App";
 import { cleanSearchPagination } from "../../../utility/Helper"
 

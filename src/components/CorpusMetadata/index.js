@@ -1,21 +1,15 @@
 import { useEffect, useCallback, useContext } from "react";
-import { getCorpusMetaData } from "../../services/CorpusMetaData";
+import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Grid, Typography } from "@mui/material";
+import { Box } from "@mui/system"; // CHECK: Should this be imported from @mui/material?
 import { makeStyles } from "@mui/styles";
-import { Grid } from "@mui/material";
-import { Box } from "@mui/system";
-import {
-  useLocation,
-  useNavigate,
-  useParams,
-  useSearchParams,
-} from "react-router-dom";
-import PaginationComponent from "../Common/PaginationComponent";
+import { getCorpusMetaData } from "../../services/CorpusMetaData";
 import FilterSidebar from "./FilterSidebar";
 import TableComponent from "./TableComponent";
 import CorpusHeader from "./CorpusHeader";
 import NavigationAndStats from "./NavigationAndStats";
 import SearchFilters from "./SearchFilter";
-import { Typography } from "@mui/material";
+import PaginationComponent from "../Common/PaginationComponent";
 import { Context } from "../../App";
 
 // make custom style for material ui component
