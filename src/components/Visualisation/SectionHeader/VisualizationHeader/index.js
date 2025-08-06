@@ -85,7 +85,7 @@ const VisualizationHeader = ({ restoreCanvas, isPairwiseViz, colorScale, width }
                 mr: "10px",
               }}
             >
-              <i className="fa-solid fa-cloud-arrow-down"></i>
+              <i className={showDownloadOptions ? "fa-solid fa-chevron-up" : "fa-solid fa-cloud-arrow-down"}></i>
             </Button>
           </Tooltip>
         </Box>

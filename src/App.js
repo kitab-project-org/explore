@@ -2,7 +2,6 @@ import { createContext, useRef, useState } from "react";
 import { HashRouter as Router, Routes, Route } from "react-router-dom";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { green, red } from "@mui/material/colors";
-import * as saveSvgAsPng from "save-svg-as-png";
 
 import "./App.css";
 import Insight from "./pages/Insight";
@@ -241,51 +240,6 @@ function App() {
     setIsOpenDrawer(true);
   };
 
-  const downloadPNG = (downloadFileName, svgId) => {
-    //const downloadFileName = `${metaData?.book1?.versionCode}_${metaData?.book2?.versionCode}.png`;
-    const svg = document.getElementById(svgId);
-    const newSvg = svg.cloneNode(true);
-
-    let scale = 3; // default scale: 300 % 
-
-    if (outputImageWidth) {  // context variable!
-      const inchPerMM = 1 / 25.4;
-      const svgPixelWidth = svg.clientWidth;
-      const outputWidthInInches = outputImageWidth * inchPerMM;
-      const targetPixelWidth = outputWidthInInches * (dpi || 300); // dpi is also a context variable; use 300 if dpi is undefined
-      scale = targetPixelWidth / svgPixelWidth / window.devicePixelRatio;
-      console.log("window.devicePixelRatio: "+window.devicePixelRatio)
-
-      /*
-       NB: the save-svg-as-png library gets the width of the svg in one of these ways:
-       * - svg.viewBox.baseVal["width"] : returns 0 in our case
-       * - newSvg.getAttribute("width") : returns same value as svg.clientWidth
-       * - svg.getBoundingClientRect()["width"] : returns same value as svg.clientWidth
-       * - window.getComputedStyle(svg).getPropertyValue("width") : returns same value as svg.clientWidth
-      
-      console.log('svg.viewBox.baseVal["width"]: '+svg.viewBox.baseVal["width"]);
-      console.log('newSvg.getAttribute("width"): '+newSvg.getAttribute("width"));
-      console.log('svg.getBoundingClientRect()["width"]: '+svg.getBoundingClientRect()["width"]);
-      console.log('window.getComputedStyle(svg).getPropertyValue("width") '+window.getComputedStyle(svg).getPropertyValue("width"));
-      
-      
-      console.log(`requested image width: ${outputImageWidth} mm`);
-      console.log(`requested dpi: ${dpi}`);
-      console.log(`svg width: ${svgPixelWidth}`);
-      console.log(`svg bounding box width: ${svg.getBBox().width}`);
-      console.log(`Output width: ${outputWidthInInches} inch`);
-      console.log(`Output width: ${targetPixelWidth} pixels`);
-      console.log(`Scale: ${scale}`);
-      */
-    }
-
-    // save the png:
-    saveSvgAsPng.saveSvgAsPng(newSvg, downloadFileName, {
-      scale: scale, 
-      backgroundColor: "white",
-    });
-  };
-
   return (
     <Context.Provider
       value={{
@@ -435,7 +389,6 @@ function App() {
         setRemoveTags,
         selfReuseOnly,
         setSelfReuseOnly,
-        downloadPNG,
         advanceSearch,
         setAdvanceSearch,
       }}

@@ -1,7 +1,73 @@
+import { saveSvgAsPng, svgAsDataUri } from "save-svg-as-png";
 import { srtFolders, lightSrtFolders, srtFoldersGitHub} from "../assets/srtFolders"
 import { config } from "../config";
+
+
 const { GITHUB_BASE_URL, GITHUB_BASE_RAW_URL } = config;
 
+
+const downloadSVG = (svgId, downloadFileName) => {
+  //const downloadFileName = `${metaData?.book1?.versionCode}_${metaData?.book2?.versionCode}.png`;
+  const svg = document.getElementById(svgId);
+
+  svgAsDataUri(svg)
+    .then(uri => {
+      const link = document.createElement('a');
+      link.download = downloadFileName.replace(".png", ".svg");
+      link.href = uri;                     // data URI
+      document.body.appendChild(link);     // required for Firefox
+      link.click();                        // trigger download
+      document.body.removeChild(link);     // cleanup
+    })
+    .catch(err => {
+      console.error("Failed to download SVG:", err);
+    });
+}
+
+const downloadPNG = (svgId, downloadFileName, outputImageWidth, dpi) => {
+  //const downloadFileName = `${metaData?.book1?.versionCode}_${metaData?.book2?.versionCode}.png`;
+  const svg = document.getElementById(svgId);
+  const newSvg = svg.cloneNode(true);
+
+  let scale = 3; // default scale: 300 % 
+
+  if (outputImageWidth) {  // context variable!
+    const inchPerMM = 1 / 25.4;
+    const svgPixelWidth = svg.clientWidth;
+    const outputWidthInInches = outputImageWidth * inchPerMM;
+    const targetPixelWidth = outputWidthInInches * (dpi || 300); // dpi is also a context variable; use 300 if dpi is undefined
+    scale = targetPixelWidth / svgPixelWidth / window.devicePixelRatio;
+    console.log("window.devicePixelRatio: "+window.devicePixelRatio)
+
+    /*
+      NB: the save-svg-as-png library gets the width of the svg in one of these ways:
+      * - svg.viewBox.baseVal["width"] : returns 0 in our case
+      * - newSvg.getAttribute("width") : returns same value as svg.clientWidth
+      * - svg.getBoundingClientRect()["width"] : returns same value as svg.clientWidth
+      * - window.getComputedStyle(svg).getPropertyValue("width") : returns same value as svg.clientWidth
+    
+    console.log('svg.viewBox.baseVal["width"]: '+svg.viewBox.baseVal["width"]);
+    console.log('newSvg.getAttribute("width"): '+newSvg.getAttribute("width"));
+    console.log('svg.getBoundingClientRect()["width"]: '+svg.getBoundingClientRect()["width"]);
+    console.log('window.getComputedStyle(svg).getPropertyValue("width") '+window.getComputedStyle(svg).getPropertyValue("width"));
+    
+    
+    console.log(`requested image width: ${outputImageWidth} mm`);
+    console.log(`requested dpi: ${dpi}`);
+    console.log(`svg width: ${svgPixelWidth}`);
+    console.log(`svg bounding box width: ${svg.getBBox().width}`);
+    console.log(`Output width: ${outputWidthInInches} inch`);
+    console.log(`Output width: ${targetPixelWidth} pixels`);
+    console.log(`Scale: ${scale}`);
+    */
+  }
+
+  // save the png:
+  saveSvgAsPng(newSvg, downloadFileName, {
+    scale: scale, 
+    backgroundColor: "white",
+  });
+};
 
 /**
  * Testing functionality to make a server fetch fail
@@ -567,6 +633,8 @@ function getMetaLabel(d, metaType) {
 
 
 export {
+  downloadSVG,
+  downloadPNG,
   getHighestValueInArrayOfObjects,
   calculateTooltipPos,
   cleanSearchPagination,
