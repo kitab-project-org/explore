@@ -3,15 +3,17 @@ import { Box, Button, Typography, Tooltip } from "@mui/material";
 import * as d3 from "d3";
 import IncludeMetaDropdown from "./IncludeMetaDropdown";
 import OutputDimensions from "./OutputDimensions";
+import { downloadPNG, downloadSVG } from "../../../../utility/Helper";
 import { Context } from "../../../../App";
 
 
 const DownloadPanel = ( {isPairwiseViz, downloadFileName} ) => {
   const { 
-    downloadPNG, 
     tickFontSize, 
     includeURL,
-    setIncludeURL
+    setIncludeURL,
+    outputImageWidth,
+    dpi
   } = useContext(Context);
   
   const svgSelector = isPairwiseViz ? 'svgChart' : 'scatterChart';
@@ -72,7 +74,7 @@ const DownloadPanel = ( {isPairwiseViz, downloadFileName} ) => {
           </Button>
         </Tooltip>
         <Button
-          onClick={() => downloadPNG(downloadFileName, svgSelector, includeURL)}
+          onClick={() => downloadPNG(svgSelector, downloadFileName, outputImageWidth, dpi)}
           color="primary"
           variant="outlined"
           rel="noreferrer"
@@ -80,6 +82,16 @@ const DownloadPanel = ( {isPairwiseViz, downloadFileName} ) => {
           style={{textTransform: 'none'}}
         >
           Download PNG
+        </Button>
+        <Button
+          onClick={() => downloadSVG(svgSelector, downloadFileName)}
+          color="primary"
+          variant="outlined"
+          rel="noreferrer"
+          target="_blank"
+          style={{textTransform: 'none'}}
+        >
+          Download SVG
         </Button>
       </Box>
     </>
