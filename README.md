@@ -28,6 +28,8 @@ NB: we use a forking workflow so you can test the GitHub Pages deployment on you
 
 The aim is to create small, short-lived feature branches, and have the main branch continuously updated.
 
+* pick or create an issue you want to work on (and assign it to yourself)
+* use [this GitHub Kanban board](https://github.com/orgs/kitab-project-org/projects/2/views/1?layout_template=board) so that others can keep track of who's working on what
 * (only the first time):
   - Fork the repo https://github.com/kitab-project-org/explore/ on GitHub
   - clone your fork to your local machine: `git clone https://github.com/<yourGithubUserName>/explore.git`
@@ -71,6 +73,8 @@ The aim is to create small, short-lived feature branches, and have the main bran
 * In the kitab-project-org GitHub page, go to [Actions](https://github.com/kitab-project-org/explore/actions), and choose "Deploy to Github Pages from current branch" in the left-hand column
 * Click the "Run workflow" button, select the "main" branch from the dropdown, and click the green "Run workflow" button
 
+## Description of the component structure
+See [this document](https://docs.google.com/presentation/d/1OeujYqQMVfyVTf5daPZLQdqFnynhK84I_kjeUzXL9Bs/edit?usp=sharing)
 
 ## Contributing
 
