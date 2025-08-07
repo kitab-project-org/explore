@@ -22,7 +22,7 @@ export default function SetSearchField() {
     normalizedSearch,
     setNormalizedSearch,
     advanceSearchModal,
-    setAdvanceSearchModal,
+    setAdvanceSearchModal
   } = useContext(Context);
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -69,6 +69,8 @@ export default function SetSearchField() {
       );
     }
   }, [searchParams, setNormalizedSearch]);
+
+  
 
   return (
     <Box

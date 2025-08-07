@@ -61,6 +61,7 @@ export default function AdvanceSearch() {
       max_tok_count: tempAdvanceSearch?.max_tok_count,
       min_tok_count: tempAdvanceSearch?.min_tok_count,
       editor: tempAdvanceSearch?.editor,
+      edition_place: tempAdvanceSearch?.edition_place,
       publisher: tempAdvanceSearch?.publisher,
       edition_date: tempAdvanceSearch?.edition_date,
       died_before_AH: tempAdvanceSearch?.died_before_AH,

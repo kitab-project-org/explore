@@ -121,7 +121,7 @@ const SearchFilters = ({ handleResetFilters, getQuery }) => {
     let newArr = [];
     for (let i = 0; i < arr.length; i++) {
       if (searchParams.has(arr[i]) && isExist(Object.keys(paramMappings)[i])) {
-        newArr = [...newArr, paramMappings[arr[i]]];
+        newArr = [...newArr, `${paramMappings[arr[i]]}: ${searchParams.get(arr[i])}`];
       }
     }
     setAdvanceParams(newArr);
@@ -215,36 +215,7 @@ const SearchFilters = ({ handleResetFilters, getQuery }) => {
                   fullWidth={true}
                 />
               </form>
-              {advanceParams.length !== 0 && (
-                <Box
-                  sx={{
-                    width: "100%",
-                    height: "50px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <Typography variant="body1">Advanced Search:</Typography>
-                  {advanceParams &&
-                    advanceParams.map((item, i) => (
-                      <Typography
-                        key={i}
-                        variant="body2"
-                        sx={{ ml: "4px", color: "#2863A5" }}
-                      >
-                        {item}
-                        {advanceParams.length === i + 1 ? "" : ", "}
-                      </Typography>
-                    ))}
-                  <Button
-                    sx={{ color: "red" }}
-                    onClick={clearAllAdvanceSearchFilter}
-                  >
-                    Clear All
-                  </Button>
-                </Box>
-              )}
+             
               {(searchParams.get("search") || text || searchField) && (
                 <Typography
                   sx={{
@@ -263,6 +234,36 @@ const SearchFilters = ({ handleResetFilters, getQuery }) => {
             </Box>
           </Grid>
         </Grid>
+        {advanceParams.length !== 0 && (
+              <Box
+                sx={{
+                  width: "100%",
+                  height: "50px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Typography variant="body1">Advanced Search:</Typography>
+                {advanceParams &&
+                  advanceParams.map((item, i) => (
+                    <Typography
+                      key={i}
+                      variant="body2"
+                      sx={{ ml: "4px", color: "#2863A5" }}
+                    >
+                      {item}
+                      {advanceParams.length === i + 1 ? "" : ", "}
+                    </Typography>
+                  ))}
+                <Button
+                  sx={{ color: "red" }}
+                  onClick={clearAllAdvanceSearchFilter}
+                >
+                  Clear All
+                </Button>
+              </Box>
+            )}
       </Grid>
     </Box>
   );

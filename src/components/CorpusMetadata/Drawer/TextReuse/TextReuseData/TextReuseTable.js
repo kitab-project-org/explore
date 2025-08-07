@@ -103,7 +103,10 @@ const TextReuseTable = ({ b1Metadata, normalizedQuery, handleRedirectToChart, b1
     // fetch the text reuse stats data:
     try {
       fetchData(b1Metadata);
-      setIsLoading(false);
+      console.log("Stopping spinner")
+      if (statsData.length > 0) {
+        setIsLoading(false);
+      }
       setIsError(false);
     } catch {
       if (isMounted) {
@@ -113,7 +116,7 @@ const TextReuseTable = ({ b1Metadata, normalizedQuery, handleRedirectToChart, b1
         setTotal(0);
       }
     }
-  }, [b1Metadata, isOpenDrawer]);
+  }, [b1Metadata, isOpenDrawer, statsData]);
 
   // filter the data whenever the search query changes:
   // NB: the query has already been lowercased and trimmed!
