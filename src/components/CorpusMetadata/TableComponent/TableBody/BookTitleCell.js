@@ -4,6 +4,18 @@ import { Context } from "../../../../App";
 
 const BookTitleCell = ({ row, classes }) => {
   const { toggleSidePanel } = useContext(Context);
+
+  const isManuscript = row.manuscript !== null;
+
+  // for manuscripts: primary line = shelfmark, secondary line = first Arabic
+  // title if available; for texts: Latin title + Arabic title as usual
+  const primaryText = isManuscript
+    ? row.manuscript?.shelfmark
+    : row?.text?.title_lat_prefered;
+  const secondaryText = isManuscript
+    ? row.manuscript?.titles?.find(t => t.language === "ar")?.title ?? ""
+    : row?.text?.title_ar_prefered;
+
   return (
     <TableCell
       className={classes.tableCell}
@@ -43,11 +55,11 @@ const BookTitleCell = ({ row, classes }) => {
               );
             }}
           >
-            {row?.text?.title_lat_prefered}
+            {primaryText}
           </Typography>
         </Box>
         <Typography variant="body2" my={0}>
-          {row?.text?.title_ar_prefered}
+          {secondaryText}
         </Typography>
       </Stack>
       <Typography
