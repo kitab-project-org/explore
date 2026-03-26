@@ -71,6 +71,8 @@ const MetadataTable = ({ isHome }) => {
     showFilters,
     advanceSearch,
     setAdvanceSearch,
+    includeManuscripts,
+    setIncludeManuscripts,
   } = useContext(Context);
 
   // update orders
@@ -238,6 +240,13 @@ const MetadataTable = ({ isHome }) => {
     } else {
       navigate(`/${releaseCode}/${location.search}`);
     }
+
+    // always reset the manuscripts toggle when switching releases so the
+    // user starts from a clean state regardless of which release is selected;
+    // the toggle itself is rendered in FilterSidebar, which also determines
+    // whether to show it based on the release's subcorpora field
+    setIncludeManuscripts(false);
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [releaseCode]);
 
