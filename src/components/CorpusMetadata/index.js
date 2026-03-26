@@ -71,9 +71,10 @@ const MetadataTable = ({ isHome }) => {
     showFilters,
     advanceSearch,
     setAdvanceSearch,
-    activeSubcorpora,
-    setActiveSubcorpora,
-    allReleasesInsights,
+    includeManuscripts,
+    setIncludeManuscripts,
+    activeLanguages,
+    setActiveLanguages,
   } = useContext(Context);
 
   // update orders
@@ -128,8 +129,8 @@ const MetadataTable = ({ isHome }) => {
       mARkdown: false,
       notYetAnnotated: false,
     });
-    const releaseSubcorpora = allReleasesInsights.find(r => r.release_code === releaseCode)?.subcorpora ?? [];
-    setActiveSubcorpora(releaseSubcorpora);
+    setIncludeManuscripts(false);
+    setActiveLanguages([]);
     setSearchParams({ version: "all" });
     setAdvanceSearch({
       // max_char_count: "",
@@ -203,11 +204,8 @@ const MetadataTable = ({ isHome }) => {
     setStatus("loading");
     // only send the subcorpora param when some are excluded; when all are
     // active (activeSubcorpora matches the full release list) send nothing
-    const releaseSubcorpora = allReleasesInsights.find(r => r.release_code === releaseCode)?.subcorpora ?? [];
-    const subcorporaQuery =
-      activeSubcorpora.length > 0 && activeSubcorpora.length < releaseSubcorpora.length
-        ? activeSubcorpora.join(",")
-        : "";
+    // only send language param when a subset is selected; [] means all active
+    const languageQuery = activeLanguages.length > 0 ? activeLanguages.join(",") : "";
     const getData = async () => {
       const data = await getCorpusMetaData(
         page,
@@ -220,7 +218,8 @@ const MetadataTable = ({ isHome }) => {
         analysisPriority,
         releaseCode,
         advanceSearch,
-        subcorporaQuery
+        includeManuscripts,
+        languageQuery
       );
       setRows(data.results);
       setStatus("loaded");
@@ -244,8 +243,8 @@ const MetadataTable = ({ isHome }) => {
     setStatus,
     setTotal,
     advanceSearch,
-    activeSubcorpora,
-    allReleasesInsights,
+    includeManuscripts,
+    activeLanguages,
   ]);
   useEffect(() => {
     if (!isHome) {
@@ -254,11 +253,10 @@ const MetadataTable = ({ isHome }) => {
       navigate(`/${releaseCode}/${location.search}`);
     }
 
-    // always reset to the full subcorpora list when switching releases so
-    // the user starts from a clean state; the toggles are rendered in
-    // FilterSidebar, which derives the list from the release's subcorpora field
-    const releaseSubcorpora = allReleasesInsights.find(r => r.release_code === releaseCode)?.subcorpora ?? [];
-    setActiveSubcorpora(releaseSubcorpora);
+    // always reset filters when switching releases so the user starts clean;
+    // the toggles are rendered in FilterSidebar based on the release's fields
+    setIncludeManuscripts(false);
+    setActiveLanguages([]);
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [releaseCode]);

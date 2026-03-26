@@ -14,7 +14,8 @@ export async function getCorpusMetaData(
   analysisPriority,
   releaseCode,
   advanceSearch,
-  subcorporaQuery
+  includeManuscripts,
+  languageQuery
 ) {
   try {
     let QUERY_PARAMS = "";
@@ -90,13 +91,14 @@ export async function getCorpusMetaData(
         ? ``
         : `&died_after_AH=${advanceSearch?.died_after_AH}`;
 
-    // only send the subcorpora param when some subcorpora are excluded;
-    // omitting it lets the API return all subcorpora by default
-    const subcorporaFilter = subcorporaQuery ? `&subcorpora=${subcorporaQuery}` : ``;
+    // always send include_manuscripts so the API knows whether to include them
+    const manuscriptsFilter = `&include_manuscripts=${includeManuscripts ? 'true' : 'false'}`;
+    // only send language when a subset is selected; omitting it returns all languages
+    const languageFilter = languageQuery ? `&language=${languageQuery}` : ``;
 
     QUERY_PARAMS = `?&ordering=${orderBy}&page=${
       !page ? 1 : page
-    }&page_size=${pagesize}${annotationFilterQuery}${statusQuery}${searchQuery}${normalize}${max_tok_count}${min_tok_count}${editor}${edition_place}${publisher}${edition_date}${died_before_AH}${died_after_AH}${subcorporaFilter}`;
+    }&page_size=${pagesize}${annotationFilterQuery}${statusQuery}${searchQuery}${normalize}${max_tok_count}${min_tok_count}${editor}${edition_place}${publisher}${edition_date}${died_before_AH}${died_after_AH}${manuscriptsFilter}${languageFilter}`;
 
     if (releaseCodeQuery) {
       const res = await fetch(

@@ -5,8 +5,7 @@ import TableBodyComponent from "./TableBody";
 import { Context } from "../../../App";
 
 const TableComponent = ({ classes }) => {
-  const { activeSubcorpora } = useContext(Context);
-  const includeManuscripts = activeSubcorpora.includes("MSS");
+  const { includeManuscripts } = useContext(Context);
 
   // column names for the two multifunctional columns change when manuscripts
   // are included, to reflect that they may contain shelfmarks/holdings

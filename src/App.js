@@ -236,10 +236,12 @@ function App() {
   const [selfReuseOnly, setSelfReuseOnly] = useState(false);
 
   const [allReleasesInsights, setAllReleasesInsights] = useState([]);
-  // subcorpora currently shown in the metadata table; empty array means all
-  // subcorpora are active and no filter param is sent to the API;
-  // only relevant for releases that have subcorpora (2025.1.9+)
-  const [activeSubcorpora, setActiveSubcorpora] = useState([]);
+  // whether to include manuscript versions in the metadata table;
+  // only relevant for releases where has_manuscripts is true (2025.1.9+)
+  const [includeManuscripts, setIncludeManuscripts] = useState(false);
+  // languages currently shown in the metadata table; empty array means all
+  // languages are active and no language param is sent to the API
+  const [activeLanguages, setActiveLanguages] = useState([]);
 
   useEffect(() => {
     getAllReleasesInsights().then(data => {
@@ -405,8 +407,10 @@ function App() {
         advanceSearch,
         setAdvanceSearch,
         allReleasesInsights,
-        activeSubcorpora,
-        setActiveSubcorpora,
+        includeManuscripts,
+        setIncludeManuscripts,
+        activeLanguages,
+        setActiveLanguages,
       }}
     >
       <ThemeProvider theme={theme}>

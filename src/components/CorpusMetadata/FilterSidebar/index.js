@@ -10,40 +10,27 @@ import {
   Switch,
   Tooltip,
 } from "@mui/material";
-
-// display labels for known subcorpus codes; code is used as the toggle label,
-// full description is shown in a tooltip
-const SUBCORPORA_LABELS = {
-  ARA: "Arabic",
-  PER: "Persian",
-  URD: "Urdu",
-  MSS: "Manuscripts and documents",
-};
 import MetaFilters from "./MetaFilters";
 import { Context } from "../../../App";
 import { cleanSearchPagination } from "../../../utility/Helper"
+
 
 
 const FilterSidebar = () => {
   const {
     showFilters,
     analysisPriority, setAnalysisPriority,
-    activeSubcorpora, setActiveSubcorpora,
+    includeManuscripts, setIncludeManuscripts,
+    activeLanguages, setActiveLanguages,
     allReleasesInsights,
     releaseCode,
   } = useContext(Context);
 
-  // subcorpora available in the currently selected release; empty for older
-  // releases that predate subcorpus support (e.g. before 2025.1.9)
-  const releaseSubcorpora = allReleasesInsights
-    .find(r => r.release_code === releaseCode)
-    ?.subcorpora ?? [];
-
-  const handleSubcorporaToggle = (code) => {
-    setActiveSubcorpora(prev =>
-      prev.includes(code) ? prev.filter(s => s !== code) : [...prev, code]
-    );
-  };
+  const releaseInsights = allReleasesInsights.find(r => r.release_code === releaseCode);
+  // true when the selected release has manuscript versions (2025.1.9+)
+  const hasManuscripts = releaseInsights?.has_manuscripts ?? false;
+  // dict of language codes → labels present in the release; empty for older releases
+  const releaseLanguages = releaseInsights?.languages ?? {};
 
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -71,6 +58,18 @@ const FilterSidebar = () => {
       }
     }
   }, [searchParams, setSearchParams, analysisPriority, setAnalysisPriority]);
+
+  // toggle a single language code on/off; when all are active (activeLanguages=[])
+  // and one is toggled off, populate the list with all codes except that one
+  const handleLanguageToggle = (code) => {
+    if (activeLanguages.length === 0) {
+      setActiveLanguages(Object.keys(releaseLanguages).filter(l => l !== code));
+    } else {
+      setActiveLanguages(prev =>
+        prev.includes(code) ? prev.filter(l => l !== code) : [...prev, code]
+      );
+    }
+  };
 
   return (
     <Box
@@ -143,31 +142,54 @@ const FilterSidebar = () => {
                 />
               </Box>
 
-              {/* One toggle per subcorpus; only shown for releases that have
-                  subcorpora (e.g. 2025.1.9+); label = code, tooltip = full name */}
-              {releaseSubcorpora.map(code => (
+              {/* Only shown for releases that contain manuscript versions */}
+              {hasManuscripts && (
                 <Box
-                  key={code}
                   display={"flex"}
                   alignItems={"center"}
                   justifyContent={"space-between"}
                 >
-                  <Tooltip
-                    title={SUBCORPORA_LABELS[code] ?? code}
-                    placement="right"
-                    arrow
-                  >
-                    <FormLabel sx={{ color: "rgba(0, 0, 0, 0.6) !important", cursor: "default" }}>
-                      {code}
-                    </FormLabel>
-                  </Tooltip>
+                  <FormLabel sx={{ color: "rgba(0, 0, 0, 0.6) !important" }}>
+                    Include Manuscripts
+                  </FormLabel>
                   <Switch
                     size="small"
-                    onChange={() => handleSubcorporaToggle(code)}
-                    checked={activeSubcorpora.includes(code)}
+                    onChange={() => setIncludeManuscripts(!includeManuscripts)}
+                    checked={includeManuscripts}
                   />
                 </Box>
-              ))}
+              )}
+
+              {/* One toggle per language; only shown when the release has
+                  more than one language; label = code, tooltip = full name */}
+              {Object.keys(releaseLanguages).length > 1 && (
+                <Box display={"flex"} flexDirection={"column"} gap={1} mt={1}>
+                  <FormLabel
+                    sx={{ fontWeight: "600", color: "rgba(0, 0, 0, 0.6) !important" }}
+                  >
+                    Languages:
+                  </FormLabel>
+                  {Object.entries(releaseLanguages).map(([code, label]) => (
+                    <Box
+                      key={code}
+                      display={"flex"}
+                      alignItems={"center"}
+                      justifyContent={"space-between"}
+                    >
+                      <Tooltip title={label} placement="right" arrow>
+                        <FormLabel sx={{ color: "rgba(0, 0, 0, 0.6) !important", cursor: "default" }}>
+                          {code}
+                        </FormLabel>
+                      </Tooltip>
+                      <Switch
+                        size="small"
+                        onChange={() => handleLanguageToggle(code)}
+                        checked={activeLanguages.length === 0 || activeLanguages.includes(code)}
+                      />
+                    </Box>
+                  ))}
+                </Box>
+              )}
             </Box>
           </FormControl>
         </ListItem>
