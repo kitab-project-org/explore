@@ -5,6 +5,21 @@ import { Context } from "../../../../App";
 const AuthorCell = ({ row, classes }) => {
   const { toggleSidePanel } = useContext(Context);
 
+  const isManuscript = row.manuscript !== null;
+
+  // for manuscripts: primary line = holding name, no secondary line;
+  // for texts: Latin author name + Arabic author name as usual
+  const holding = row.manuscript?.holdings?.[0];
+  const holdingName = holding
+    ? Object.values(holding.names ?? {})[0] ?? holding.loc_uri
+    : "";
+  const primaryText = isManuscript
+    ? holdingName
+    : row?.text?.author?.[0]?.author_lat_prefered ?? "";
+  const secondaryText = isManuscript
+    ? ""
+    : row?.text?.author?.[0]?.author_ar_prefered ?? "";
+
   return (
     <TableCell
       className={classes.tableCell}
@@ -44,13 +59,11 @@ const AuthorCell = ({ row, classes }) => {
               );
             }}
           >
-            {row?.text.author[0]?.author_lat_prefered &&
-              row?.text.author[0]?.author_lat_prefered}
+            {primaryText}
           </Typography>
         </Box>
         <Typography variant="body2" my={0}>
-          {row?.text.author[0]?.author_lat_prefered &&
-            row?.text.author[0]?.author_ar_prefered}
+          {secondaryText}
         </Typography>
       </Stack>
 
