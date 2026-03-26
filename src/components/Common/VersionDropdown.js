@@ -9,7 +9,7 @@ import { useContext } from "react";
 import { Context } from "../../App";
 
 export default function VersionDropdown() {
-  const { releaseCode, setReleaseCode, setReleaseCodeChanged } =
+  const { releaseCode, setReleaseCode, setReleaseCodeChanged, allReleasesInsights } =
     useContext(Context);
 
   // change release code from dropdown
@@ -19,6 +19,12 @@ export default function VersionDropdown() {
     setReleaseCodeChanged(true);
     setReleaseCode(event.target.value);
   };
+
+  const releaseOptions = allReleasesInsights.length > 0
+    ? [...allReleasesInsights].sort((a, b) =>
+        b.release_code.localeCompare(a.release_code)
+      )
+    : [{ release_code: releaseCode }];
 
   return (
     <Tooltip title="Select the OpenITI release version" placement="top">
@@ -33,10 +39,11 @@ export default function VersionDropdown() {
       >
         <InputLabel id="demo-select-small-label">Version</InputLabel>
         <Select value={releaseCode} label="Version" onChange={handleChange}>
-          <MenuItem value={"2023.1.8"}>2023.1.8</MenuItem>
-          <MenuItem value={"2022.2.7"}>2022.2.7</MenuItem>
-          <MenuItem value={"2022.1.6"}>2022.1.6</MenuItem>
-          <MenuItem value={"2021.2.5"}>2021.2.5</MenuItem>
+          {releaseOptions.map((r) => (
+            <MenuItem key={r.release_code} value={r.release_code}>
+              {r.release_code}
+            </MenuItem>
+          ))}
         </Select>
       </FormControl>
     </Tooltip>
