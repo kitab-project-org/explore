@@ -1,4 +1,4 @@
-import { createContext, useRef, useState } from "react";
+import { createContext, useEffect, useRef, useState } from "react";
 import { HashRouter as Router, Routes, Route } from "react-router-dom";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { green, red } from "@mui/material/colors";
@@ -9,6 +9,7 @@ import Visualisation from "./pages/Visualisation";
 import CorpusMetadata from "./pages/CorpusMetadata";
 import DiffViewer from "./pages/DiffViewer";
 import LeftSidePanel from "./components/CorpusMetadata/Drawer";
+import { getAllReleasesInsights } from "./services/CorpusMetaData";
 
 const theme = createTheme({
   palette: {
@@ -234,6 +235,14 @@ function App() {
 
   const [selfReuseOnly, setSelfReuseOnly] = useState(false);
 
+  const [allReleasesInsights, setAllReleasesInsights] = useState([]);
+
+  useEffect(() => {
+    getAllReleasesInsights().then(data => {
+      if (Array.isArray(data)) setAllReleasesInsights(data);
+    });
+  }, []);
+
   const toggleSidePanel = (val, tIndex) => {
     setTabIndex(tIndex);
     setVersionDetails(val);
@@ -391,6 +400,7 @@ function App() {
         setSelfReuseOnly,
         advanceSearch,
         setAdvanceSearch,
+        allReleasesInsights,
       }}
     >
       <ThemeProvider theme={theme}>
