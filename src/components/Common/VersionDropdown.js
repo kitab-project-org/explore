@@ -20,6 +20,8 @@ export default function VersionDropdown() {
     setReleaseCode(event.target.value);
   };
 
+  // dynamically load release numbers from the release insights
+  // instead of hardcoding them
   const releaseOptions = allReleasesInsights.length > 0
     ? [...allReleasesInsights].sort((a, b) =>
         b.release_code.localeCompare(a.release_code)
