@@ -14,6 +14,7 @@ import GetAppOutlinedIcon from "@mui/icons-material/GetAppOutlined";
 import PropTypes from "prop-types";
 
 import AuthorDetails from "./AuthorDetails";
+import ManuscriptHoldingDetails from "./ManuscriptHoldingDetails";
 import TextReuse from "./TextReuse";
 import TextDetails from "./TextDetails";
 import VersionDetails from "./VersionDetails";
@@ -199,7 +200,7 @@ export default function LeftSidePanel() {
               </Box>
               <TabPanel value={tabIndex} index={0}>
                 {fullData && !isManuscript && <AuthorDetails fullData={fullData} />}
-                {fullData && isManuscript && <Typography sx={{ p: 1 }}>Holding details coming soon.</Typography>}
+                {fullData && isManuscript && <ManuscriptHoldingDetails fullData={fullData} />}
               </TabPanel>
               <TabPanel value={tabIndex} index={1}>
                 {fullData && !isManuscript && <TextDetails fullData={fullData} />}
