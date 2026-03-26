@@ -15,8 +15,20 @@ import { cleanSearchPagination } from "../../../utility/Helper"
 
 
 const FilterSidebar = () => {
-  const { showFilters, analysisPriority, setAnalysisPriority } =
-    useContext(Context);
+  const {
+    showFilters,
+    analysisPriority, setAnalysisPriority,
+    includeManuscripts, setIncludeManuscripts,
+    allReleasesInsights,
+    releaseCode,
+  } = useContext(Context);
+
+  // true only when the selected release has an "mss" subcorpus entry in its
+  // CorpusInsights record (e.g. 2025.1.9+); older releases return false so
+  // the manuscripts toggle is hidden for them
+  const hasManuscripts = allReleasesInsights
+    .find(r => r.release_code === releaseCode)
+    ?.subcorpora?.includes("mss") ?? false;
 
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -115,6 +127,28 @@ const FilterSidebar = () => {
                   color="pri"
                 />
               </Box>
+
+              {/* Only shown for releases that contain manuscript transcriptions */}
+              {hasManuscripts && (
+                <Box
+                  display={"flex"}
+                  alignItems={"center"}
+                  justifyContent={"space-between"}
+                >
+                  <FormLabel
+                    sx={{
+                      color: "rgba(0, 0, 0, 0.6) !important",
+                    }}
+                  >
+                    Include Manuscripts
+                  </FormLabel>
+                  <Switch
+                    size="small"
+                    onChange={() => setIncludeManuscripts(!includeManuscripts)}
+                    checked={includeManuscripts}
+                  />
+                </Box>
+              )}
             </Box>
           </FormControl>
         </ListItem>
