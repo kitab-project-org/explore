@@ -7,17 +7,19 @@ const AuthorCell = ({ row, classes }) => {
 
   const isManuscript = row.manuscript !== null;
 
-  // for manuscripts: primary line = holding name, no secondary line;
+  // for manuscripts: primary line = English holding name, secondary = Arabic;
   // for texts: Latin author name + Arabic author name as usual
-  const holding = row.manuscript?.holdings?.[0];
-  const holdingName = holding
-    ? Object.values(holding.names ?? {})[0] ?? holding.loc_uri
-    : "";
+  const holding = row.manuscript?.manuscript_holding;
+  const holdingEn = holding?.names?.en ?? holding?.loc_uri;
+  const holdingAr = holding?.names?.ar ?? "";
+  
+  const cityEn = holding?.city?.display_names?.en ?? "";
+  const cityAr = holding?.city?.display_names?.ar ?? "";
   const primaryText = isManuscript
-    ? holdingName
+    ? [holdingEn, cityEn].filter(Boolean).join(", ") // add a comma only if both are present
     : row?.text?.author?.[0]?.author_lat_prefered ?? "";
   const secondaryText = isManuscript
-    ? ""
+    ? [holdingAr, cityAr].filter(Boolean).join("، ")
     : row?.text?.author?.[0]?.author_ar_prefered ?? "";
 
   return (
