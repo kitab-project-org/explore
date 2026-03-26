@@ -70,7 +70,7 @@ const TableBodyComponent = ({ classes }) => {
               boxSizing: "border-box",
             }}
           >
-            {row?.text.author[0]?.date && row?.text?.author[0]?.date}
+            {row?.text?.author?.[0]?.date ?? ""}
             <Typography
               sx={{
                 display: {
