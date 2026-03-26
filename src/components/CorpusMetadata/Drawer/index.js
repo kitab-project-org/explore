@@ -17,6 +17,7 @@ import AuthorDetails from "./AuthorDetails";
 import ManuscriptHoldingDetails from "./ManuscriptHoldingDetails";
 import TextReuse from "./TextReuse";
 import TextDetails from "./TextDetails";
+import ManuscriptDetails from "./ManuscriptDetails";
 import VersionDetails from "./VersionDetails";
 import { getSidePanelData } from "../../../services/CorpusMetaData";
 import { Context } from "../../../App";
@@ -204,7 +205,7 @@ export default function LeftSidePanel() {
               </TabPanel>
               <TabPanel value={tabIndex} index={1}>
                 {fullData && !isManuscript && <TextDetails fullData={fullData} />}
-                {fullData && isManuscript && <Typography sx={{ p: 1 }}>Manuscript details coming soon.</Typography>}
+                {fullData && isManuscript && <ManuscriptDetails fullData={fullData} />}
               </TabPanel>
               <TabPanel value={tabIndex} index={2}>
                 {fullData && <VersionDetails fullData={fullData} />}
