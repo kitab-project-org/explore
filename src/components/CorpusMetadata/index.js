@@ -71,8 +71,9 @@ const MetadataTable = ({ isHome }) => {
     showFilters,
     advanceSearch,
     setAdvanceSearch,
-    includeManuscripts,
-    setIncludeManuscripts,
+    activeSubcorpora,
+    setActiveSubcorpora,
+    allReleasesInsights,
   } = useContext(Context);
 
   // update orders
@@ -127,6 +128,8 @@ const MetadataTable = ({ isHome }) => {
       mARkdown: false,
       notYetAnnotated: false,
     });
+    const releaseSubcorpora = allReleasesInsights.find(r => r.release_code === releaseCode)?.subcorpora ?? [];
+    setActiveSubcorpora(releaseSubcorpora);
     setSearchParams({ version: "all" });
     setAdvanceSearch({
       // max_char_count: "",
@@ -198,6 +201,13 @@ const MetadataTable = ({ isHome }) => {
 
   useEffect(() => {
     setStatus("loading");
+    // only send the subcorpora param when some are excluded; when all are
+    // active (activeSubcorpora matches the full release list) send nothing
+    const releaseSubcorpora = allReleasesInsights.find(r => r.release_code === releaseCode)?.subcorpora ?? [];
+    const subcorporaQuery =
+      activeSubcorpora.length > 0 && activeSubcorpora.length < releaseSubcorpora.length
+        ? activeSubcorpora.join(",")
+        : "";
     const getData = async () => {
       const data = await getCorpusMetaData(
         page,
@@ -209,7 +219,8 @@ const MetadataTable = ({ isHome }) => {
         sortingOrder,
         analysisPriority,
         releaseCode,
-        advanceSearch
+        advanceSearch,
+        subcorporaQuery
       );
       setRows(data.results);
       setStatus("loaded");
@@ -233,6 +244,8 @@ const MetadataTable = ({ isHome }) => {
     setStatus,
     setTotal,
     advanceSearch,
+    activeSubcorpora,
+    allReleasesInsights,
   ]);
   useEffect(() => {
     if (!isHome) {
@@ -241,11 +254,11 @@ const MetadataTable = ({ isHome }) => {
       navigate(`/${releaseCode}/${location.search}`);
     }
 
-    // always reset the manuscripts toggle when switching releases so the
-    // user starts from a clean state regardless of which release is selected;
-    // the toggle itself is rendered in FilterSidebar, which also determines
-    // whether to show it based on the release's subcorpora field
-    setIncludeManuscripts(false);
+    // always reset to the full subcorpora list when switching releases so
+    // the user starts from a clean state; the toggles are rendered in
+    // FilterSidebar, which derives the list from the release's subcorpora field
+    const releaseSubcorpora = allReleasesInsights.find(r => r.release_code === releaseCode)?.subcorpora ?? [];
+    setActiveSubcorpora(releaseSubcorpora);
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [releaseCode]);

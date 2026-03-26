@@ -236,9 +236,10 @@ function App() {
   const [selfReuseOnly, setSelfReuseOnly] = useState(false);
 
   const [allReleasesInsights, setAllReleasesInsights] = useState([]);
-  // whether to include manuscript versions in the metadata table;
+  // subcorpora currently shown in the metadata table; empty array means all
+  // subcorpora are active and no filter param is sent to the API;
   // only relevant for releases that have subcorpora (2025.1.9+)
-  const [includeManuscripts, setIncludeManuscripts] = useState(false);
+  const [activeSubcorpora, setActiveSubcorpora] = useState([]);
 
   useEffect(() => {
     getAllReleasesInsights().then(data => {
@@ -404,8 +405,8 @@ function App() {
         advanceSearch,
         setAdvanceSearch,
         allReleasesInsights,
-        includeManuscripts,
-        setIncludeManuscripts,
+        activeSubcorpora,
+        setActiveSubcorpora,
       }}
     >
       <ThemeProvider theme={theme}>

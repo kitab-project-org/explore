@@ -13,7 +13,8 @@ export async function getCorpusMetaData(
   orderBy,
   analysisPriority,
   releaseCode,
-  advanceSearch
+  advanceSearch,
+  subcorporaQuery
 ) {
   try {
     let QUERY_PARAMS = "";
@@ -89,9 +90,13 @@ export async function getCorpusMetaData(
         ? ``
         : `&died_after_AH=${advanceSearch?.died_after_AH}`;
 
+    // only send the subcorpora param when some subcorpora are excluded;
+    // omitting it lets the API return all subcorpora by default
+    const subcorporaFilter = subcorporaQuery ? `&subcorpora=${subcorporaQuery}` : ``;
+
     QUERY_PARAMS = `?&ordering=${orderBy}&page=${
       !page ? 1 : page
-    }&page_size=${pagesize}${annotationFilterQuery}${statusQuery}${searchQuery}${normalize}${max_tok_count}${min_tok_count}${editor}${edition_place}${publisher}${edition_date}${died_before_AH}${died_after_AH}`;
+    }&page_size=${pagesize}${annotationFilterQuery}${statusQuery}${searchQuery}${normalize}${max_tok_count}${min_tok_count}${editor}${edition_place}${publisher}${edition_date}${died_before_AH}${died_after_AH}${subcorporaFilter}`;
 
     if (releaseCodeQuery) {
       const res = await fetch(

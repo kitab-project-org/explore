@@ -8,7 +8,17 @@ import {
   ListItem,
   ListSubheader,
   Switch,
+  Tooltip,
 } from "@mui/material";
+
+// display labels for known subcorpus codes; code is used as the toggle label,
+// full description is shown in a tooltip
+const SUBCORPORA_LABELS = {
+  ARA: "Arabic",
+  PER: "Persian",
+  URD: "Urdu",
+  MSS: "Manuscripts and documents",
+};
 import MetaFilters from "./MetaFilters";
 import { Context } from "../../../App";
 import { cleanSearchPagination } from "../../../utility/Helper"
@@ -18,17 +28,22 @@ const FilterSidebar = () => {
   const {
     showFilters,
     analysisPriority, setAnalysisPriority,
-    includeManuscripts, setIncludeManuscripts,
+    activeSubcorpora, setActiveSubcorpora,
     allReleasesInsights,
     releaseCode,
   } = useContext(Context);
 
-  // true only when the selected release has an "mss" subcorpus entry in its
-  // CorpusInsights record (e.g. 2025.1.9+); older releases return false so
-  // the manuscripts toggle is hidden for them
-  const hasManuscripts = allReleasesInsights
+  // subcorpora available in the currently selected release; empty for older
+  // releases that predate subcorpus support (e.g. before 2025.1.9)
+  const releaseSubcorpora = allReleasesInsights
     .find(r => r.release_code === releaseCode)
-    ?.subcorpora?.includes("MSS") ?? false;
+    ?.subcorpora ?? [];
+
+  const handleSubcorporaToggle = (code) => {
+    setActiveSubcorpora(prev =>
+      prev.includes(code) ? prev.filter(s => s !== code) : [...prev, code]
+    );
+  };
 
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -128,27 +143,31 @@ const FilterSidebar = () => {
                 />
               </Box>
 
-              {/* Only shown for releases that contain manuscript transcriptions */}
-              {hasManuscripts && (
+              {/* One toggle per subcorpus; only shown for releases that have
+                  subcorpora (e.g. 2025.1.9+); label = code, tooltip = full name */}
+              {releaseSubcorpora.map(code => (
                 <Box
+                  key={code}
                   display={"flex"}
                   alignItems={"center"}
                   justifyContent={"space-between"}
                 >
-                  <FormLabel
-                    sx={{
-                      color: "rgba(0, 0, 0, 0.6) !important",
-                    }}
+                  <Tooltip
+                    title={SUBCORPORA_LABELS[code] ?? code}
+                    placement="right"
+                    arrow
                   >
-                    Include Manuscripts
-                  </FormLabel>
+                    <FormLabel sx={{ color: "rgba(0, 0, 0, 0.6) !important", cursor: "default" }}>
+                      {code}
+                    </FormLabel>
+                  </Tooltip>
                   <Switch
                     size="small"
-                    onChange={() => setIncludeManuscripts(!includeManuscripts)}
-                    checked={includeManuscripts}
+                    onChange={() => handleSubcorporaToggle(code)}
+                    checked={activeSubcorpora.includes(code)}
                   />
                 </Box>
-              )}
+              ))}
             </Box>
           </FormControl>
         </ListItem>
