@@ -19,17 +19,16 @@ export default function VersionDropdown() {
     setReleaseCodeChanged(true);
     setReleaseCode(event.target.value);
   };
-
   // dynamically load release numbers from the release insights
   // instead of hardcoding them
   const releaseOptions = allReleasesInsights.length > 0
-    ? [...allReleasesInsights].sort((a, b) =>
-        b.release_code.localeCompare(a.release_code)
-      )
+    ? [...allReleasesInsights]
+        .filter(r => r.release_code)
+        .sort((a, b) => b.release_code.localeCompare(a.release_code))
     : [{ release_code: releaseCode }];
 
   return (
-    <Tooltip title="Select the OpenITI release version" placement="top">
+    <Tooltip title="Select the OpenITI release version" placement="left">
       <FormControl
         sx={{
           minWidth: {
