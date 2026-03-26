@@ -211,14 +211,28 @@ export async function getAggregatedStats() {
   }
 }
 
-// get corpus insight data
-
+// get corpus insight data for a single release
 export async function getCorpusInsightData(releaseCode) {
   try {
-    const RELEASE_CODE = releaseCode;
-    const res = await fetch(`${DEV_BASE_URL}/${RELEASE_CODE}/corpusinsights/`, {
-      mode: "cors",
-    });
+    const res = await fetch(
+      `${DEV_ENV ? DEV_BASE_URL : PROD_BASE_URL}/${releaseCode}/corpusinsights/`,
+      { mode: "cors" }
+    );
+    const data = await res.json();
+    return data;
+  } catch (error) {
+    return error;
+  }
+}
+
+// get corpus insight data for all releases (used to populate the version dropdown
+// and derive which releases have subcorpora)
+export async function getAllReleasesInsights() {
+  try {
+    const res = await fetch(
+      `${DEV_ENV ? DEV_BASE_URL : PROD_BASE_URL}/all-releases/corpusinsights/`,
+      { mode: "cors" }
+    );
     const data = await res.json();
     return data;
   } catch (error) {
