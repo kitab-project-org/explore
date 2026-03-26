@@ -31,6 +31,9 @@ export default function LeftSidePanel() {
   const [fullData, setFullData] = useState({});
   const [fullDataLoading, setFullDataLoading] = useState(false);
 
+  // true when the drawer is showing a manuscript version rather than a text version
+  const isManuscript = fullData?.manuscript != null;
+
 
   // download metadata function
   const handleDownloadJsonClick = () => {
@@ -173,12 +176,12 @@ export default function LeftSidePanel() {
                   scrollButtons="auto"
                 >
                   <Tab
-                    label="Author Details"
+                    label={isManuscript ? "Holding Details" : "Author Details"}
                     {...a11yProps(0)}
                     sx={{ padding: "0px 10px", fontSize: "12px" }}
                   />
                   <Tab
-                    label="Text Details"
+                    label={isManuscript ? "Manuscript Details" : "Text Details"}
                     {...a11yProps(1)}
                     sx={{ padding: "0px 10px", fontSize: "12px" }}
                   />
@@ -195,10 +198,12 @@ export default function LeftSidePanel() {
                 </Tabs>
               </Box>
               <TabPanel value={tabIndex} index={0}>
-                {fullData && <AuthorDetails fullData={fullData} />}
+                {fullData && !isManuscript && <AuthorDetails fullData={fullData} />}
+                {fullData && isManuscript && <Typography sx={{ p: 1 }}>Holding details coming soon.</Typography>}
               </TabPanel>
               <TabPanel value={tabIndex} index={1}>
-                {fullData && <TextDetails fullData={fullData} />}
+                {fullData && !isManuscript && <TextDetails fullData={fullData} />}
+                {fullData && isManuscript && <Typography sx={{ p: 1 }}>Manuscript details coming soon.</Typography>}
               </TabPanel>
               <TabPanel value={tabIndex} index={2}>
                 {fullData && <VersionDetails fullData={fullData} />}
