@@ -28,7 +28,7 @@ const FilterSidebar = () => {
   // the manuscripts toggle is hidden for them
   const hasManuscripts = allReleasesInsights
     .find(r => r.release_code === releaseCode)
-    ?.subcorpora?.includes("mss") ?? false;
+    ?.subcorpora?.includes("MSS") ?? false;
 
   const [searchParams, setSearchParams] = useSearchParams();
 
