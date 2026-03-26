@@ -2,7 +2,8 @@ import { Box, TableCell, TableHead, TableRow } from "@mui/material";
 import SortingComponent from "./SortingButtons/SortingComponent";
 
 const TableHeader = ({ columns, classes }) => {
-  // get table cell width
+  // get table cell width; the two multifunctional columns keep the same width
+  // regardless of whether manuscripts are included
   const getWidth = (value) => {
     if (value === "More") {
       return "9%";
@@ -12,9 +13,9 @@ const TableHeader = ({ columns, classes }) => {
       return "9%";
     } else if (value === "Token Count") {
       return "9%";
-    } else if (value === "Book Title") {
+    } else if (value === "Book Title" || value === "Book Title / Shelfmark") {
       return "30%";
-    } else if (value === "Author") {
+    } else if (value === "Author" || value === "Author / Holding") {
       return "13%";
     } else if (value === "Version ID") {
       return "14%";
@@ -23,7 +24,9 @@ const TableHeader = ({ columns, classes }) => {
     }
   };
 
-  // return dynamic components
+  // return sorting button components; the two multifunctional columns sort by
+  // text fields when manuscripts are included — manuscript rows without those
+  // fields will naturally sort to the end
   const returnComponent = (column) => {
     if (column === "Author Death Date ") {
       return (
@@ -36,14 +39,14 @@ const TableHeader = ({ columns, classes }) => {
       return (
         <SortingComponent ascending={"tok_length"} descending={"-tok_length"} />
       );
-    } else if (column === "Book Title") {
+    } else if (column === "Book Title" || column === "Book Title / Shelfmark") {
       return (
         <SortingComponent
           ascending={"version__text__title_lat_prefered"}
           descending={"-version__text__title_lat_prefered"}
         />
       );
-    } else if (column === "Author") {
+    } else if (column === "Author" || column === "Author / Holding") {
       return (
         <SortingComponent
           ascending={"version__text__author__author_lat_prefered"}
