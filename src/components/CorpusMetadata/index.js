@@ -11,6 +11,7 @@ import NavigationAndStats from "./NavigationAndStats";
 import SearchFilters from "./SearchFilter";
 import PaginationComponent from "../Common/PaginationComponent";
 import { Context } from "../../App";
+import { cleanSearchPagination } from "../../utility/Helper";
 
 // make custom style for material ui component
 const useStyles = makeStyles((theme) => ({
@@ -249,16 +250,19 @@ const MetadataTable = ({ isHome }) => {
     activeLanguages,
   ]);
   useEffect(() => {
+    const cleanParams = new URLSearchParams(cleanSearchPagination(searchParams));
+    const search = cleanParams.toString() ? `?${cleanParams.toString()}` : "";
     if (!isHome) {
-      navigate(`/metadata/${releaseCode}/${location.search}`);
+      navigate(`/metadata/${releaseCode}/${search}`);
     } else {
-      navigate(`/${releaseCode}/${location.search}`);
+      navigate(`/${releaseCode}/${search}`);
     }
 
     // always reset filters when switching releases so the user starts clean;
     // the toggles are rendered in FilterSidebar based on the release's fields
     setIncludeManuscripts(true);
     setActiveLanguages([]);
+    setPage(1);
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [releaseCode]);
