@@ -21,7 +21,7 @@ const CopyToClipboard = ({ data }) => {
         sx={{
           bgcolor: "none",
           p: "0px",
-          ml: "15px",
+          ml: "0px",
           width: "22px",
           height: "22px",
           display: "flex",

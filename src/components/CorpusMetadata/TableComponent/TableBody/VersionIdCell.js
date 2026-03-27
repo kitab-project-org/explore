@@ -1,5 +1,6 @@
 import {
   Box,
+  Chip,
   Divider,
   Stack,
   TableCell,
@@ -15,6 +16,9 @@ const VersionIdCell = ({ row, classes }) => {
   const { toggleSidePanel } = useContext(Context);
   let versionUrl = row?.release_version?.url;
   let versionUri = versionUrl.split("/")[versionUrl.split("/").length - 1];
+  const languages = row?.language
+    ? row.language.split(",").map(l => l.trim()).filter(Boolean)
+    : [];
 
   // get colors for annotation status
   const getColored = () => {
@@ -65,17 +69,12 @@ const VersionIdCell = ({ row, classes }) => {
           {row?.version_code}
         </Typography>
 
-        <Stack
-          direction={"row"}
-          spacing={1}
-          divider={<Divider orientation="vertical" flexItem />}
-          alignItems={"center"}
-        >
+        <Box display="flex" flexWrap="wrap" alignItems="center" gap={1}>
           <Tooltip
             placement="top"
             title="Warning: This is not the best version of the book! Choose another version unless you really want this one."
           >
-            <Box sx={{ pl: 1 }}>
+            <Box>
               {row?.release_version?.analysis_priority === "pri" ? (
                 ""
               ) : (
@@ -86,6 +85,7 @@ const VersionIdCell = ({ row, classes }) => {
               )}
             </Box>
           </Tooltip>
+          <Divider orientation="vertical" sx={{ height: "16px", alignSelf: "center" }} />
           <Tooltip placement="top" title={row?.release_version?.url}>
             <Box
               onClick={() => downloadGitHubRawFile(row)}
@@ -99,6 +99,7 @@ const VersionIdCell = ({ row, classes }) => {
               </Typography>
             </Box>
           </Tooltip>
+          <Divider orientation="vertical" sx={{ height: "16px", alignSelf: "center" }} />
           <Tooltip title={row?.release_version?.annotation_status}>
             <Box
               sx={{
@@ -114,8 +115,25 @@ const VersionIdCell = ({ row, classes }) => {
               }}
             ></Box>
           </Tooltip>
+          <Divider orientation="vertical" sx={{ height: "16px", alignSelf: "center" }} />
           <CopyToClipboard data={versionUri} />
-        </Stack>
+          {languages.length > 0 && (
+            <>
+              <Divider orientation="vertical" sx={{ height: "16px", alignSelf: "center" }} />
+              <Box display="flex" gap={0.5}>
+                {languages.map(lang => (
+                  <Chip
+                    key={lang}
+                    label={lang}
+                    size="small"
+                    variant="outlined"
+                    sx={{ height: "20px", fontSize: "15px", borderRadius: "4px" }}
+                  />
+                ))}
+              </Box>
+            </>
+          )}
+        </Box>
       </Stack>
       <Typography
         sx={{
