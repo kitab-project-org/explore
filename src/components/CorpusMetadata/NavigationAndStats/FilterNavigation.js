@@ -9,12 +9,22 @@ const FilterNavigation = ({ showFilters }) => {
   const {
     analysisPriority, setAnalysisPriority,
     includeManuscripts, setIncludeManuscripts,
+    activeLanguages, setActiveLanguages,
     allReleasesInsights, releaseCode,
   } = useContext(Context);
 
-  const hasManuscripts = allReleasesInsights
-    .find(r => r.release_code === releaseCode)
-    ?.has_manuscripts ?? false;
+  const releaseInsights = allReleasesInsights.find(r => r.release_code === releaseCode);
+  const hasManuscripts = releaseInsights?.has_manuscripts ?? false;
+  // union of all language codes → labels across every release, for chip labels
+  const allLanguages = allReleasesInsights.reduce(
+    (acc, r) => ({ ...acc, ...(r.languages ?? {}) }),
+    {}
+  );
+
+  const handleLanguageChipDelete = (code) => {
+    const remaining = activeLanguages.filter(l => l !== code);
+    setActiveLanguages(remaining);
+  };
   const [searchParams, setSearchParams] = useSearchParams();
   const [annotationStatus, setAnnotationStatus] = useState([]);
 
@@ -177,6 +187,31 @@ const FilterNavigation = ({ showFilters }) => {
           </Button>
         </Tooltip>
       )}
+      {activeLanguages.length > 0 &&
+        activeLanguages.map(code => (
+          <Tooltip key={code} title={allLanguages[code] ?? code} arrow>
+            <Button
+              onClick={() => handleLanguageChipDelete(code)}
+              sx={{
+                bgcolor: "#e5e7eb",
+                px: "18px",
+                borderRadius: "50px",
+                py: "5px",
+                mr: "10px",
+                mb: { xs: "10px", sn: "0px" },
+              }}
+            >
+              <Typography
+                variant="body2"
+                sx={{ color: "#333" }}
+              >
+                {code}{" "}
+                <i className="fa-solid fa-xmark" style={{ fontSize: "12px" }}></i>
+              </Typography>
+            </Button>
+          </Tooltip>
+        ))
+      }
       {annotationStatus &&
         annotationStatus.map(
           (item, i) =>
