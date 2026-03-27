@@ -141,23 +141,34 @@ const FilterSidebar = () => {
                 />
               </Box>
 
-              {/* Only shown for releases that contain manuscript versions */}
-              {hasManuscripts && (
+              {/* Greyed out for releases that do not contain manuscript versions */}
+              <Tooltip
+                title={!hasManuscripts ? "This release does not contain manuscripts" : ""}
+                placement="right"
+                arrow
+              >
                 <Box
                   display={"flex"}
                   alignItems={"center"}
                   justifyContent={"space-between"}
                 >
-                  <FormLabel sx={{ color: "rgba(0, 0, 0, 0.6) !important" }}>
+                  <FormLabel
+                    sx={{
+                      color: hasManuscripts
+                        ? "rgba(0, 0, 0, 0.6) !important"
+                        : "rgba(0, 0, 0, 0.3) !important",
+                    }}
+                  >
                     Include Manuscripts
                   </FormLabel>
                   <Switch
                     size="small"
                     onChange={() => setIncludeManuscripts(!includeManuscripts)}
                     checked={includeManuscripts}
+                    disabled={!hasManuscripts}
                   />
                 </Box>
-              )}
+              </Tooltip>
             </Box>
 
             {/* One toggle per language; only shown when the release has
