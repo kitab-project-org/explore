@@ -68,7 +68,6 @@ function MetaFilters() {
               checked={annotationFilter?.notYetAnnotated}
               onChange={handleChange}
               name={"notYetAnnotated"}
-              color={"notYetAnnotated"}
             />
           </Box>
 
@@ -89,7 +88,6 @@ function MetaFilters() {
               checked={annotationFilter?.inProgress}
               onChange={handleChange}
               name={"inProgress"}
-              color={"inProgress"}
             />
           </Box>
 
@@ -110,7 +108,6 @@ function MetaFilters() {
               checked={annotationFilter?.completed}
               onChange={handleChange}
               name={"completed"}
-              color={"completed"}
             />
           </Box>
 
@@ -131,7 +128,6 @@ function MetaFilters() {
               checked={annotationFilter?.mARkdown}
               onChange={handleChange}
               name={"mARkdown"}
-              color={"mARkdown"}
             />
           </Box>
         </Box>

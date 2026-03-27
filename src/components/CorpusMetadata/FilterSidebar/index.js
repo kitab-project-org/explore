@@ -138,7 +138,6 @@ const FilterSidebar = () => {
                   size="small"
                   onChange={() => handlePrimaryTextToggle()}
                   checked={analysisPriority}
-                  color="pri"
                 />
               </Box>
 
@@ -159,16 +158,22 @@ const FilterSidebar = () => {
                   />
                 </Box>
               )}
+            </Box>
 
-              {/* One toggle per language; only shown when the release has
-                  more than one language; label = code, tooltip = full name */}
-              {Object.keys(releaseLanguages).length > 1 && (
-                <Box display={"flex"} flexDirection={"column"} gap={1} mt={1}>
-                  <FormLabel
-                    sx={{ fontWeight: "600", color: "rgba(0, 0, 0, 0.6) !important" }}
-                  >
-                    Languages:
-                  </FormLabel>
+            {/* One toggle per language; only shown when the release has
+                more than one language; label = code, tooltip = full name */}
+            {Object.keys(releaseLanguages).length > 1 && (
+              <>
+                <FormLabel
+                  sx={{
+                    py: "10px",
+                    fontWeight: "600",
+                    color: "rgba(0, 0, 0, 0.6) !important",
+                  }}
+                >
+                  Languages:
+                </FormLabel>
+                <Box display={"flex"} flexDirection={"column"} gap={1} mx={2}>
                   {Object.entries(releaseLanguages).map(([code, label]) => (
                     <Box
                       key={code}
@@ -177,7 +182,7 @@ const FilterSidebar = () => {
                       justifyContent={"space-between"}
                     >
                       <Tooltip title={label} placement="right" arrow>
-                        <FormLabel sx={{ color: "rgba(0, 0, 0, 0.6) !important", cursor: "default" }}>
+                        <FormLabel sx={{ color: "rgba(0, 0, 0, 0.6) !important" }}>
                           {code}
                         </FormLabel>
                       </Tooltip>
@@ -189,8 +194,8 @@ const FilterSidebar = () => {
                     </Box>
                   ))}
                 </Box>
-              )}
-            </Box>
+              </>
+            )}
           </FormControl>
         </ListItem>
         <ListItem>
