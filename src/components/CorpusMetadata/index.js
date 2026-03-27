@@ -31,7 +31,10 @@ const useStyles = makeStyles((theme) => ({
     [theme.breakpoints.down("sm")]: {
       padding: "20px",
     },
-    [theme.breakpoints.up("sm")]: {
+    [theme.breakpoints.between("sm", "lg")]: {
+      padding: "0px 3%",
+    },
+    [theme.breakpoints.up("lg")]: {
       padding: "0px 100px",
     },
   },
@@ -68,7 +71,6 @@ const MetadataTable = ({ isHome }) => {
     setTotal,
     checkedNotification,
     setCheckedNotification,
-    showFilters,
     advanceSearch,
     setAdvanceSearch,
     includeManuscripts,
@@ -269,20 +271,15 @@ const MetadataTable = ({ isHome }) => {
         <Box
           width={"100%"}
           display={"flex"}
-          justifyContent={"right"}
-          overflow={"hidden"}
-          position={"relative"}
+          alignItems={"flex-start"}
         >
           <FilterSidebar />
 
           <Box
             sx={{
-              transition: ".3s",
-              float: "right",
-              width: {
-                xs: "100%",
-                sm: showFilters ? "80%" : "100%",
-              },
+              transition: "width .3s",
+              flex: 1,
+              minWidth: 0,
             }}
           >
             <Box

@@ -50,7 +50,7 @@ function MetaFilters() {
         >
           Annotation Status:
         </FormLabel>
-        <Box display={"flex"} flexDirection={"column"} gap={1} mx={2}>
+        <Box display={"flex"} flexDirection={"column"} gap={1} ml={1}>
           <Box
             display={"flex"}
             alignItems={"center"}

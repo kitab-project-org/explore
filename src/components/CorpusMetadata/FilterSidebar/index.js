@@ -2,6 +2,7 @@ import { useContext, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   Box,
+  Drawer,
   FormControl,
   FormLabel,
   List,
@@ -9,6 +10,8 @@ import {
   ListSubheader,
   Switch,
   Tooltip,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import MetaFilters from "./MetaFilters";
 import { Context } from "../../../App";
@@ -18,13 +21,16 @@ import { cleanSearchPagination } from "../../../utility/Helper"
 
 const FilterSidebar = () => {
   const {
-    showFilters,
+    showFilters, setFilterPanel,
     analysisPriority, setAnalysisPriority,
     includeManuscripts, setIncludeManuscripts,
     activeLanguages, setActiveLanguages,
     allReleasesInsights,
     releaseCode,
   } = useContext(Context);
+
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   const releaseInsights = allReleasesInsights.find(r => r.release_code === releaseCode);
   // true when the selected release has manuscript versions (2025.1.9+)
@@ -73,57 +79,45 @@ const FilterSidebar = () => {
     );
   };
 
-  return (
-    <Box
-      sx={{
-        //transition: ".3s",
-        transition: "transform 0.3s ease-in-out",
-        position: {
-          xs: "fixed",
-          sm: "absolute",
-        },
-        width: {
-          xs: "90%",
-          sm: "20%",
-        },
-        zIndex: "999",
-        left: {
-          xs: "50%",
-          sm: showFilters ? 0 : "-20%",
-        },
-        /*translate: {
-          xs: "-50%",
-          sm: "0",
-        },*/
-        transform: {
-          xs: showFilters ? "translateX(0)" : "translateX(-100%)",
-          sm: showFilters ? "translateX(0)" : "translateX(-100%)",
-        },
-        borderRadius: "5px",
-        boxShadow: {
-          xs: "0px 0px 5px 0px grey",
-          sm: "inherit",
-        },
-        display: {
-          xs: showFilters ? "block" : "none",
-          sm: "block",
-        },
-      }}
-      bgcolor={"white"}
-    >
-      <List subheader={<ListSubheader>Filters</ListSubheader>}>
-        <ListItem>
-          <FormControl component="fieldset" variant="standard" fullWidth>
-            <FormLabel
-              sx={{
-                py: "10px",
-                fontWeight: "600",
-                color: "rgba(0, 0, 0, 0.6) !important",
-              }}
+  const content = (
+    <List subheader={<ListSubheader>Filters</ListSubheader>}>
+      <ListItem sx={{ px: 1 }}>
+        <FormControl component="fieldset" variant="standard" fullWidth>
+          <FormLabel
+            sx={{
+              py: "10px",
+              fontWeight: "600",
+              color: "rgba(0, 0, 0, 0.6) !important",
+            }}
+          >
+            Display text versions:
+          </FormLabel>
+          <Box display={"flex"} flexDirection={"column"} gap={1} ml={1}>
+            <Box
+              display={"flex"}
+              alignItems={"center"}
+              justifyContent={"space-between"}
             >
-              Display text versions:
-            </FormLabel>
-            <Box display={"flex"} flexDirection={"column"} gap={1} mx={2}>
+              <FormLabel
+                sx={{
+                  color: "rgba(0, 0, 0, 0.6) !important",
+                }}
+              >
+                Include Secondary Versions
+              </FormLabel>
+              <Switch
+                size="small"
+                onChange={() => handlePrimaryTextToggle()}
+                checked={analysisPriority}
+              />
+            </Box>
+
+            {/* Greyed out for releases that do not contain manuscript versions */}
+            <Tooltip
+              title={!hasManuscripts ? "This release does not contain manuscripts" : ""}
+              placement="right"
+              arrow
+            >
               <Box
                 display={"flex"}
                 alignItems={"center"}
@@ -131,117 +125,124 @@ const FilterSidebar = () => {
               >
                 <FormLabel
                   sx={{
-                    color: "rgba(0, 0, 0, 0.6) !important",
+                    color: hasManuscripts
+                      ? "rgba(0, 0, 0, 0.6) !important"
+                      : "rgba(0, 0, 0, 0.3) !important",
                   }}
                 >
-                  Include Secondary Versions
+                  Include Manuscripts
                 </FormLabel>
                 <Switch
                   size="small"
-                  onChange={() => handlePrimaryTextToggle()}
-                  checked={analysisPriority}
+                  onChange={() => setIncludeManuscripts(!includeManuscripts)}
+                  checked={includeManuscripts}
+                  disabled={!hasManuscripts}
                 />
               </Box>
+            </Tooltip>
+          </Box>
 
-              {/* Greyed out for releases that do not contain manuscript versions */}
-              <Tooltip
-                title={!hasManuscripts ? "This release does not contain manuscripts" : ""}
-                placement="right"
-                arrow
+          {/* One toggle per language known across all releases; greyed out
+              if the language is not present in the currently selected release */}
+          {Object.keys(allLanguages).length > 0 && (
+            <>
+              <FormLabel
+                sx={{
+                  py: "10px",
+                  fontWeight: "600",
+                  color: "rgba(0, 0, 0, 0.6) !important",
+                }}
               >
-                <Box
-                  display={"flex"}
-                  alignItems={"center"}
-                  justifyContent={"space-between"}
-                >
-                  <FormLabel
-                    sx={{
-                      color: hasManuscripts
-                        ? "rgba(0, 0, 0, 0.6) !important"
-                        : "rgba(0, 0, 0, 0.3) !important",
-                    }}
-                  >
-                    Include Manuscripts
+                Languages:
+              </FormLabel>
+              <Box display={"flex"} flexDirection={"column"} gap={1} ml={1}>
+                {/* Master toggle: resets to all languages when clicked */}
+                <Box display={"flex"} alignItems={"center"} justifyContent={"space-between"}>
+                  <FormLabel sx={{ color: "rgba(0, 0, 0, 0.6) !important" }}>
+                    All languages
                   </FormLabel>
                   <Switch
                     size="small"
-                    onChange={() => setIncludeManuscripts(!includeManuscripts)}
-                    checked={includeManuscripts}
-                    disabled={!hasManuscripts}
+                    checked={activeLanguages.length === 0}
+                    onChange={() => setActiveLanguages([])}
                   />
                 </Box>
-              </Tooltip>
-            </Box>
-
-            {/* One toggle per language known across all releases; greyed out
-                if the language is not present in the currently selected release */}
-            {Object.keys(allLanguages).length > 0 && (
-              <>
-                <FormLabel
-                  sx={{
-                    py: "10px",
-                    fontWeight: "600",
-                    color: "rgba(0, 0, 0, 0.6) !important",
-                  }}
-                >
-                  Languages:
-                </FormLabel>
-                <Box display={"flex"} flexDirection={"column"} gap={1} mx={2}>
-                  {/* Master toggle: resets to all languages when clicked */}
-                  <Box display={"flex"} alignItems={"center"} justifyContent={"space-between"}>
-                    <FormLabel sx={{ color: "rgba(0, 0, 0, 0.6) !important" }}>
-                      All languages
-                    </FormLabel>
-                    <Switch
-                      size="small"
-                      checked={activeLanguages.length === 0}
-                      onChange={() => setActiveLanguages([])}
-                    />
-                  </Box>
-                  {Object.entries(allLanguages).map(([code, label]) => {
-                    const inRelease = code in releaseLanguages;
-                    return (
-                      <Tooltip
-                        key={code}
-                        title={!inRelease ? `This release does not contain ${label} texts` : label}
-                        placement="right"
-                        arrow
+                {Object.entries(allLanguages).map(([code, label]) => {
+                  const inRelease = code in releaseLanguages;
+                  return (
+                    <Tooltip
+                      key={code}
+                      title={!inRelease ? `This release does not contain ${label} texts` : label}
+                      placement="right"
+                      arrow
+                    >
+                      <Box
+                        display={"flex"}
+                        alignItems={"center"}
+                        justifyContent={"space-between"}
                       >
-                        <Box
-                          display={"flex"}
-                          alignItems={"center"}
-                          justifyContent={"space-between"}
+                        <FormLabel
+                          sx={{
+                            color: inRelease
+                              ? "rgba(0, 0, 0, 0.6) !important"
+                              : "rgba(0, 0, 0, 0.3) !important",
+                          }}
                         >
-                          <FormLabel
-                            sx={{
-                              color: inRelease
-                                ? "rgba(0, 0, 0, 0.6) !important"
-                                : "rgba(0, 0, 0, 0.3) !important",
-                            }}
-                          >
-                            {code}
-                          </FormLabel>
-                          <Switch
-                            size="small"
-                            onChange={() => handleLanguageToggle(code)}
-                            checked={inRelease && activeLanguages.includes(code)}
-                            disabled={!inRelease}
-                          />
-                        </Box>
-                      </Tooltip>
-                    );
-                  })}
-                </Box>
-              </>
-            )}
-          </FormControl>
-        </ListItem>
-        <ListItem>
-          <MetaFilters />
-        </ListItem>
-      </List>
-    </Box>
+                          {code}
+                        </FormLabel>
+                        <Switch
+                          size="small"
+                          onChange={() => handleLanguageToggle(code)}
+                          checked={inRelease && activeLanguages.includes(code)}
+                          disabled={!inRelease}
+                        />
+                      </Box>
+                    </Tooltip>
+                  );
+                })}
+              </Box>
+            </>
+          )}
+        </FormControl>
+      </ListItem>
+      <ListItem sx={{ px: 1 }}>
+        <MetaFilters />
+      </ListItem>
+    </List>
   );
+
+  if (isMobile) {
+    return (
+      <Drawer
+        anchor="left"
+        open={showFilters}
+        onClose={() => setFilterPanel(false)}
+        variant="temporary"
+        ModalProps={{ keepMounted: true }}
+      >
+        <Box sx={{ width: "85vw" }} bgcolor="white">
+          {content}
+        </Box>
+      </Drawer>
+    );
+  }
+
+  return showFilters ? (
+    <Box
+      sx={{
+        width: "20%",
+        flexShrink: 0,
+        position: "sticky",
+        top: 0,
+        alignSelf: "flex-start",
+        maxHeight: "calc(100vh - 80px)",
+        overflowY: "auto",
+      }}
+      bgcolor={"white"}
+    >
+      {content}
+    </Box>
+  ) : null;
 };
 
 export default FilterSidebar;
