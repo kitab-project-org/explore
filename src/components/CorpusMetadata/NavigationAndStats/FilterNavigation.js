@@ -203,7 +203,7 @@ const FilterNavigation = ({ showFilters }) => {
             >
               <Typography
                 variant="body2"
-                sx={{ color: "#333" }}
+                sx={{ color: "#333", textTransform: "lowercase" }}
               >
                 {code}{" "}
                 <i className="fa-solid fa-xmark" style={{ fontSize: "12px" }}></i>
