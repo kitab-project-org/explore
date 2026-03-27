@@ -6,7 +6,15 @@ import { cleanSearchPagination } from "../../../utility/Helper"
 
 
 const FilterNavigation = ({ showFilters }) => {
-  const { analysisPriority, setAnalysisPriority } = useContext(Context);
+  const {
+    analysisPriority, setAnalysisPriority,
+    includeManuscripts, setIncludeManuscripts,
+    allReleasesInsights, releaseCode,
+  } = useContext(Context);
+
+  const hasManuscripts = allReleasesInsights
+    .find(r => r.release_code === releaseCode)
+    ?.has_manuscripts ?? false;
   const [searchParams, setSearchParams] = useSearchParams();
   const [annotationStatus, setAnnotationStatus] = useState([]);
 
@@ -131,6 +139,44 @@ const FilterNavigation = ({ showFilters }) => {
           </Typography>
         </Button>
       </Tooltip>
+      {hasManuscripts && (
+        <Tooltip
+          title={
+            includeManuscripts
+              ? "Manuscripts are included. Click to exclude."
+              : "Manuscripts are excluded. Click to include."
+          }
+        >
+          <Button
+            onClick={() => setIncludeManuscripts(!includeManuscripts)}
+            sx={{
+              bgcolor: "#e5e7eb",
+              px: "18px",
+              borderRadius: "50px",
+              py: "5px",
+              mr: "10px",
+              mb: {
+                xs: "10px",
+                sn: "0px",
+              },
+            }}
+          >
+            <Typography
+              variant="body2"
+              sx={{
+                textTransform: "capitalize",
+                color: "#333",
+              }}
+            >
+              {includeManuscripts ? "Manuscripts included" : "Manuscripts excluded"}{" "}
+              <i
+                className="fa-solid fa-xmark"
+                style={{ fontSize: "12px" }}
+              ></i>
+            </Typography>
+          </Button>
+        </Tooltip>
+      )}
       {annotationStatus &&
         annotationStatus.map(
           (item, i) =>

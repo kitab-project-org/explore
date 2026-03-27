@@ -29,8 +29,14 @@ const FilterSidebar = () => {
   const releaseInsights = allReleasesInsights.find(r => r.release_code === releaseCode);
   // true when the selected release has manuscript versions (2025.1.9+)
   const hasManuscripts = releaseInsights?.has_manuscripts ?? false;
-  // dict of language codes → labels present in the release; empty for older releases
+  // dict of language codes → labels present in the current release
   const releaseLanguages = releaseInsights?.languages ?? {};
+  // union of all language codes → labels across every release; used to show
+  // a consistent set of toggles regardless of which release is selected
+  const allLanguages = allReleasesInsights.reduce(
+    (acc, r) => ({ ...acc, ...(r.languages ?? {}) }),
+    {}
+  );
 
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -171,9 +177,9 @@ const FilterSidebar = () => {
               </Tooltip>
             </Box>
 
-            {/* One toggle per language; only shown when the release has
-                more than one language; label = code, tooltip = full name */}
-            {Object.keys(releaseLanguages).length > 1 && (
+            {/* One toggle per language known across all releases; greyed out
+                if the language is not present in the currently selected release */}
+            {Object.keys(allLanguages).length > 0 && (
               <>
                 <FormLabel
                   sx={{
@@ -185,25 +191,39 @@ const FilterSidebar = () => {
                   Languages:
                 </FormLabel>
                 <Box display={"flex"} flexDirection={"column"} gap={1} mx={2}>
-                  {Object.entries(releaseLanguages).map(([code, label]) => (
-                    <Box
-                      key={code}
-                      display={"flex"}
-                      alignItems={"center"}
-                      justifyContent={"space-between"}
-                    >
-                      <Tooltip title={label} placement="right" arrow>
-                        <FormLabel sx={{ color: "rgba(0, 0, 0, 0.6) !important" }}>
-                          {code}
-                        </FormLabel>
+                  {Object.entries(allLanguages).map(([code, label]) => {
+                    const inRelease = code in releaseLanguages;
+                    return (
+                      <Tooltip
+                        key={code}
+                        title={!inRelease ? `This release does not contain ${label} texts` : label}
+                        placement="right"
+                        arrow
+                      >
+                        <Box
+                          display={"flex"}
+                          alignItems={"center"}
+                          justifyContent={"space-between"}
+                        >
+                          <FormLabel
+                            sx={{
+                              color: inRelease
+                                ? "rgba(0, 0, 0, 0.6) !important"
+                                : "rgba(0, 0, 0, 0.3) !important",
+                            }}
+                          >
+                            {code}
+                          </FormLabel>
+                          <Switch
+                            size="small"
+                            onChange={() => handleLanguageToggle(code)}
+                            checked={inRelease && (activeLanguages.length === 0 || activeLanguages.includes(code))}
+                            disabled={!inRelease}
+                          />
+                        </Box>
                       </Tooltip>
-                      <Switch
-                        size="small"
-                        onChange={() => handleLanguageToggle(code)}
-                        checked={activeLanguages.length === 0 || activeLanguages.includes(code)}
-                      />
-                    </Box>
-                  ))}
+                    );
+                  })}
                 </Box>
               </>
             )}
