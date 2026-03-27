@@ -68,13 +68,9 @@ const FilterSidebar = () => {
   // toggle a single language code on/off; when all are active (activeLanguages=[])
   // and one is toggled off, populate the list with all codes except that one
   const handleLanguageToggle = (code) => {
-    if (activeLanguages.length === 0) {
-      setActiveLanguages(Object.keys(releaseLanguages).filter(l => l !== code));
-    } else {
-      setActiveLanguages(prev =>
-        prev.includes(code) ? prev.filter(l => l !== code) : [...prev, code]
-      );
-    }
+    setActiveLanguages(prev =>
+      prev.includes(code) ? prev.filter(l => l !== code) : [...prev, code]
+    );
   };
 
   return (
@@ -191,6 +187,17 @@ const FilterSidebar = () => {
                   Languages:
                 </FormLabel>
                 <Box display={"flex"} flexDirection={"column"} gap={1} mx={2}>
+                  {/* Master toggle: resets to all languages when clicked */}
+                  <Box display={"flex"} alignItems={"center"} justifyContent={"space-between"}>
+                    <FormLabel sx={{ color: "rgba(0, 0, 0, 0.6) !important" }}>
+                      All languages
+                    </FormLabel>
+                    <Switch
+                      size="small"
+                      checked={activeLanguages.length === 0}
+                      onChange={() => setActiveLanguages([])}
+                    />
+                  </Box>
                   {Object.entries(allLanguages).map(([code, label]) => {
                     const inRelease = code in releaseLanguages;
                     return (
@@ -217,7 +224,7 @@ const FilterSidebar = () => {
                           <Switch
                             size="small"
                             onChange={() => handleLanguageToggle(code)}
-                            checked={inRelease && (activeLanguages.length === 0 || activeLanguages.includes(code))}
+                            checked={inRelease && activeLanguages.includes(code)}
                             disabled={!inRelease}
                           />
                         </Box>
