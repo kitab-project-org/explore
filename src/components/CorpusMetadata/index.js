@@ -131,7 +131,7 @@ const MetadataTable = ({ isHome }) => {
       mARkdown: false,
       notYetAnnotated: false,
     });
-    setIncludeManuscripts(false);
+    setIncludeManuscripts(true);
     setActiveLanguages([]);
     setSearchParams({ version: "all" });
     setAdvanceSearch({
@@ -257,7 +257,7 @@ const MetadataTable = ({ isHome }) => {
 
     // always reset filters when switching releases so the user starts clean;
     // the toggles are rendered in FilterSidebar based on the release's fields
-    setIncludeManuscripts(false);
+    setIncludeManuscripts(true);
     setActiveLanguages([]);
 
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -238,7 +238,7 @@ function App() {
   const [allReleasesInsights, setAllReleasesInsights] = useState([]);
   // whether to include manuscript versions in the metadata table;
   // only relevant for releases where has_manuscripts is true (2025.1.9+)
-  const [includeManuscripts, setIncludeManuscripts] = useState(false);
+  const [includeManuscripts, setIncludeManuscripts] = useState(true);
   // languages currently shown in the metadata table; empty array means all
   // languages are active and no language param is sent to the API
   const [activeLanguages, setActiveLanguages] = useState([]);
