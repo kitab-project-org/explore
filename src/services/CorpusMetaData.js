@@ -37,7 +37,7 @@ export async function getCorpusMetaData(
       : "";
     let searchQuery =
       searchField && query
-        ? `&${searchField === "title" ? "title_lat" : "author_lat"}=${query}`
+        ? `&${searchField}=${query}`
         : query
         ? `&search=${query}`
         : "";

@@ -202,11 +202,12 @@ const SearchFilters = ({ handleResetFilters, getQuery }) => {
                 <TextField
                   id="outlined-search"
                   label={
-                    searchField
-                      ? searchField === "author"
-                        ? "Search by author"
-                        : "Search by title"
-                      : "Search by author, title or attributes"
+                    {
+                      author: "Search by author",
+                      title: "Search by title",
+                      shelfmark: "Search by shelfmark",
+                      holding: "Search by manuscript holding",
+                    }[searchField] ?? "Search by author, title or other attributes"
                   }
                   type="search"
                   size="small"

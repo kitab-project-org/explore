@@ -87,6 +87,39 @@ export default function SetSearchField() {
         },
       }}
     >
+      <FormControl sx={{ width: "max-content" }}>
+        <RadioGroup
+          row
+          aria-labelledby="search-by-label"
+          name="row-radio-buttons-group"
+          onChange={handleSearchField}
+          onClick={(e) => {
+            if (e.target.value === searchField) {
+              setSearchField("");
+              searchParams.delete("search_by");
+              setSearchParams(searchParams);
+            }
+          }}
+          value={searchField}
+          sx={{ flexWrap: "wrap", alignItems: "center" }}
+        >
+          <Typography sx={{ fontSize: 14, mr: 1 }}>Search by:</Typography>
+          {[
+            { value: "author", label: "Author" },
+            { value: "title", label: "Title" },
+            { value: "shelfmark", label: "Shelfmark" },
+            { value: "holding", label: "Manuscript Holding" },
+          ].map(({ value, label }) => (
+            <FormControlLabel
+              key={value}
+              value={value}
+              control={<Radio sx={{ "& .MuiSvgIcon-root": { fontSize: 18 } }} />}
+              label={label}
+              sx={{ "& .MuiTypography-root": { fontSize: 14, userSelect: "none" } }}
+            />
+          ))}
+        </RadioGroup>
+      </FormControl>
       <Tooltip title="Normalize search terms (Arabic+translation) to find more results">
         <FormControl>
           <FormControlLabel
@@ -94,73 +127,18 @@ export default function SetSearchField() {
             control={
               <Checkbox
                 checked={normalizedSearch}
-                sx={{
-                  "& .MuiSvgIcon-root": {
-                    fontSize: 18,
-                  },
-                }}
+                sx={{ "& .MuiSvgIcon-root": { fontSize: 18 } }}
               />
             }
             label="Normalize Search Terms"
             sx={{
-              "& .MuiTypography-root": {
-                fontSize: 14,
-                userSelect: "none",
-              },
+              "& .MuiTypography-root": { fontSize: 14, userSelect: "none" },
               display: "flex",
               justifyContent: "flex-start",
             }}
           />
         </FormControl>
       </Tooltip>
-      <FormControl sx={{ width: "max-content" }}>
-        <RadioGroup
-          row
-          aria-labelledby="demo-row-radio-buttons-group-label"
-          name="row-radio-buttons-group"
-          onChange={handleSearchField}
-          value={searchField}
-        >
-          <FormControlLabel
-            value="author"
-            sx={{
-              "& .MuiTypography-root": {
-                fontSize: 14,
-                userSelect: "none",
-              },
-            }}
-            control={
-              <Radio
-                sx={{
-                  "& .MuiSvgIcon-root": {
-                    fontSize: 18,
-                  },
-                }}
-              />
-            }
-            label="Search By Author"
-          />
-          <FormControlLabel
-            value="title"
-            control={
-              <Radio
-                sx={{
-                  "& .MuiSvgIcon-root": {
-                    fontSize: 18,
-                  },
-                }}
-              />
-            }
-            label="Search By Book Title"
-            sx={{
-              "& .MuiTypography-root": {
-                fontSize: 14,
-                userSelect: "none",
-              },
-            }}
-          />
-        </RadioGroup>
-      </FormControl>
       <Button
         variant="contained"
         sx={{
