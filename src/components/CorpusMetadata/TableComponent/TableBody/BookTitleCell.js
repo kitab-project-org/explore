@@ -7,14 +7,13 @@ const BookTitleCell = ({ row, classes }) => {
 
   const isManuscript = row.manuscript !== null;
 
-  // for manuscripts: primary line = shelfmark, secondary line = first Arabic
-  // title if available; for texts: Latin title + Arabic title as usual
+  // for manuscripts: primary line = shelfmark, secondary lines = all titles;
+  // for texts: Latin title + Arabic title as usual
   const primaryText = isManuscript
     ? row.manuscript?.shelfmark
     : row?.text?.title_lat_prefered;
-  const secondaryText = isManuscript
-    ? row.manuscript?.titles?.find(t => t.language === "ar")?.title ?? ""
-    : row?.text?.title_ar_prefered;
+  const secondaryText = isManuscript ? null : row?.text?.title_ar_prefered;
+  const manuscriptTitles = isManuscript ? (row.manuscript?.titles ?? []) : [];
 
   return (
     <TableCell
@@ -58,9 +57,16 @@ const BookTitleCell = ({ row, classes }) => {
             {primaryText}
           </Typography>
         </Box>
-        <Typography variant="body2" my={0}>
-          {secondaryText}
-        </Typography>
+        {secondaryText && (
+          <Typography variant="body2" my={0}>
+            {secondaryText}
+          </Typography>
+        )}
+        {manuscriptTitles.map((t, i) => (
+          <Typography key={i} variant="body2" my={0}>
+            {t.title}
+          </Typography>
+        ))}
       </Stack>
       <Typography
         sx={{
