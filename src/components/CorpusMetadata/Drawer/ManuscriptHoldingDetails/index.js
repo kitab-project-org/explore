@@ -7,25 +7,29 @@ const ManuscriptHoldingDetails = ({ fullData }) => {
     return <Typography>No holding information available.</Typography>;
   }
 
-  const holdingName = Object.values(holding.names ?? {})[0];
-  const country =
-    Object.values(holding.country?.display_names ?? {})[0] ??
-    holding.country?.country_code;
-  const city =
-    Object.values(holding.city?.display_names ?? {})[0] ??
-    holding.city?.code;
+  const unique = (arr) => [...new Set(arr.filter(Boolean))];
+
+  const holdingNames = unique(Object.values(holding.names ?? {}));
+  const countryNames = unique([
+    ...Object.values(holding.country?.display_names ?? {}),
+    holding.country?.country_code,
+  ]);
+  const cityNames = unique([
+    ...Object.values(holding.city?.display_names ?? {}),
+    holding.city?.code,
+  ]);
 
   const rows = [
-    { label: "Location URI", value: holding.loc_uri },
-    { label: "Name", value: holdingName },
-    { label: "Country", value: country },
-    { label: "City", value: city },
+    { label: "Location URI", value: unique([holding.loc_uri]) },
+    { label: "Name", value: holdingNames },
+    { label: "Country", value: countryNames },
+    { label: "City", value: cityNames },
   ];
 
   return (
     <Box sx={{ width: "100%" }}>
       {rows.map(({ label, value }) =>
-        value ? (
+        value.length > 0 ? (
           <Box
             key={label}
             sx={{
@@ -36,7 +40,11 @@ const ManuscriptHoldingDetails = ({ fullData }) => {
             }}
           >
             <Box sx={{ width: "25%", margin: "5px 0px" }}>{label}</Box>
-            <Box sx={{ width: "75%", margin: "5px 0px" }}>{value}</Box>
+            <Box sx={{ width: "75%", margin: "5px 0px" }}>
+              {value.map((v, i) => (
+                <span key={i}>{v}{i < value.length - 1 && <br />}</span>
+              ))}
+            </Box>
           </Box>
         ) : null
       )}
