@@ -1,5 +1,5 @@
 import { useContext } from "react";
-import { TableBody, TableCell, TableRow, Typography } from "@mui/material";
+import { Box, TableBody, TableCell, TableRow, Tooltip, Typography } from "@mui/material";
 import { Context } from "../../../../App";
 import VersionIdCell from "./VersionIdCell";
 import BookTitleCell from "./BookTitleCell";
@@ -17,6 +17,7 @@ const TableBodyComponent = ({ classes }) => {
           key={index}
           className={classes.tableCell}
           sx={{
+            position: "relative",
             display: "flex",
             flexDirection: {
               xs: "column",
@@ -88,6 +89,19 @@ const TableBodyComponent = ({ classes }) => {
           <ReuseCell classes={classes} row={row} />
 
           <MoreCell classes={classes} row={row} />
+          {row.manuscript !== null && (
+            <Tooltip title="Manuscript" placement="left" arrow>
+              <Box sx={{
+                position: "absolute",
+                right: 0,
+                top: 0,
+                bottom: 0,
+                width: "3px",
+                bgcolor: "#2863A5",
+                cursor: "default",
+              }} />
+            </Tooltip>
+          )}
         </TableRow>
       ))}
     </TableBody>
