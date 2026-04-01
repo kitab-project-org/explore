@@ -13,7 +13,11 @@ import { Context } from "../../../../App";
 import CopyToClipboard from "../../../Common/CopyToClipboard";
 
 const VersionIdCell = ({ row, classes }) => {
-  const { toggleSidePanel } = useContext(Context);
+  const { toggleSidePanel, allReleasesInsights } = useContext(Context);
+  const allLanguages = allReleasesInsights.reduce(
+    (acc, r) => ({ ...acc, ...(r.languages ?? {}) }),
+    {}
+  );
   let versionUrl = row?.release_version?.url;
   let versionUri = versionUrl.split("/")[versionUrl.split("/").length - 1];
   const languages = row?.language
@@ -108,13 +112,14 @@ const VersionIdCell = ({ row, classes }) => {
           {languages.length > 0 && (
             <Box display="flex" gap={0.5} flexWrap="wrap">
               {languages.map(lang => (
-                <Chip
-                  key={lang}
-                  label={lang}
-                  size="small"
-                  variant="outlined"
-                  sx={{ height: "20px", fontSize: "15px", borderRadius: "4px" }}
-                />
+                <Tooltip key={lang} title={allLanguages[lang] ?? lang} arrow>
+                  <Chip
+                    label={lang}
+                    size="small"
+                    variant="outlined"
+                    sx={{ height: "20px", fontSize: "15px", borderRadius: "4px" }}
+                  />
+                </Tooltip>
               ))}
             </Box>
           )}
