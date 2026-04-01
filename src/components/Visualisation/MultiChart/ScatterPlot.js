@@ -10,7 +10,9 @@ import { calculateTooltipPos, wrapTextToSvgWidth } from "../../../utility/Helper
 const ScatterPlot = (props) => {
   console.log("ScatterPlot");
   const ref = useRef();
-  const bottomOfGraph = useRef(2313543512)
+  const bottomOfGraph = useRef(2313543512);
+  const isUploadRef = useRef(props.isUpload);
+  useEffect(() => { isUploadRef.current = props.isUpload; });
   const versionCode = props.versionCode.split("-")[0];
   const {
     chartData,
@@ -43,6 +45,7 @@ const ScatterPlot = (props) => {
   // create the color scale, based on the ch_match values:
   useEffect(() => {
     if (props.msdata){
+      console.log(props.msdata);
       // try to distribute the values evenly along the colors
       // (sequential scale does not give great results): 
       // calculate the quantile thresholds for all ch_match values except the max value
@@ -61,7 +64,9 @@ const ScatterPlot = (props) => {
       // (number of colors needs to be one larger than number of thresholds)      
       const colScale = d3.scaleThreshold(quantiles, colors);
       setColorScale(() => colScale);
-    } 
+    } else {
+      console.log("props.msdata not defined!");
+    }
     // eslint-disable-next-line
   }, []); 
   //}, [colors, props.maxChMatch, props.msdata, setColorScale]);  // deps array leads to infinite loop!
@@ -323,9 +328,12 @@ const ScatterPlot = (props) => {
               .attr("cy", function (d) { return yScale(d.ms1); } )
               .attr("r", props.dotSize)
               .style("fill", function (d) { return colorScale(d.ch_match) } )
+              .style("cursor", function (d) {
+                return (!props.isUpload && d.id2 !== versionCode) ? "pointer" : "default";
+              })
               // add tooltip:
-              .on("mouseover", function(event, d) { 
-                // make the tooltip visible:           
+              .on("mouseover", function(event, d) {
+                // make the tooltip visible:
                 tooltipDiv.transition()
                     .duration(200)
                     .style("opacity", .9);
@@ -336,7 +344,9 @@ const ScatterPlot = (props) => {
                     ? `<br/>Milestone ${d.alignments[0].ms2} in ${props.bookUriDict[d.id2]}`
                     : `<br/>Milestones ${d.alignments.map(el => el.ms2)} in ${props.bookUriDict[d.id2]}`;
                   tooltipMsg += `<br/>Characters matched: ${d.ch_match}`;
-                  tooltipMsg += "<br/>(Click dot to compare milestones)"
+                  tooltipMsg += props.isUpload
+                    ? "<br/>(Text comparison not available for uploaded files)"
+                    : "<br/>(Click dot to compare milestones)";
                 }
                 // position the tooltip (making sure it does not extend outside view):
                 const [x, y] = calculateTooltipPos(event, tooltipDiv, tooltipMsg, "multiVis");
@@ -351,7 +361,7 @@ const ScatterPlot = (props) => {
                       .style("opacity", 0);
               })
               .on("click", function(event, d){
-                if (d.id2 !== versionCode) {
+                if (d.id2 !== versionCode && !isUploadRef.current) {
                   handleClickedDot(event, d);
                 }
               })

@@ -38,7 +38,9 @@ const MultiVisual = (props) => {
   // extract relevant objects from chartData:
   let {
     versionCode,
+    isUpload,
     tokens,
+    mainBookMilestones: storedMainBookMilestones,
     msData,
     msStats,
     bookStats,
@@ -144,7 +146,7 @@ const MultiVisual = (props) => {
     console.log("TO DO: restore canvas");
   };
 
-  const mainBookMilestones = Math.ceil(tokens.first / 300);
+  const mainBookMilestones = storedMainBookMilestones ?? Math.ceil(tokens.first / 300);
 
   // build variables needed to create axes:
   /*const maxChMatch = msData.reduce(
@@ -206,6 +208,7 @@ const MultiVisual = (props) => {
                 mainBookMilestones={mainBookMilestones}
                 mainBookURI={mainBookURI}
                 versionCode={versionCode}
+                isUpload={isUpload}
                 bookStats={bookStats}
                 maxTotalChMatch={maxTotalChMatch}
                 msdata={msData}

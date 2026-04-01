@@ -321,6 +321,7 @@ export const setMultiVizData = (values) => {
   console.log("LOADING ONE TO MANY DATA");
   const {
     book1,
+    isUpload = false,
     msdataFile,
     statsFile,
     dataLoading,
@@ -341,10 +342,6 @@ export const setMultiVizData = (values) => {
 
       // Parse the CSV files and set the chart data:
       const parseCSVData = async (msdataFile, statsFile, book1) => {
-        // calculate the last milestone number in the main book:
-        let mainBookMilestones = Math.ceil(
-          book1.release_version.tok_length / 300
-        );
         let mainBookID = book1.version_code;
         let mainBookURI = book1.text.text_uri;
 
@@ -356,6 +353,11 @@ export const setMultiVizData = (values) => {
           dynamicTyping: true, // converts numeric fields to integers
           skipEmptyLines: true,
           complete: (result) => {
+            // derive the last milestone number from the ms1 column of the msdata CSV:
+            const mainBookMilestones = result.data.reduce(
+              (max, r) => (Number.isFinite(r.ms1) && r.ms1 > max ? r.ms1 : max),
+              0
+            );
             // parse stats csv file
             // (contains text reuse stats for book 1, arranged per book2):
             Papa.parse(statsFile, {
@@ -384,7 +386,9 @@ export const setMultiVizData = (values) => {
                 // pass the one-to-many data to the Context:
                 setChartData({
                   versionCode: book1?.version_code,
-                  tokens: { first: book1?.release_version?.tok_length },
+                  isUpload: isUpload,
+                  mainBookMilestones: mainBookMilestones,
+                  tokens: { first: book1?.release_version?.tok_length ?? mainBookMilestones * 300 },
                   msData: msData,
                   msStats: msStats,
                   msBooks: msBooks,

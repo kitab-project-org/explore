@@ -51,10 +51,10 @@ const buildPlaceholderMeta = (bookID) => {
   return {
     "id": 0,
     "version_code": bookID ? bookID : "NOT FOUND",
-    "version_uri": "NOT_FOUND",
+    "version_uri": bookID ? bookID : "NOT FOUND",
     "language": "undefined",
     "text": {
-        "text_uri": "NOT_FOUND",
+        "text_uri": bookID ? bookID : "NOT FOUND",
         "title_ar_prefered": "NOT_FOUND",
         "title_lat_prefered": "NOT_FOUND",
         "titles_ar": "NOT_FOUND",
@@ -371,8 +371,68 @@ const VisualisationPage = () => {
         }*/
       }, 1000);
 
-    } else {
-      console.log("UPLOADING ONE-TO-MANY DATA?");
+    } else if (upload.length === 2){
+      console.log("UPLOADING ONE-TO-MANY DATA");
+      //try {
+      console.log("trying...");
+      // ONE TO ALL VISUALISATION
+      setIsPairwiseViz(false);
+      setIsLoading(false);
+
+      // get the version code for book1:
+      let book1Code = null;
+      let msdataFile = null;
+      let statsFile = null;
+      console.log(upload);
+      if (upload[0].name.endsWith("_all.csv")){
+        book1Code = upload[0].name.replace("_all.csv", "");
+        msdataFile = upload[0];
+        statsFile = upload[1];
+      } else if (upload[1].name.endsWith("_all.csv")){
+        book1Code = upload[1].name.replace("_all.csv", "");
+        msdataFile = upload[1];
+        statsFile = upload[0];
+      }
+      const book_names = [book1Code, ];
+      const book1 = buildPlaceholderMeta(book1Code);
+      setMainVersionCode(book1Code);
+      console.log(book1);
+
+      // 
+      // const book1 = versionMeta.book1;
+
+      // setMainVersionCode(book1.version_code);
+
+      // // download msdata (from GitHub):
+      // const msdataFile = await getOneBookMsData(releaseCode, book_names[0]);
+      // // download stats (from GitHub):
+      // const statsFile = await getOneBookReuseStats(
+      //   releaseCode,
+      //   book_names[0]
+      // );
+
+      // set visualisation data
+      setMultiVizData({
+        book1,
+        isUpload: true,
+        msdataFile,
+        statsFile,
+        dataLoading,
+        setDataLoading,
+        setMetaData,
+        releaseCode,
+        getMetadataObject,
+        setChartData,
+        setIsError,
+        setIsFileUploaded,
+        setUrl,
+      });
+      // } catch (err) {
+      //   setDataLoading({ ...dataLoading, uploading: false });
+      //   setIsError(true);
+      //   setErrorType(["There was an error loading the data.", "Please check your URL and try again."]);
+      //   setIsLoading(false);
+      // }
       /*if (book_names[1].replace(".csv", "") == "all") {
         // load this data in the one-to-many visualisation: 
         book1 = bookMeta.book1;
@@ -397,6 +457,8 @@ const VisualisationPage = () => {
           setUrl,
         });
       }*/
+    } else {
+      console.log("Upload either one or two csv files, not "+upload.length)
     }
     
   };
