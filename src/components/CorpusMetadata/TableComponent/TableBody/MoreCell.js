@@ -1,6 +1,6 @@
 import { useContext } from "react";
 import { Checkbox, TableCell, Tooltip } from "@mui/material";
-import { Context } from "../../../../../App";
+import { Context } from "../../../../App";
 
 // download raw github file
 export function downloadGitHubRawFile(row) {
