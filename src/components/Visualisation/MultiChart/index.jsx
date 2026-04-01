@@ -246,6 +246,7 @@ const MultiVisual = (props) => {
             bookStats={bookStats}
             mainBookURI={mainBookURI}
             dateRange={dataDateRange}
+            isUpload={isUpload}
           />
         </>
         <div className={"vizTooltip"} sx={{ style: "opacity: 0" }} />

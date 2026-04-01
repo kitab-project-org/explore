@@ -7,6 +7,8 @@ import { Context } from "../../../App";
 
 const BottomBar = (props) => {
   const ref = useRef();
+  const isUploadRef = useRef(props.isUpload);
+  useEffect(() => { isUploadRef.current = props.isUpload; });
   const { tickFontSize, axisLabelFontSize, yTickWidth } = useContext(Context);
   let height = props.height - props.margin.top - props.margin.bottom;
   let width = props.width;
@@ -152,6 +154,7 @@ const BottomBar = (props) => {
             .style("fill", "#3FB8AF")
             .style("stroke", "#3FB8AF")
             // add tooltip:
+            .style("cursor", () => isUploadRef.current ? "default" : "pointer")
             .on("mouseover", function(event, d) {
                 // make the tooltip visible:
                 tooltipDiv.transition()
@@ -160,7 +163,11 @@ const BottomBar = (props) => {
                 // create the text for the tooltip:
                 let tooltipMsg = d.book;
                 tooltipMsg += "<br/>Total characters matched: " + d3.format(",")(d.ch_match);
-                tooltipMsg += "<br/>(Click bar to see pairwise visualisation)";
+                if (!isUploadRef.current) {
+                  tooltipMsg += "<br/>(Click bar to see pairwise visualisation)";
+                } else {
+                  tooltipMsg += "<br/>(Pairwise visualisation is not available for uploaded data)";
+                }
                 // position the tooltip so that it remains in sight:
                 const [x, y] = calculateTooltipPos(event, tooltipDiv, tooltipMsg, "multiVis");
                 tooltipDiv.html(tooltipMsg)
@@ -174,6 +181,7 @@ const BottomBar = (props) => {
                     .style("opacity", 0);
             })
             .on("click", function(event,d){
+                if (isUploadRef.current) return;
                 // show the book-to-book visualisation
                 // in a separate tab:
                 let currentUrl = window.location.href;
