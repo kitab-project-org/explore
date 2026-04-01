@@ -90,7 +90,7 @@ const TableBodyComponent = ({ classes }) => {
 
           <MoreCell classes={classes} row={row} />
           {row.manuscript !== null && (
-            <Tooltip title="Manuscript" placement="left" arrow>
+            <Tooltip title="Manuscript" placement="left" >
               <Box sx={{
                 position: "absolute",
                 right: 0,
