@@ -54,7 +54,7 @@ const TableHeader = ({ columns, classes }) => {
       return (
         <SortingComponent ascending={"tok_length"} descending={"-tok_length"} />
       );
-    } else if (column === "Book Title" || column === "Book Title / Shelfmark") {
+    /*} else if (column === "Book Title" || column === "Book Title / Shelfmark") {
       return (
         <SortingComponent
           ascending={"version__text__title_lat_prefered"}
@@ -67,7 +67,7 @@ const TableHeader = ({ columns, classes }) => {
           ascending={"version__text__author__author_lat_prefered"}
           descending={"-version__text__author__author_lat_prefered"}
         />
-      );
+      );*/
     } else if (column === "Text Reuse") {
       return (
         <SortingComponent
