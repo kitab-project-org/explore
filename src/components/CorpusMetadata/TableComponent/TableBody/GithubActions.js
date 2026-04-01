@@ -43,11 +43,11 @@ const GitHubActions = ({ versionURI }) => {
     <>
       <Tooltip title={openDropdown ? "" : "Click to see GitHub options"}>
         <IconButton
-          onClick={() => {
-            setOpenDropdown(true);
-          }}
+          onMouseEnter={() => setOpenDropdown(true)}
+          onMouseLeave={() => setOpenDropdown(false)}
           size={"small"}
           color={"neutral"}
+          sx={{ p: 0 }}
         >
           <GitHubIcon sx={{ fontSize: "18px" }} />
           {openDropdown ? (
@@ -88,21 +88,6 @@ const GitHubActions = ({ versionURI }) => {
           )}
         </IconButton>
       </Tooltip>
-      {openDropdown && (
-        <Box
-          sx={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100vh",
-            zIndex: "9999",
-          }}
-          onClick={() => {
-            setOpenDropdown(false);
-          }}
-        ></Box>
-      )}
     </>
   );
 };
