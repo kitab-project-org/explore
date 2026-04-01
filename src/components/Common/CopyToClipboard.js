@@ -16,7 +16,7 @@ const CopyToClipboard = ({ data }) => {
     }
   };
   return (
-    <Tooltip title="Copy to Clipboard">
+    <Tooltip title="Copy URI to Clipboard">
       <Box
         sx={{
           bgcolor: "none",

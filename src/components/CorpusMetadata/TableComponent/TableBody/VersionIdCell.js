@@ -1,7 +1,6 @@
 import {
   Box,
   Chip,
-  Divider,
   Stack,
   TableCell,
   Tooltip,
@@ -9,6 +8,7 @@ import {
 } from "@mui/material";
 import { useContext } from "react";
 import { downloadGitHubRawFile } from "./MoreCell";
+import GitHubActions from "./GithubActions";
 import { Context } from "../../../../App";
 import CopyToClipboard from "../../../Common/CopyToClipboard";
 
@@ -20,18 +20,13 @@ const VersionIdCell = ({ row, classes }) => {
     ? row.language.split(",").map(l => l.trim()).filter(Boolean)
     : [];
 
-  // get colors for annotation status
-  const getColored = () => {
-    if (row?.release_version?.annotation_status === "(not yet annotated)") {
-      return "conic-gradient(grey 360deg, #d1d5db 0deg)";
-    } else if (row?.release_version?.annotation_status === "inProgress") {
-      return "conic-gradient(#2863A5 90deg, #d1d5db 0deg)";
-    } else if (row?.release_version?.annotation_status === "completed") {
-      return "conic-gradient(#ea580c 180deg, #d1d5db 0deg)";
-    } else if (row?.release_version?.annotation_status === "mARkdown") {
-      return "conic-gradient(green 360deg, #d1d5db 0deg)";
-    }
+  const annotationIcons = {
+    "(not yet annotated)": { icon: "fa-regular fa-circle", color: "#d1d5db" },
+    inProgress:            { icon: "fa-solid fa-spinner",      color: "#ea580c" },
+    completed:             { icon: "fa-solid fa-circle",       color: "green" },
+    mARkdown:              { icon: "fa-solid fa-circle-check", color: "green" },
   };
+  const annotationIcon = annotationIcons[row?.release_version?.annotation_status];
 
   return (
     <TableCell
@@ -39,7 +34,7 @@ const VersionIdCell = ({ row, classes }) => {
       sx={{
         width: {
           xs: "100%",
-          md: "15%",
+          md: "18%",
         },
         border: "none",
         display: {
@@ -69,15 +64,14 @@ const VersionIdCell = ({ row, classes }) => {
           {row?.version_code}
         </Typography>
 
+        {/* Row 1: action icons */}
         <Box display="flex" flexWrap="wrap" alignItems="center" gap={1}>
           <Tooltip
             placement="top"
             title="Warning: This is not the best version of the book! Choose another version unless you really want this one."
           >
             <Box>
-              {row?.release_version?.analysis_priority === "pri" ? (
-                ""
-              ) : (
+              {row?.release_version?.analysis_priority !== "pri" && (
                 <i
                   className="fa-solid fa-triangle-exclamation"
                   style={{ color: "#eab308" }}
@@ -85,53 +79,44 @@ const VersionIdCell = ({ row, classes }) => {
               )}
             </Box>
           </Tooltip>
-          <Divider orientation="vertical" sx={{ height: "16px", alignSelf: "center" }} />
           <Tooltip placement="top" title={row?.release_version?.url}>
             <Box
               onClick={() => downloadGitHubRawFile(row)}
-              sx={{
-                color: "#94a3b8",
-                cursor: "pointer",
-              }}
+              sx={{ color: "#94a3b8", cursor: "pointer" }}
             >
               <Typography color={"#2863A5"}>
                 <i className="fa-solid fa-cloud-arrow-down"></i>
               </Typography>
             </Box>
           </Tooltip>
-          <Divider orientation="vertical" sx={{ height: "16px", alignSelf: "center" }} />
-          <Tooltip title={row?.release_version?.annotation_status}>
-            <Box
-              sx={{
-                borderRadius: "50px",
-                height: "16px",
-                width: "16px",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-              style={{
-                background: getColored(row?.release_version?.annotation_status),
-              }}
-            ></Box>
-          </Tooltip>
-          <Divider orientation="vertical" sx={{ height: "16px", alignSelf: "center" }} />
           <CopyToClipboard data={versionUri} />
+          <GitHubActions versionURI={row?.version_uri} />
+        </Box>
+
+        {/* Row 2: information icons */}
+        <Box display="flex" flexWrap="wrap" alignItems="center" gap={1}>
+          <Tooltip title={row?.release_version?.annotation_status}>
+            <Box display="flex" alignItems="center">
+              {annotationIcon && (
+                <i
+                  className={annotationIcon.icon}
+                  style={{ color: annotationIcon.color, fontSize: "16px" }}
+                />
+              )}
+            </Box>
+          </Tooltip>
           {languages.length > 0 && (
-            <>
-              <Divider orientation="vertical" sx={{ height: "16px", alignSelf: "center" }} />
-              <Box display="flex" gap={0.5}>
-                {languages.map(lang => (
-                  <Chip
-                    key={lang}
-                    label={lang}
-                    size="small"
-                    variant="outlined"
-                    sx={{ height: "20px", fontSize: "15px", borderRadius: "4px" }}
-                  />
-                ))}
-              </Box>
-            </>
+            <Box display="flex" gap={0.5} flexWrap="wrap">
+              {languages.map(lang => (
+                <Chip
+                  key={lang}
+                  label={lang}
+                  size="small"
+                  variant="outlined"
+                  sx={{ height: "20px", fontSize: "15px", borderRadius: "4px" }}
+                />
+              ))}
+            </Box>
           )}
         </Box>
       </Stack>

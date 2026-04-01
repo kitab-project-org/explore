@@ -7,7 +7,7 @@ import LocalOfferIcon from "@mui/icons-material/LocalOffer";
 import PestControlIcon from "@mui/icons-material/PestControl";
 import SyncAltIcon from "@mui/icons-material/SyncAlt";
 
-const GtihubActions = ({ versionURI }) => {
+const GitHubActions = ({ versionURI }) => {
   const [openDropdown, setOpenDropdown] = useState(false);
 
   // github action icons data
@@ -41,7 +41,7 @@ const GtihubActions = ({ versionURI }) => {
 
   return (
     <>
-      <Tooltip title="GitHub">
+      <Tooltip title={openDropdown ? "" : "Click to see GitHub options"}>
         <IconButton
           onClick={() => {
             setOpenDropdown(true);
@@ -49,18 +49,15 @@ const GtihubActions = ({ versionURI }) => {
           size={"small"}
           color={"neutral"}
         >
-          <GitHubIcon />
+          <GitHubIcon sx={{ fontSize: "18px" }} />
           {openDropdown ? (
             <Box
               sx={{
                 position: "absolute",
                 bgcolor: "white",
-                top: "100%",
-                left: "0px",
-                right: {
-                  xs: "0px",
-                  sm: "auto",
-                },
+                top: "50%",
+                right: "100%",
+                transform: "translateY(-50%)",
                 zIndex: "99999",
                 boxShadow: "0px 0px 5px 0px grey",
                 display: "flex",
@@ -110,4 +107,4 @@ const GtihubActions = ({ versionURI }) => {
   );
 };
 
-export default GtihubActions;
+export default GitHubActions;

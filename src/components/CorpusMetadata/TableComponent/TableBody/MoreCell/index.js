@@ -1,6 +1,5 @@
 import { useContext } from "react";
-import { ButtonGroup, Checkbox, TableCell, Tooltip, Typography } from "@mui/material";
-import GtihubActions from "./GithubActions";
+import { Checkbox, TableCell, Tooltip } from "@mui/material";
 import { Context } from "../../../../../App";
 
 // download raw github file
@@ -81,41 +80,26 @@ const MoreCell = ({ classes, row }) => {
       sx={{
         width: {
           xs: "100%",
-          md: "10%",
+          md: "4%",
         },
         border: "none",
         display: "flex",
         justifyContent: {
           xs: "space-between !important",
-          md: "flex-end !important",
+          md: "center !important",
         },
         alignItems: "center",
         boxSizing: "border-box",
       }}
     >
-      <ButtonGroup
-        sx={{ display: "flex", alignItems: "center" }}
-        variant="outlined"
-        aria-label="outlined button group"
-      >
-        <GtihubActions versionURI={row?.version_uri} />
-        <Tooltip title="Select rows to view text reuse data / download metadata">
-          <Checkbox
-            checked={isChecked(row)}
-            onChange={() => handleChecked(row)}
-          />
-        </Tooltip>
-      </ButtonGroup>
-      <Typography
-        sx={{
-          display: {
-            xs: "block",
-            md: "none",
-          },
-        }}
-      >
-        More
-      </Typography>
+      <Tooltip title="Select rows to view text reuse data / download metadata">
+        <Checkbox
+          size="small"
+          checked={isChecked(row)}
+          onChange={() => handleChecked(row)}
+          sx={{ p: 0 }}
+        />
+      </Tooltip>
     </TableCell>
   );
 };

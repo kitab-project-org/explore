@@ -28,7 +28,8 @@ const AuthorCell = ({ row, classes }) => {
       sx={{
         width: {
           xs: "100%",
-          md: "15%",
+          //md: "16%",
+          md: "18%",
         },
         border: "none",
         display: {
