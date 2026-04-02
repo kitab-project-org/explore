@@ -2,6 +2,7 @@ import { useContext } from "react";
 import { CSVLink } from "react-csv";
 import { CircularProgress, IconButton, Tooltip } from "@mui/material";
 import { Context } from "../../../App";
+import { getCorpusMetaDataTsvUrl } from "../../../services/CorpusMetaData";
 
 // Function to flatten data for export (ChatGPT suggestion)
 const flattenItem = (item) => ({
@@ -29,49 +30,87 @@ const flattenItem = (item) => ({
 });
 
 
-const DownloadData = ({ data, status }) => {
-  const { checkedBooks } = useContext(Context);
+const DownloadData = ({ status }) => {
+  const {
+    checkedBooks,
+    query,
+    searchField,
+    normalizedSearch,
+    annotationFilter,
+    sortingOrder,
+    analysisPriority,
+    releaseCode,
+    advanceSearch,
+    includeManuscripts,
+    activeLanguages,
+  } = useContext(Context);
 
-  // format metadata for download
-  const specificData = (checkedBooks.length !== 0 ? checkedBooks : data).map(flattenItem);
+  const hasSelection = checkedBooks.length > 0;
+  const selectedData = hasSelection ? checkedBooks.map(flattenItem) : [];
 
+  const handleApiDownload = () => {
+    const languageQuery = activeLanguages.length > 0 ? activeLanguages.join(",") : "";
+    const url = getCorpusMetaDataTsvUrl(
+      query,
+      searchField,
+      normalizedSearch,
+      annotationFilter,
+      sortingOrder,
+      analysisPriority,
+      releaseCode,
+      advanceSearch,
+      includeManuscripts,
+      languageQuery
+    );
+    console.log("TSV download URL:", url);
+    // Navigate directly to the URL; the server sets Content-Disposition: attachment
+    // so the browser downloads the file rather than displaying it.
+    const link = document.createElement("a");
+    link.href = url;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const isLoading = status === "loading";
+
+  const tooltipTitle = hasSelection
+    ? "Download selected metadata in tsv format"
+    : "Download all matching metadata in tsv format";
 
   return (
-    <Tooltip
-      title={
-        checkedBooks.length > 0
-          ? "Download selected metadata in tsv format"
-          : "Download metadata on this page in tsv format"
-      }
-      placement="top"
-    >
+    <Tooltip title={tooltipTitle} placement="top">
       <span>
-        {status === "loading" ? (
+        {isLoading ? (
           <IconButton size="large" variant="text" sx={{ fontSize: "15px" }}>
             <CircularProgress size={"15px"} sx={{ color: "green" }} />
           </IconButton>
+        ) : hasSelection ? (
+          <CSVLink
+            data={selectedData}
+            enclosingCharacter={""}
+            separator={"\t"}
+            filename="kitabapps_data.tsv"
+            style={{
+              textDecoration: "none",
+              display: "flex",
+              alignItems: "center",
+              color: "#6b7280",
+            }}
+          >
+            <IconButton size="large" variant="text" sx={{ fontSize: "15px", padding: "5px" }}>
+              <i className="fa-solid fa-table-list" style={{ color: "#2863A5" }}></i>
+            </IconButton>
+          </CSVLink>
         ) : (
-          specificData.length !== 0 && (
-            <CSVLink
-              data={specificData}
-              enclosingCharacter={''}
-              separator={"\t"}
-              filename="kitabapps_data.tsv"
-              style={{
-                textDecoration: "none",
-                display: "flex",
-                alignItems: "center",
-                color: "#6b7280",
-              }}
-            >
-              <IconButton size="large" variant="text" sx={{ fontSize: "15px", padding: "5px" }}>
-                <i
-                  className="fa-solid fa-table-list"
-                  style={{ color: "#2863A5" }}
-                ></i>
-              </IconButton>
-            </CSVLink>
-          )
+          <IconButton
+            size="large"
+            variant="text"
+            sx={{ fontSize: "15px", padding: "5px" }}
+            onClick={handleApiDownload}
+          >
+            <i className="fa-solid fa-table-list" style={{ color: "#2863A5" }}></i>
+          </IconButton>
         )}
       </span>
     </Tooltip>

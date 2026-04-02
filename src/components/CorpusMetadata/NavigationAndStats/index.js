@@ -386,7 +386,7 @@ const NavigationAndStats = () => {
             </>
           )}
           <>
-          <Box>{rows && <DownloadData data={rows} status={status} />}</Box>
+          <Box><DownloadData status={status} /></Box>
 
           {checkedBooks.length === 0 ? (
             ""
