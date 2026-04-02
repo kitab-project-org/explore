@@ -7,10 +7,49 @@ import {
   Typography,
 } from "@mui/material";
 import { useContext } from "react";
-import { downloadGitHubRawFile } from "./MoreCell";
 import GitHubActions from "./GithubActions";
 import { Context } from "../../../../App";
 import CopyToClipboard from "../../../Common/CopyToClipboard";
+
+function downloadGitHubRawFile(row) {
+  /*let outputFilename = `${row?.version_uri}.txt`; */ 
+
+  fetch(row?.release_version?.url)
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error("Failed to download file.");
+      }
+      return response.blob();
+    })
+    .then((blob) => {
+      // Create a temporary anchor element
+      const anchor = document.createElement("a");
+      anchor.style.display = "none";
+      document.body.appendChild(anchor);
+
+      // Create a URL object from the blob
+      const url = window.URL.createObjectURL(blob);
+
+      // Set the anchor's href to the URL
+      anchor.href = url;
+
+      // Set the anchor's download attribute and filename
+      const outputFilename = new URL(`${row?.release_version?.ur}`).pathname.split('/').pop();
+      anchor.download = outputFilename;
+
+      // Trigger a click event on the anchor element to start the download
+      anchor.click();
+
+      // Clean up by revoking the URL object
+      window.URL.revokeObjectURL(url);
+
+      // Remove the temporary anchor element from the document
+      document.body.removeChild(anchor);
+    })
+    .catch((error) => {
+      console.error("Error:", error.message);
+    });
+}
 
 const VersionIdCell = ({ row, classes }) => {
   const { toggleSidePanel, allReleasesInsights } = useContext(Context);
