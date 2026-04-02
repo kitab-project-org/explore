@@ -1,9 +1,9 @@
 import { useContext, useEffect } from "react";
-import { Box, Button, Typography, Tooltip } from "@mui/material";
+import { Alert, Box, Button, Typography, Tooltip } from "@mui/material";
 import * as d3 from "d3";
 import IncludeMetaDropdown from "./IncludeMetaDropdown";
 import OutputDimensions from "./OutputDimensions";
-import { downloadPNG, downloadSVG } from "../../../../utility/Helper";
+import { downloadPNG, downloadSVG, isChrome } from "../../../../utility/Helper";
 import { Context } from "../../../../App";
 
 
@@ -17,6 +17,22 @@ const DownloadPanel = ( {isPairwiseViz, downloadFileName} ) => {
   } = useContext(Context);
   
   const svgSelector = isPairwiseViz ? 'svgChart' : 'scatterChart';
+
+  // Estimate output pixel area to detect potential Chrome data-URI size limit issues.
+  // Chrome (and other Chromium-based browsers) truncates data URIs beyond ~5MB,
+  // producing a corrupt PNG. Threshold: 130 million pixels (set experimentally).
+  const CHROME_PIXEL_THRESHOLD = 130_000_000;
+  const showChromeWarning = (() => {
+    if (!outputImageWidth || !isChrome()) return false;
+    const svgEl = document.getElementById(svgSelector);
+    if (!svgEl) return false;
+    const svgPixelWidth = svgEl.clientWidth || 1;
+    const svgPixelHeight = svgEl.clientHeight || 1;
+    const targetPixelWidth = (outputImageWidth / 25.4) * (dpi || 300);
+    const scale = targetPixelWidth / svgPixelWidth / (window.devicePixelRatio || 1);
+    const targetPixelHeight = svgPixelHeight * scale;
+    return targetPixelWidth * targetPixelHeight > CHROME_PIXEL_THRESHOLD;
+  })();
 
   const handleIncludeUrlChange = (e) => {
     setIncludeURL((prev) => !prev);
@@ -33,6 +49,12 @@ const DownloadPanel = ( {isPairwiseViz, downloadFileName} ) => {
 
   return (
     <>
+      {showChromeWarning && (
+        <Alert severity="warning" sx={{ mb: 1 }}>
+          The requested PNG is very large. Google Chrome may produce a corrupt file at this size.
+          Try reducing the width or DPI, or download using Firefox instead.
+        </Alert>
+      )}
       <Box
         display={"flex"}
         justifyContent={"right"}

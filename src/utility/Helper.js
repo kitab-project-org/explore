@@ -5,6 +5,13 @@ import { config } from "../config";
 
 const { GITHUB_BASE_URL, GITHUB_BASE_RAW_URL } = config;
 
+// Returns true for Chrome and other Chromium-based browsers (excludes Firefox, Safari).
+// These browsers have a ~5MB limit on data URIs used for downloads, which can corrupt
+// very large PNG exports.
+const isChrome = () =>
+  typeof navigator !== "undefined" &&
+  /Chrome/.test(navigator.userAgent) &&
+  /Google Inc/.test(navigator.vendor);
 
 const downloadSVG = (svgId, downloadFileName) => {
   //const downloadFileName = `${metaData?.book1?.versionCode}_${metaData?.book2?.versionCode}.png`;
@@ -633,6 +640,7 @@ function getMetaLabel(d, metaType) {
 
 
 export {
+  isChrome,
   downloadSVG,
   downloadPNG,
   getHighestValueInArrayOfObjects,
