@@ -76,7 +76,8 @@ function App() {
   const [searchField, setSearchField] = useState("");
   const [normalizedSearch, setNormalizedSearch] = useState(true);
   const [sortingOrder, setOrderingOrder] = useState("");
-  const [analysisPriority, setAnalysisPriority] = useState(false);
+  const [showPrimary, setShowPrimary] = useState(true);
+  const [showSecondary, setShowSecondary] = useState(false);
   const [annotationFilter, setAnnotationFilter] = useState({
     completed: false,
     inProgress: false,
@@ -238,7 +239,8 @@ function App() {
   const [allReleasesInsights, setAllReleasesInsights] = useState([]);
   // whether to include manuscript versions in the metadata table;
   // only relevant for releases where has_manuscripts is true (2025.1.9+)
-  const [includeManuscripts, setIncludeManuscripts] = useState(true);
+  // text types shown in the metadata table; empty array means all types active
+  const [activeTextTypes, setActiveTextTypes] = useState([]);
   // languages currently shown in the metadata table; empty array means all
   // languages are active and no language param is sent to the API
   const [activeLanguages, setActiveLanguages] = useState([]);
@@ -280,8 +282,10 @@ function App() {
         setNormalizedSearch,
         sortingOrder,
         setOrderingOrder,
-        analysisPriority,
-        setAnalysisPriority,
+        showPrimary,
+        setShowPrimary,
+        showSecondary,
+        setShowSecondary,
         annotationFilter,
         setAnnotationFilter,
         totalRecords,
@@ -407,8 +411,8 @@ function App() {
         advanceSearch,
         setAdvanceSearch,
         allReleasesInsights,
-        includeManuscripts,
-        setIncludeManuscripts,
+        activeTextTypes,
+        setActiveTextTypes,
         activeLanguages,
         setActiveLanguages,
       }}
