@@ -53,6 +53,7 @@ const theme = createTheme({
   },
   typography: {
     fontFamily: [
+      "Gentium Plus",
       "Amiri",
       "Roboto",
       '"Helvetica Neue"',
