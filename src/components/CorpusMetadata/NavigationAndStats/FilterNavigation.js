@@ -78,9 +78,16 @@ const FilterNavigation = ({ showFilters }) => {
     }
   };
 
+  const hasChips =
+    !showSecondary ||
+    !showPrimary ||
+    activeTextTypes.length > 0 ||
+    activeLanguages.length > 0 ||
+    annotationStatus.some(item => item);
+
   return (
     <Box
-      display={showFilters ? "none" : "flex"}
+      display={showFilters || !hasChips ? "none" : "flex"}
       alignItems={"center"}
       flexWrap={"wrap"}
       mt={3}
