@@ -1,4 +1,7 @@
 @import url("https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&display=swap");
+/*Use Gentium Plus, which has no Arabic glyps, for non-Arabic display*/
+@import url("https://fonts.googleapis.com/css2?family=Gentium+Plus:ital,wght@0,400;0,700;1,400;1,700&display=swap");
+
 
 * {
   scroll-behavior: smooth;
@@ -7,7 +10,7 @@
 
 body {
   margin: 0;
-  font-family: Amiri, Roboto, "Helvetica Neue", Arial, sans-serif !important;
+  font-family: "Gentium Plus", Amiri, Roboto, "Helvetica Neue", Arial, sans-serif !important;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   color: #333;
