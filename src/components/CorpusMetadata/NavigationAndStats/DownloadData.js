@@ -43,10 +43,11 @@ const DownloadData = ({ status }) => {
     normalizedSearch,
     annotationFilter,
     sortingOrder,
-    analysisPriority,
+    showPrimary,
+    showSecondary,
     releaseCode,
     advanceSearch,
-    includeManuscripts,
+    activeTextTypes,
     activeLanguages,
   } = useContext(Context);
 
@@ -61,10 +62,11 @@ const DownloadData = ({ status }) => {
       normalizedSearch,
       annotationFilter,
       sortingOrder,
-      analysisPriority,
+      showPrimary,
+      showSecondary,
       releaseCode,
       advanceSearch,
-      includeManuscripts,
+      activeTextTypes,
       languageQuery
     );
     console.log("TSV download URL:", url);

@@ -10,7 +10,6 @@ import {
   Typography,
 } from "@mui/material";
 import FilterAltOffIcon from "@mui/icons-material/FilterAltOff";
-import FilterClose from "@mui/icons-material/FilterListOff";
 import FilterOpen from "@mui/icons-material/FilterList";
 
 import AdvanceSearch from "./AdvanceSearch";
@@ -172,20 +171,18 @@ const SearchFilters = ({ handleResetFilters, getQuery }) => {
             right: "0px",
           }}
         >
-          <>
-            <Tooltip title="Toggle Filter Sidebar">
-              <IconButton
-                onClick={handleFilterPanel}
-                sx={{
-                  display: "flex",
-                }}
-              >
-                {showFilters ? <FilterClose /> : <FilterOpen />}
+          {!showFilters && (
+            <Tooltip title="Show Filter Sidebar">
+              <IconButton onClick={handleFilterPanel} sx={{ display: "flex" }}>
+                <FilterOpen />
               </IconButton>
             </Tooltip>
-          </>
+          )}
 
-          {searchParams.size ? (
+          {!showFilters && (searchParams.size > 3 ||
+            (searchParams.get("version") && searchParams.get("version") !== "pri") ||
+            (searchParams.get("text_type") && searchParams.get("text_type") !== "all") ||
+            (searchParams.get("language") && searchParams.get("language") !== "all")) ? (
             <Tooltip title="Clear Filters">
               <IconButton onClick={handleResetFilters}>
                 <FilterAltOffIcon />

@@ -1,10 +1,11 @@
-import { useContext, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useContext } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Box,
   Drawer,
   FormControl,
   FormLabel,
+  IconButton,
   List,
   ListItem,
   ListSubheader,
@@ -13,17 +14,20 @@ import {
   useMediaQuery,
   useTheme,
 } from "@mui/material";
+import FilterAltOffIcon from "@mui/icons-material/FilterAltOff";
+import CloseIcon from "@mui/icons-material/Close";
 import MetaFilters from "./MetaFilters";
 import { Context } from "../../../App";
-import { cleanSearchPagination } from "../../../utility/Helper"
+import { cleanSearchPagination } from "../../../utility/Helper";
 
 
 
-const FilterSidebar = () => {
+const FilterSidebar = ({ handleResetFilters }) => {
   const {
     showFilters, setFilterPanel,
-    analysisPriority, setAnalysisPriority,
-    includeManuscripts, setIncludeManuscripts,
+    showPrimary, setShowPrimary,
+    showSecondary, setShowSecondary,
+    activeTextTypes, setActiveTextTypes,
     activeLanguages, setActiveLanguages,
     allReleasesInsights,
     releaseCode,
@@ -31,9 +35,17 @@ const FilterSidebar = () => {
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+
+  // Build a raw query string without percent-encoding commas in values, then navigate to it.
+  // setSearchParams goes through URLSearchParams which encodes commas as %2C.
+  const navigateRaw = (params) => {
+    const qs = Object.entries(params).map(([k, v]) => `${encodeURIComponent(k)}=${v}`).join("&");
+    navigate({ search: `?${qs}` });
+  };
 
   const releaseInsights = allReleasesInsights.find(r => r.release_code === releaseCode);
-  // true when the selected release has manuscript versions (2025.1.9+)
   const hasManuscripts = releaseInsights?.has_manuscripts ?? false;
   // dict of language codes → labels present in the current release
   const releaseLanguages = releaseInsights?.languages ?? {};
@@ -44,43 +56,66 @@ const FilterSidebar = () => {
     {}
   );
 
-  const [searchParams, setSearchParams] = useSearchParams();
-
-  // toggler for primary-secondary metadata
-  const handlePrimaryTextToggle = () => {
-    setAnalysisPriority(!analysisPriority);
-    // remove the page parameter from the query string
+  // --- URL param helpers ---
+  const setVersionParam = (primary, secondary) => {
     const params = cleanSearchPagination(searchParams);
-    if (!analysisPriority === true) {
-      setSearchParams({ ...params, version: "all" });
-    } else {
-      setSearchParams({ ...params, version: "pri" });
-    }
+    if (primary && secondary) setSearchParams({ ...params, version: 'all' });
+    else if (!primary && secondary) setSearchParams({ ...params, version: 'sec' });
+    else if (!primary && !secondary) setSearchParams({ ...params, version: 'none' });
+    else setSearchParams({ ...params, version: 'pri' });
   };
 
-  useEffect(() => {
-    if (!analysisPriority) {
-      const params = Object.fromEntries([...searchParams]);
-      setSearchParams({ ...params, version: "pri" });
-    } else {
-      if (searchParams.get("version") === "pri") {
-        setAnalysisPriority(false);
-      } else {
-        setAnalysisPriority(true);
-      }
-    }
-  }, [searchParams, setSearchParams, analysisPriority, setAnalysisPriority]);
+  const setTextTypeParam = (newTypes) => {
+    const params = cleanSearchPagination(searchParams);
+    navigateRaw({ ...params, text_type: newTypes.length === 0 ? 'all' : newTypes.join(',') });
+  };
 
-  // toggle a single language code on/off; when all are active (activeLanguages=[])
-  // and one is toggled off, populate the list with all codes except that one
+  const setLanguageParam = (newLangs) => {
+    const params = cleanSearchPagination(searchParams);
+    navigateRaw({ ...params, language: newLangs.length === 0 ? 'all' : newLangs.join(',') });
+  };
+
+  // --- Toggle handlers ---
+  const handleTextTypeToggle = (type) => {
+    const newTypes = activeTextTypes.includes(type)
+      ? activeTextTypes.filter(t => t !== type)
+      : [...activeTextTypes, type];
+    setActiveTextTypes(newTypes);
+    setTextTypeParam(newTypes);
+  };
+
+  // toggle a single language code on/off
   const handleLanguageToggle = (code) => {
-    setActiveLanguages(prev =>
-      prev.includes(code) ? prev.filter(l => l !== code) : [...prev, code]
-    );
+    const newLangs = activeLanguages.includes(code)
+      ? activeLanguages.filter(l => l !== code)
+      : [...activeLanguages, code];
+    setActiveLanguages(newLangs);
+    setLanguageParam(newLangs);
   };
 
   const content = (
-    <List subheader={<ListSubheader>Filters</ListSubheader>}>
+    <List subheader={
+      <ListSubheader sx={{ fontSize: "1rem", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "space-between", pr: 0 }}>
+        Filters
+        <Box display="flex" alignItems="center">
+          {(searchParams.size > 3 ||
+            (searchParams.get("version") && searchParams.get("version") !== "pri") ||
+            (searchParams.get("text_type") && searchParams.get("text_type") !== "all") ||
+            (searchParams.get("language") && searchParams.get("language") !== "all")) && (
+            <Tooltip title="Clear filters">
+              <IconButton size="small" onClick={handleResetFilters}>
+                <FilterAltOffIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
+          <Tooltip title="Close filters">
+            <IconButton size="small" onClick={() => setFilterPanel(false)}>
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        </Box>
+      </ListSubheader>
+    }>
       <ListItem sx={{ px: 1 }}>
         <FormControl component="fieldset" variant="standard" fullWidth>
           <FormLabel
@@ -93,53 +128,54 @@ const FilterSidebar = () => {
             Display text versions:
           </FormLabel>
           <Box display={"flex"} flexDirection={"column"} gap={1} ml={1}>
-            <Box
-              display={"flex"}
-              alignItems={"center"}
-              justifyContent={"space-between"}
-            >
-              <FormLabel
-                sx={{
-                  color: "rgba(0, 0, 0, 0.6) !important",
-                }}
-              >
-                Include Secondary Versions
-              </FormLabel>
-              <Switch
-                size="small"
-                onChange={() => handlePrimaryTextToggle()}
-                checked={analysisPriority}
-              />
-            </Box>
-
-            {/* Greyed out for releases that do not contain manuscript versions */}
-            <Tooltip
-              title={!hasManuscripts ? "This release does not contain manuscripts" : ""}
-              placement="right"
-              arrow
-            >
-              <Box
-                display={"flex"}
-                alignItems={"center"}
-                justifyContent={"space-between"}
-              >
-                <FormLabel
-                  sx={{
-                    color: hasManuscripts
-                      ? "rgba(0, 0, 0, 0.6) !important"
-                      : "rgba(0, 0, 0, 0.3) !important",
-                  }}
-                >
-                  Include Manuscripts
-                </FormLabel>
-                <Switch
-                  size="small"
-                  onChange={() => setIncludeManuscripts(!includeManuscripts)}
-                  checked={includeManuscripts}
-                  disabled={!hasManuscripts}
-                />
+            {[
+              { label: "Primary",   checked: showPrimary,   onChange: () => { const n = !showPrimary;   setShowPrimary(n);   setVersionParam(n, showSecondary); } },
+              { label: "Secondary", checked: showSecondary, onChange: () => { const n = !showSecondary; setShowSecondary(n); setVersionParam(showPrimary, n); } },
+            ].map(({ label, checked, onChange }) => (
+              <Box key={label} display={"flex"} alignItems={"center"} justifyContent={"space-between"}>
+                <FormLabel sx={{ color: "rgba(0, 0, 0, 0.6) !important" }}>{label}</FormLabel>
+                <Switch size="small" checked={checked} onChange={onChange} />
               </Box>
-            </Tooltip>
+            ))}
+          </Box>
+
+          <FormLabel
+            sx={{
+              py: "10px",
+              fontWeight: "600",
+              color: "rgba(0, 0, 0, 0.6) !important",
+            }}
+          >
+            Texts by type:
+          </FormLabel>
+          <Box display={"flex"} flexDirection={"column"} gap={1} ml={1}>
+            {[
+              { key: null,           label: "All" },
+              { key: "manuscripts",  label: "Manuscripts",     disabled: !hasManuscripts, tooltip: !hasManuscripts ? "This release does not contain manuscripts" : "" },
+              { key: "ocr",          label: "Uncorrected OCR", disabled: false, tooltip: "" },
+              { key: "other",        label: "Other",           disabled: false, tooltip: "" },
+            ].map(({ key, label, disabled, tooltip }) => (
+              <Tooltip key={label} title={tooltip} placement="right" arrow>
+                <Box display={"flex"} alignItems={"center"} justifyContent={"space-between"}>
+                  <FormLabel sx={{ color: disabled ? "rgba(0, 0, 0, 0.3) !important" : "rgba(0, 0, 0, 0.6) !important" }}>
+                    {label}
+                  </FormLabel>
+                  <Switch
+                    size="small"
+                    checked={key === null ? activeTextTypes.length === 0 : activeTextTypes.includes(key)}
+                    onChange={() => {
+                      if (key === null) {
+                        if (activeTextTypes.length === 0) { setActiveTextTypes(['other']); setTextTypeParam(['other']); }
+                        else { setActiveTextTypes([]); setTextTypeParam([]); }
+                      } else {
+                        handleTextTypeToggle(key);
+                      }
+                    }}
+                    disabled={disabled}
+                  />
+                </Box>
+              </Tooltip>
+            ))}
           </Box>
 
           {/* One toggle per language known across all releases; greyed out
@@ -156,7 +192,7 @@ const FilterSidebar = () => {
                 Languages:
               </FormLabel>
               <Box display={"flex"} flexDirection={"column"} gap={1} ml={1}>
-                {/* Master toggle: resets to all languages when clicked */}
+                {/* Master toggle: selects "ara" only when already on; resets to all otherwise */}
                 <Box display={"flex"} alignItems={"center"} justifyContent={"space-between"}>
                   <FormLabel sx={{ color: "rgba(0, 0, 0, 0.6) !important" }}>
                     All languages
@@ -164,7 +200,10 @@ const FilterSidebar = () => {
                   <Switch
                     size="small"
                     checked={activeLanguages.length === 0}
-                    onChange={() => setActiveLanguages([])}
+                    onChange={() => {
+                      if (activeLanguages.length === 0) { setActiveLanguages(['ara']); setLanguageParam(['ara']); }
+                      else { setActiveLanguages([]); setLanguageParam([]); }
+                    }}
                   />
                 </Box>
                 {Object.entries(allLanguages).map(([code, label]) => {

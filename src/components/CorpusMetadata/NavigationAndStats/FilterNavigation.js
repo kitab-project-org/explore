@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Box, Button, Typography, Tooltip } from "@mui/material";
 import { Context } from "../../../App";
 import { cleanSearchPagination } from "../../../utility/Helper"
@@ -7,14 +7,13 @@ import { cleanSearchPagination } from "../../../utility/Helper"
 
 const FilterNavigation = ({ showFilters }) => {
   const {
-    analysisPriority, setAnalysisPriority,
-    includeManuscripts, setIncludeManuscripts,
+    showPrimary, setShowPrimary,
+    showSecondary, setShowSecondary,
+    activeTextTypes, setActiveTextTypes,
     activeLanguages, setActiveLanguages,
-    allReleasesInsights, releaseCode,
+    allReleasesInsights,
   } = useContext(Context);
 
-  const releaseInsights = allReleasesInsights.find(r => r.release_code === releaseCode);
-  const hasManuscripts = releaseInsights?.has_manuscripts ?? false;
   // union of all language codes → labels across every release, for chip labels
   const allLanguages = allReleasesInsights.reduce(
     (acc, r) => ({ ...acc, ...(r.languages ?? {}) }),
@@ -24,25 +23,19 @@ const FilterNavigation = ({ showFilters }) => {
   const handleLanguageChipDelete = (code) => {
     const remaining = activeLanguages.filter(l => l !== code);
     setActiveLanguages(remaining);
+    const params = cleanSearchPagination(searchParams);
+    navigateRaw({ ...params, language: remaining.length === 0 ? 'all' : remaining.join(',') });
   };
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const navigateRaw = (params) => {
+    const qs = Object.entries(params).map(([k, v]) => `${encodeURIComponent(k)}=${v}`).join("&");
+    navigate({ search: `?${qs}` });
+  };
   const [annotationStatus, setAnnotationStatus] = useState([]);
 
   // reset search params from url
   const handleDeleteSearchParams = (value, field) => {
-    if (value === "version") {
-      if (searchParams.get("version") === "pri") {
-        setAnalysisPriority(true);
-        // remove the page parameter from the query string
-        const params = cleanSearchPagination(searchParams);
-        setSearchParams({ ...params, version: "all" });
-      } else {
-        setAnalysisPriority(false);
-        // remove the page parameter from the query string
-        const params = cleanSearchPagination(searchParams);
-        setSearchParams({ ...params, version: "pri" });
-      }
-    }
     if (field === "annotationStatus") {
       let getData = "";
       const filterAnnotationStatus = annotationStatus.filter(
@@ -111,82 +104,75 @@ const FilterNavigation = ({ showFilters }) => {
       >
         Filters
       </Typography>
-      <Tooltip
-        title={
-          analysisPriority
-            ? "All text versions displayed."
-            : "Only one version per text displayed"
-        }
-      >
-        <Button
-          onClick={() => handleDeleteSearchParams("version")}
-          sx={{
-            bgcolor: "#e5e7eb",
-            px: "18px",
-            borderRadius: "50px",
-            py: "5px",
-            mr: "10px",
-            mb: {
-              xs: "10px",
-              sn: "0px",
-            },
+      {!showSecondary && (
+        <Tooltip title="Click to include secondary texts.">
+          <Button onClick={() => {
+            setShowSecondary(true);
+            const params = cleanSearchPagination(searchParams);
+            setSearchParams({ ...params, version: showPrimary ? 'all' : 'sec' });
           }}
-        >
-          <Typography
-            variant="body2"
-            sx={{
-              textTransform: "capitalize",
-              color: "#333",
-            }}
-          >
-            {analysisPriority ? "All Versions" : "Primary"}{" "}
-            <i
-              className="fa-solid fa-xmark"
-              style={{
-                fontSize: "12px",
-              }}
-            ></i>
-          </Typography>
-        </Button>
-      </Tooltip>
-      {hasManuscripts && (
-        <Tooltip
-          title={
-            includeManuscripts
-              ? "Manuscripts are included. Click to exclude."
-              : "Manuscripts are excluded. Click to include."
-          }
-        >
-          <Button
-            onClick={() => setIncludeManuscripts(!includeManuscripts)}
-            sx={{
-              bgcolor: "#e5e7eb",
-              px: "18px",
-              borderRadius: "50px",
-              py: "5px",
-              mr: "10px",
-              mb: {
-                xs: "10px",
-                sn: "0px",
-              },
-            }}
-          >
-            <Typography
-              variant="body2"
-              sx={{
-                textTransform: "capitalize",
-                color: "#333",
-              }}
-            >
-              {includeManuscripts ? "Manuscripts included" : "Manuscripts excluded"}{" "}
-              <i
-                className="fa-solid fa-xmark"
-                style={{ fontSize: "12px" }}
-              ></i>
+            sx={{ bgcolor: "#e5e7eb", px: "18px", borderRadius: "50px", py: "5px", mr: "10px", mb: { xs: "10px", sn: "0px" } }}>
+            <Typography variant="body2" sx={{ textTransform: "none", color: "#333" }}>
+              Secondary texts excluded <i className="fa-solid fa-xmark" style={{ fontSize: "12px" }}></i>
             </Typography>
           </Button>
         </Tooltip>
       )}
+      {!showPrimary && (
+        <Tooltip title="Click to include primary texts.">
+          <Button onClick={() => {
+            setShowPrimary(true);
+            const params = cleanSearchPagination(searchParams);
+            setSearchParams({ ...params, version: showSecondary ? 'all' : 'pri' });
+          }}
+            sx={{ bgcolor: "#e5e7eb", px: "18px", borderRadius: "50px", py: "5px", mr: "10px", mb: { xs: "10px", sn: "0px" } }}>
+            <Typography variant="body2" sx={{ textTransform: "none", color: "#333" }}>
+              Primary texts excluded <i className="fa-solid fa-xmark" style={{ fontSize: "12px" }}></i>
+            </Typography>
+          </Button>
+        </Tooltip>
+      )}
+      {(() => {
+        const manuscriptsOnly = activeTextTypes.length === 1 && activeTextTypes.includes('manuscripts');
+        const ocrOnly = activeTextTypes.length === 1 && activeTextTypes.includes('ocr');
+        const chips = [];
+        if (manuscriptsOnly) {
+          chips.push({ key: 'manuscripts-only', label: 'Manuscripts only', onClick: () => {
+            setActiveTextTypes([]);
+            setSearchParams({ ...cleanSearchPagination(searchParams), text_type: 'all' });
+          }});
+        }
+        if (ocrOnly) {
+          chips.push({ key: 'ocr-only', label: 'Uncorrected OCR only', onClick: () => {
+            setActiveTextTypes([]);
+            setSearchParams({ ...cleanSearchPagination(searchParams), text_type: 'all' });
+          }});
+        }
+        if (activeTextTypes.length > 0 && !activeTextTypes.includes('manuscripts') && !ocrOnly) {
+          chips.push({ key: 'manuscripts-excl', label: 'Manuscripts excluded', onClick: () => {
+            const newTypes = [...activeTextTypes, 'manuscripts'];
+            setActiveTextTypes(newTypes);
+            navigateRaw({ ...cleanSearchPagination(searchParams), text_type: newTypes.join(',') });
+          }});
+        }
+        if (activeTextTypes.length > 0 && !activeTextTypes.includes('ocr') && !manuscriptsOnly) {
+          chips.push({ key: 'ocr-excl', label: 'Uncorrected OCR excluded', onClick: () => {
+            const newTypes = [...activeTextTypes, 'ocr'];
+            setActiveTextTypes(newTypes);
+            navigateRaw({ ...cleanSearchPagination(searchParams), text_type: newTypes.join(',') });
+          }});
+        }
+        return chips.map(({ key, label, onClick }) => (
+          <Tooltip key={key} title="Click to remove this filter.">
+            <Button onClick={onClick}
+              sx={{ bgcolor: "#e5e7eb", px: "18px", borderRadius: "50px", py: "5px", mr: "10px", mb: { xs: "10px", sn: "0px" } }}>
+              <Typography variant="body2" sx={{ textTransform: "none", color: "#333" }}>
+                {label} <i className="fa-solid fa-xmark" style={{ fontSize: "12px" }}></i>
+              </Typography>
+            </Button>
+          </Tooltip>
+        ));
+      })()}
       {activeLanguages.length > 0 &&
         activeLanguages.map(code => (
           <Tooltip key={code} title={allLanguages[code] ?? code} arrow>

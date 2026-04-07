@@ -64,8 +64,10 @@ const MetadataTable = ({ isHome }) => {
     setNormalizedSearch,
     sortingOrder,
     setOrderingOrder,
-    analysisPriority,
-    setAnalysisPriority,
+    showPrimary,
+    setShowPrimary,
+    showSecondary,
+    setShowSecondary,
     annotationFilter,
     setAnnotationFilter,
     totalRecords,
@@ -74,8 +76,8 @@ const MetadataTable = ({ isHome }) => {
     setCheckedNotification,
     advanceSearch,
     setAdvanceSearch,
-    includeManuscripts,
-    setIncludeManuscripts,
+    activeTextTypes,
+    setActiveTextTypes,
     activeLanguages,
     setActiveLanguages,
   } = useContext(Context);
@@ -122,7 +124,8 @@ const MetadataTable = ({ isHome }) => {
     setQuery("");
     setOrderingOrder("");
     setOrderingOrder("");
-    setAnalysisPriority(true);
+    setShowPrimary(true);
+    setShowSecondary(false);
     setPage(1);
     setNormalizedSearch(true);
     setRowsPerPage(10);
@@ -132,9 +135,9 @@ const MetadataTable = ({ isHome }) => {
       mARkdown: false,
       notYetAnnotated: false,
     });
-    setIncludeManuscripts(true);
+    setActiveTextTypes([]);
     setActiveLanguages([]);
-    setSearchParams({ version: "all" });
+    setSearchParams({ version: 'pri', text_type: 'all', language: 'all' });
     setAdvanceSearch({
       // max_char_count: "",
       // min_char_count: "",
@@ -153,6 +156,32 @@ const MetadataTable = ({ isHome }) => {
       setQuery(searchParams.get("search"));
     }
   }, [searchParams, setQuery]);
+
+  const updateVersion = useCallback(() => {
+    const v = searchParams.get("version");
+    if (v === "all") { setShowPrimary(true); setShowSecondary(true); }
+    else if (v === "sec") { setShowPrimary(false); setShowSecondary(true); }
+    else if (v === "none") { setShowPrimary(false); setShowSecondary(false); }
+    else { setShowPrimary(true); setShowSecondary(false); } // "pri" or missing
+  }, [searchParams, setShowPrimary, setShowSecondary]);
+
+  useEffect(() => { updateVersion(); }, [updateVersion]);
+
+  const updateTextTypes = useCallback(() => {
+    const tt = searchParams.get("text_type");
+    if (!tt || tt === "all") { setActiveTextTypes([]); }
+    else { setActiveTextTypes(tt.split(",")); }
+  }, [searchParams, setActiveTextTypes]);
+
+  useEffect(() => { updateTextTypes(); }, [updateTextTypes]);
+
+  const updateLanguages = useCallback(() => {
+    const lang = searchParams.get("language");
+    if (!lang || lang === "all") { setActiveLanguages([]); }
+    else { setActiveLanguages(lang.split(",")); }
+  }, [searchParams, setActiveLanguages]);
+
+  useEffect(() => { updateLanguages(); }, [updateLanguages]);
 
   useEffect(() => {
     if (version) {
@@ -218,10 +247,11 @@ const MetadataTable = ({ isHome }) => {
         normalizedSearch,
         annotationFilter,
         sortingOrder,
-        analysisPriority,
+        showPrimary,
+        showSecondary,
         releaseCode,
         advanceSearch,
-        includeManuscripts,
+        activeTextTypes,
         languageQuery
       );
       setRows(data.results);
@@ -238,7 +268,8 @@ const MetadataTable = ({ isHome }) => {
     normalizedSearch,
     annotationFilter,
     sortingOrder,
-    analysisPriority,
+    showPrimary,
+    showSecondary,
     releaseCode,
     checkedNotification,
     setCheckedNotification,
@@ -246,7 +277,7 @@ const MetadataTable = ({ isHome }) => {
     setStatus,
     setTotal,
     advanceSearch,
-    includeManuscripts,
+    activeTextTypes,
     activeLanguages,
   ]);
   useEffect(() => {
@@ -260,9 +291,12 @@ const MetadataTable = ({ isHome }) => {
 
     // always reset filters when switching releases so the user starts clean;
     // the toggles are rendered in FilterSidebar based on the release's fields
-    setIncludeManuscripts(true);
+    setShowPrimary(true);
+    setShowSecondary(false);
+    setActiveTextTypes([]);
     setActiveLanguages([]);
     setPage(1);
+    setSearchParams({ version: 'pri', text_type: 'all', language: 'all' });
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [releaseCode]);
@@ -277,7 +311,7 @@ const MetadataTable = ({ isHome }) => {
           display={"flex"}
           alignItems={"flex-start"}
         >
-          <FilterSidebar />
+          <FilterSidebar handleResetFilters={handleResetFilters} />
 
           <Box
             sx={{
