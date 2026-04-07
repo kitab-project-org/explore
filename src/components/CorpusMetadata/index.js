@@ -281,14 +281,6 @@ const MetadataTable = ({ isHome }) => {
     activeLanguages,
   ]);
   useEffect(() => {
-    const cleanParams = new URLSearchParams(cleanSearchPagination(searchParams));
-    const search = cleanParams.toString() ? `?${cleanParams.toString()}` : "";
-    if (!isHome) {
-      navigate(`/metadata/${releaseCode}/${search}`);
-    } else {
-      navigate(`/${releaseCode}/${search}`);
-    }
-
     // always reset filters when switching releases so the user starts clean;
     // the toggles are rendered in FilterSidebar based on the release's fields
     setShowPrimary(true);
@@ -296,7 +288,13 @@ const MetadataTable = ({ isHome }) => {
     setActiveTextTypes([]);
     setActiveLanguages([]);
     setPage(1);
-    setSearchParams({ version: 'pri', text_type: 'all', language: 'all' });
+    // combine path + default search params in a single navigate to avoid conflicts
+    const search = "?version=pri&text_type=all&language=all";
+    if (!isHome) {
+      navigate(`/metadata/${releaseCode}/${search}`);
+    } else {
+      navigate(`/${releaseCode}/${search}`);
+    }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [releaseCode]);
