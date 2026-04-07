@@ -121,7 +121,7 @@ const MetadataTable = ({ isHome }) => {
 
   // function for reset filters
   const handleResetFilters = () => {
-    setQuery("");
+    //setQuery("");
     setOrderingOrder("");
     setOrderingOrder("");
     setShowPrimary(true);
