@@ -112,7 +112,7 @@ const TableHeader = ({ columns, classes }) => {
         sx={{
           width: "100%",
           display: "flex",
-          alignItems: "center",
+          alignItems: "stretch",
           justifyContent: "start",
         }}
       >
@@ -122,7 +122,6 @@ const TableHeader = ({ columns, classes }) => {
             key={column.field}
             sx={{
               width: `${getWidth(column.headerName)} !important`,
-              height: "40px",
               display: {
                 xs: column.headerName === "Author Death Date" ? "none" : "flex",
                 sm: "flex",
