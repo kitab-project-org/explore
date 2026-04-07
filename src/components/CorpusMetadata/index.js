@@ -281,19 +281,26 @@ const MetadataTable = ({ isHome }) => {
     activeLanguages,
   ]);
   useEffect(() => {
-    // always reset filters when switching releases so the user starts clean;
+    /*// always reset filters when switching releases so the user starts clean;
     // the toggles are rendered in FilterSidebar based on the release's fields
     setShowPrimary(true);
     setShowSecondary(false);
     setActiveTextTypes([]);
     setActiveLanguages([]);
     setPage(1);
-    // combine path + default search params in a single navigate to avoid conflicts
-    const search = "?version=pri&text_type=all&language=all";
+    // combine path + default search params in a single navigate to avoid conflicts;
+    // preserve the current search query if present
+    const currentQuery = searchParams.get("search");
+    const queryPart = currentQuery ? `&search=${encodeURIComponent(currentQuery)}` : "";
+    const search = `?version=pri&text_type=all&language=all${queryPart}`;*/
+    
+    const params = cleanSearchPagination(searchParams); // strips page
+    const search = Object.entries(params).map(([k, v]) => `${encodeURIComponent(k)}=${v}`).join("&");
+
     if (!isHome) {
-      navigate(`/metadata/${releaseCode}/${search}`);
+      navigate(`/metadata/${releaseCode}/?${search}`);
     } else {
-      navigate(`/${releaseCode}/${search}`);
+      navigate(`/${releaseCode}/?${search}`);
     }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
