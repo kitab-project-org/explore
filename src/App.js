@@ -70,7 +70,7 @@ function App() {
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [rows, setRows] = useState([]);
-  const [defaultReleaseCode, setDefaultReleaseCode] = useState("2023.1.8");
+  const [defaultReleaseCode, setDefaultReleaseCode] = useState("2025.1.9");
   const [releaseCode, setReleaseCode] = useState(defaultReleaseCode);
   const [status, setStatus] = useState(false);
   const [query, setQuery] = useState("");
