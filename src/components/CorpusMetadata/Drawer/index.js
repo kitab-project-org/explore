@@ -109,9 +109,11 @@ export default function LeftSidePanel() {
         open={isOpenDrawer}
         onClose={() => setIsOpenDrawer(false)}
         anchor="right"
+        ModalProps={{ keepMounted: true }}
       >
         {fullData && (
           <Box
+            id="meta-drawer"
             sx={{
               width: {
                 xl: "850px",

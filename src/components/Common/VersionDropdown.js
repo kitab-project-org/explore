@@ -30,6 +30,7 @@ export default function VersionDropdown() {
   return (
     <Tooltip title="Select the OpenITI release version" placement="left">
       <FormControl
+        id="version-dropdown"
         sx={{
           minWidth: {
             xs: "120px",

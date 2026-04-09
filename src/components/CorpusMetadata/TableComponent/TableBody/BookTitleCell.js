@@ -42,6 +42,7 @@ const BookTitleCell = ({ row, classes }) => {
           my={0}
         >
           <Typography
+            className="tour-book-link"
             color={"#2863A5"}
             sx={{ cursor: "pointer" }}
             onClick={() => {

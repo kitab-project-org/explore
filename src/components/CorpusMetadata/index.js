@@ -83,6 +83,8 @@ const MetadataTable = ({ isHome }) => {
     activeLanguages,
     setActiveLanguages,
     setFilterPanel,
+    toggleSidePanel,
+    setIsOpenDrawer
   } = useContext(Context);
 
   // update orders
@@ -319,7 +321,13 @@ const MetadataTable = ({ isHome }) => {
 
   return (
     <>
-      <CorpusMetadataTour run={tourRunning} onExit={() => setTourRunning(false)} setFilterPanel={setFilterPanel} />
+      <CorpusMetadataTour 
+        run={tourRunning} 
+        onExit={() => setTourRunning(false)} 
+        setFilterPanel={setFilterPanel} 
+        toggleSidePanel={toggleSidePanel}
+        setIsOpenDrawer={setIsOpenDrawer}
+      />
       <Grid container className={classes.gridContainer}>
         <CorpusHeader onStartTour={() => setTourRunning(true)} />
 

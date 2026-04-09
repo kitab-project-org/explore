@@ -47,7 +47,19 @@ const steps = [
     element: ".tour-version-link",
     title: "Clickable Cells",
     intro:
-      "Click the version ID (shown here in blue) to open a side panel with detailed metadata for that text version. The book title and author name are also clickable and open related information.",
+      "You can click the VersionID to open a side panel with detailed metadata for that text version. Click 'Next' to see what it looks like.",
+  },
+  {
+    element: "#meta-drawer",
+    title: "Metadata details",
+    intro:
+      "The panel contains metadata on this specific text version. At the top, you can access tabs with metadata on the author, the text and text reuse.",
+  },
+  {
+    element: ".tour-book-link",
+    title: "Clickable Cells",
+    intro:
+      "The book title and author name are also clickable and open related information.",
   },
   {
     element: ".tour-reuse-count",
@@ -68,6 +80,13 @@ const steps = [
       "Check two rows to select them, then use the panel that appears at the bottom of the page to view their pairwise text reuse data or download the metadata for the selected texts.",
   },
   {
+    element: "#version-dropdown",
+    title: "Select Your OpenITI release version",
+    intro:
+      "The OpenITI corpus changes all the time. We periodically release stable versions that can be cited. Select the OpenITI version here.",
+  },
+  
+  {
     element: "#take-a-tour-btn",
     title: "That's it!",
     intro:
@@ -76,8 +95,9 @@ const steps = [
   },
 ];
 
+const DYNAMIC_ELEMENTS = new Set(["#filter-sidebar", "#meta-drawer"]);
 
-const CorpusMetadataTour = ({ run, onExit, setFilterPanel }) => {
+const CorpusMetadataTour = ({ run, onExit, setFilterPanel, toggleSidePanel, setIsOpenDrawer }) => {
   const introRef = useRef(null);
 
   useEffect(() => {
@@ -87,11 +107,13 @@ const CorpusMetadataTour = ({ run, onExit, setFilterPanel }) => {
     // so the tour degrades gracefully (e.g. when corpus-viz icon is absent).
     const availableSteps = steps.filter((step) => {
       if (!step.element) return true;
+      if (DYNAMIC_ELEMENTS.has(step.element)) return true;
       return !!document.querySelector(step.element);
     });
 
     const handleDone = () => {
       setFilterPanel?.(false);
+      setIsOpenDrawer?.(false);
       localStorage.setItem(TOUR_KEY, "true");
       onExit?.();
     };
@@ -109,23 +131,45 @@ const CorpusMetadataTour = ({ run, onExit, setFilterPanel }) => {
         doneLabel: "Done",
       });
 
-    // Track whether the tour currently has the sidebar open.
+    // Track whether the tour currently has the sidebar/drawer open.
     let tourSidebarOpen = false;
+    let tourDrawerOpen = false;
 
     // onBeforeChange: targetElement is the upcoming step's element.
-    // #filter-sidebar is always in the DOM (width:0 when closed).
-    // #filter-sidebar-toggle is always in the DOM (visibility:hidden when sidebar
-    // is open), so intro.js can find both elements in any direction.
     // Returning a Promise lets React finish rendering before intro.js highlights.
     introRef.current.onBeforeChange(function (targetElement) {
       if (targetElement?.id === "filter-sidebar") {
+        console.log("FILTER SIDEBAR TOUR")
         tourSidebarOpen = true;
         setFilterPanel?.(true);
         return new Promise((resolve) => setTimeout(resolve, 350));
+      } else if (targetElement?.id === "meta-drawer") {
+        console.log("META DRAWER TOUR")
+        tourDrawerOpen = true;
+        toggleSidePanel(
+          {
+            version_id: "JK007501",
+            release_code: "2025.1.9",
+          },
+          2
+        );
+        setIsOpenDrawer?.(true);
+        return new Promise((resolve) => {
+          setTimeout(() => {
+            introRef.current?.refresh();
+            resolve();
+          }, 350);
+        });
       } else if (tourSidebarOpen) {
         tourSidebarOpen = false;
         setFilterPanel?.(false);
         return new Promise((resolve) => setTimeout(resolve, 350));
+      } else if (tourDrawerOpen) {
+        tourDrawerOpen = false;
+        setIsOpenDrawer?.(false);
+        return new Promise((resolve) => setTimeout(resolve, 350));
+      } else {
+        console.log(targetElement.id);
       }
     });
 
