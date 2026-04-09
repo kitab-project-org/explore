@@ -292,8 +292,9 @@ const MetadataTable = ({ isHome }) => {
     // preserve the current search query if present
     const currentQuery = searchParams.get("search");
     const queryPart = currentQuery ? `&search=${encodeURIComponent(currentQuery)}` : "";
-    const search = `?version=pri&text_type=all&language=all${queryPart}`;*/
-    
+    const search = `?version=pri&text_type=all&language=all${queryPart}`;
+    */
+    // reset only the page filter when changing release version:
     const params = cleanSearchPagination(searchParams); // strips page
     const search = Object.entries(params).map(([k, v]) => `${encodeURIComponent(k)}=${v}`).join("&");
 

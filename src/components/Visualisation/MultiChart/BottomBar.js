@@ -213,6 +213,7 @@ const BottomBar = (props) => {
       id="bottom-bar"
       width={width + props.margin.left + props.margin.right}
       height={props.height + props.margin.top + props.margin.bottom}
+      style={{ fontFamily: "Arial" }}
     />
   );
 }

@@ -1050,6 +1050,7 @@ const Visual = (props) => {
           <svg
             id={"svgChart"}
             style={{ position: "relative", background: "white" }}
+            style={{ fontFamily: "Arial" }}
           ></svg>
           {toolTip.isActive && (
             <Box

@@ -31,7 +31,7 @@ const ReuseCell = ({ classes, row }) => {
       }}
     >
       {!row?.release_version?.reuse_stats ? (
-        <Typography sx={{ fontSize: "14px", color: "rgba(0,0,0,0.4)", fontStyle: "italic" }}>
+        <Typography sx={{ color: "rgba(0,0,0,0.4)", fontStyle: "italic" }}>
           No reuse data
         </Typography>
       ) : (
@@ -51,12 +51,9 @@ const ReuseCell = ({ classes, row }) => {
                 );
               }}
               size={"small"}
-              color={"neutral"}
+              color={"#2863A5"}
               sx={{
                 ml: "0px",
-                fontSize: "16px",
-                fontFamily: `Amiri,Roboto,"Helvetica Neue",Arial,sans-serif`,
-                color: "rgba(0, 0, 0, 0.87)",
                 cursor: "pointer",
                 textAlign: "center"
               }}

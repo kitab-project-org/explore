@@ -140,6 +140,7 @@ const SideBar = (props) => {
       id="side-bar"
       width={props.width + props.margin.left + props.margin.right}
       height={props.height + props.margin.top + props.margin.bottom}
+      style={{ fontFamily: "Arial" }}
     />
   );
 }

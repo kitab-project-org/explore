@@ -18,7 +18,9 @@ const CountToken = ({ classes, row }) => {
         boxSizing: "border-box",
       }}
     >
-      <Typography>{row?.release_version?.tok_length}</Typography>
+      <Typography>
+        {row?.release_version?.tok_length}
+      </Typography>
       <Typography
         sx={{
           display: {

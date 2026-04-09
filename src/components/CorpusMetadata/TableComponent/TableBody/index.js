@@ -71,7 +71,7 @@ const TableBodyComponent = ({ classes }) => {
               boxSizing: "border-box",
             }}
           >
-            {row?.text?.author?.[0]?.date ?? ""}
+            <Typography>{row?.text?.author?.[0]?.date ?? ""}</Typography>
             <Typography
               sx={{
                 display: {
@@ -80,7 +80,7 @@ const TableBodyComponent = ({ classes }) => {
                 },
               }}
             >
-              Author Death
+              Author Death Date
             </Typography>
           </TableCell>
 

@@ -280,7 +280,7 @@ const ScatterPlot = (props) => {
       props.height-visMargins.top, 
       axisLabelFontSize
     );
-    let space = -yTickWidth;
+    let space = -yTickWidth - 8;  // add 8px gap between tick labels and axis label
     labelLines.reverse().forEach((line) => {
       // define the point where the text ends ("text-anchor", "end"): 
       const x = space;
@@ -394,6 +394,7 @@ const ScatterPlot = (props) => {
         ref={ref}
         width={width + visMargins.left + visMargins.right}
         height={props.height + visMargins.top + tickFontSize}
+        style={{ fontFamily: "Arial" }}
       />
       <div ref={bottomOfGraph}/>
     </Box>
