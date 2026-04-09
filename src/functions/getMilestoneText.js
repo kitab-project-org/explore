@@ -38,8 +38,7 @@ export async function getMilestoneText(
   msNo,
   downloadedTexts,
   setDownloadedTexts,
-  meta = null,
-  msPerFile = 300
+  meta = null
 ) {
   console.log("getting milestone " + msNo + " from " + versionCode);
 
@@ -74,8 +73,23 @@ export async function getMilestoneText(
     meta = await getVersionMetadataById(releaseCode, versionCode);
     //console.log(meta);
   }
-
   // Build the URL of the i.mech file containing the milestone:
+  // const imechUrl =
+  //   releaseCode === "2021.2.5"
+  //     ? `https://raw.githubusercontent.com/OpenITI/i.mech-v5/main/data`
+  //     : `https://raw.githubusercontent.com/OpenITI/i.mech/v${releaseCode}/data`;
+  let imechUrl, msPerFile;
+  if (releaseCode === "2021.2.5"){
+    imechUrl = `https://raw.githubusercontent.com/OpenITI/i.mech-v5/main/data`;
+    msPerFile = 300
+  } else if ( parseInt(releaseCode.slice(0,4)) < 2023){
+    imechUrl = `https://raw.githubusercontent.com/OpenITI/i.mech/v${releaseCode}/data`;
+    msPerFile = 300
+  } else {
+    imechUrl = `https://raw.githubusercontent.com/OpenITI/i.mech-20/v${releaseCode}/data`;
+    msPerFile = 20
+  }
+  
   const sectionNo = (msPerFile * Math.ceil(msNo / msPerFile))
     .toString()
     .padStart(5, "0");
@@ -85,10 +99,6 @@ export async function getMilestoneText(
     .split(".")
     .slice(2)
     .join("."); // remove the book URI
-  const imechUrl =
-    releaseCode === "2021.2.5"
-      ? `https://raw.githubusercontent.com/OpenITI/i.mech-v5/main/data`
-      : `https://raw.githubusercontent.com/OpenITI/i.mech/v${releaseCode}/data`;
   const downloadUrl = `${imechUrl}/${idWithExt}-${sectionNo}`;
   // Download the i.mech file:
   console.log("downloading: " + downloadUrl);
