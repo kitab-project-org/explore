@@ -259,29 +259,33 @@ const FilterSidebar = ({ handleResetFilters }) => {
         variant="temporary"
         ModalProps={{ keepMounted: true }}
       >
-        <Box sx={{ width: "85vw" }} bgcolor="white">
+        <Box id="filter-sidebar" sx={{ width: "85vw" }} bgcolor="white">
           {content}
         </Box>
       </Drawer>
     );
   }
 
-  return showFilters ? (
+  // Always render so #filter-sidebar is in the DOM (needed by guided tour).
+  // Width 0 + overflow hidden hides it visually when the sidebar is closed.
+  return (
     <Box
+      id="filter-sidebar"
       sx={{
-        width: "20%",
+        width: showFilters ? "20%" : 0,
         flexShrink: 0,
+        overflow: "hidden",
         position: "sticky",
         top: 0,
         alignSelf: "flex-start",
         maxHeight: "calc(100vh - 80px)",
-        overflowY: "auto",
+        overflowY: showFilters ? "auto" : "hidden",
       }}
       bgcolor={"white"}
     >
       {content}
     </Box>
-  ) : null;
+  );
 };
 
 export default FilterSidebar;

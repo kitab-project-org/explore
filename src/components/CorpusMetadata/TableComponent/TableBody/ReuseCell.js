@@ -41,6 +41,7 @@ const ReuseCell = ({ classes, row }) => {
             title={`${row.release_version.reuse_stats.n_instances} text reuse instances found in the corpus, across ${row.release_version.reuse_stats.n_versions} text versions. Click to view pairwise text reuse data and statistics`}
           >
             <Typography
+              className="tour-reuse-count"
               onClick={() => {
                 toggleSidePanel(
                   {
@@ -64,7 +65,7 @@ const ReuseCell = ({ classes, row }) => {
 
           {oneToAllFolders[releaseCode] ? (
             <Tooltip placement="top" title={"Visualise corpus-wide text reuse"}>
-              <Typography sx={{ cursor: "pointer" }}>
+              <Typography className="tour-corpus-viz" sx={{ cursor: "pointer" }}>
                 <Link
                   href={`${!REPO_NAME ? "" : `/${REPO_NAME}`}/#/visualise/${
                     row?.release_version?.release_code

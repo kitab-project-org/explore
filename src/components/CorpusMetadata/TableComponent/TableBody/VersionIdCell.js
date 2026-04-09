@@ -91,6 +91,7 @@ const VersionIdCell = ({ row, classes }) => {
     >
       <Stack spacing={"2px"}>
         <Typography
+          className="tour-version-link"
           color={"#2863A5"}
           sx={{ cursor: "pointer" }}
           onClick={() => {
@@ -124,6 +125,7 @@ const VersionIdCell = ({ row, classes }) => {
           </Tooltip>
           <Tooltip placement="top" title={row?.release_version?.url}>
             <Box
+              className="tour-download-text"
               onClick={() => downloadGitHubRawFile(row)}
               sx={{ color: "#94a3b8", cursor: "pointer" }}
             >

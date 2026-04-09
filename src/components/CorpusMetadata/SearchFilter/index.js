@@ -171,13 +171,19 @@ const SearchFilters = ({ handleResetFilters, getQuery }) => {
             right: "0px",
           }}
         >
-          {!showFilters && (
-            <Tooltip title="Show Filter Sidebar">
-              <IconButton onClick={handleFilterPanel} sx={{ display: "flex" }}>
-                <FilterOpen />
-              </IconButton>
-            </Tooltip>
-          )}
+          <Tooltip title="Show Filter Sidebar">
+            <IconButton
+              id="filter-sidebar-toggle"
+              onClick={handleFilterPanel}
+              sx={{
+                display: "flex",
+                visibility: showFilters ? "hidden" : "visible",
+                pointerEvents: showFilters ? "none" : "auto",
+              }}
+            >
+              <FilterOpen />
+            </IconButton>
+          </Tooltip>
 
           {!showFilters && (searchParams.size > 3 ||
             (searchParams.get("version") && searchParams.get("version") !== "pri") ||

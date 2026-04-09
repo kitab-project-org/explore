@@ -55,6 +55,7 @@ const MoreCell = ({ classes, row }) => {
     >
       <Tooltip title="Select rows to view text reuse data / download metadata">
         <Checkbox
+          className="tour-row-checkbox"
           size="small"
           checked={isChecked(row)}
           onChange={() => handleChecked(row)}

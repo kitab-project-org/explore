@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useContext } from "react";
+import { useEffect, useCallback, useContext, useState } from "react";
 import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Grid, Typography } from "@mui/material";
 import { Box } from "@mui/system"; // CHECK: Should this be imported from @mui/material?
@@ -12,6 +12,7 @@ import SearchFilters from "./SearchFilter";
 import PaginationComponent from "../Common/PaginationComponent";
 import { Context } from "../../App";
 import { cleanSearchPagination } from "../../utility/Helper";
+import CorpusMetadataTour, { TOUR_KEY } from "../GuidedTour/CorpusMetadataTour";
 
 // make custom style for material ui component
 const useStyles = makeStyles((theme) => ({
@@ -43,6 +44,7 @@ const useStyles = makeStyles((theme) => ({
 
 const MetadataTable = ({ isHome }) => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const [tourRunning, setTourRunning] = useState(false);
   const { version } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -80,6 +82,7 @@ const MetadataTable = ({ isHome }) => {
     setActiveTextTypes,
     activeLanguages,
     setActiveLanguages,
+    setFilterPanel,
   } = useContext(Context);
 
   // update orders
@@ -156,6 +159,13 @@ const MetadataTable = ({ isHome }) => {
       setQuery(searchParams.get("search"));
     }
   }, [searchParams, setQuery]);
+
+  // auto-start tour on first visit
+  useEffect(() => {
+    if (!localStorage.getItem(TOUR_KEY)) {
+      setTourRunning(true);
+    }
+  }, []);
 
   const updateVersion = useCallback(() => {
     const v = searchParams.get("version");
@@ -309,8 +319,9 @@ const MetadataTable = ({ isHome }) => {
 
   return (
     <>
+      <CorpusMetadataTour run={tourRunning} onExit={() => setTourRunning(false)} setFilterPanel={setFilterPanel} />
       <Grid container className={classes.gridContainer}>
-        <CorpusHeader />
+        <CorpusHeader onStartTour={() => setTourRunning(true)} />
 
         <Box
           width={"100%"}
