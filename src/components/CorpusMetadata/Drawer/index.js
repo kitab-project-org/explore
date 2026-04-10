@@ -19,6 +19,7 @@ import TextReuse from "./TextReuse";
 import TextDetails from "./TextDetails";
 import ManuscriptDetails from "./ManuscriptDetails";
 import VersionDetails from "./VersionDetails";
+import TextReuseTour from "../../GuidedTour/TextReuseTour";
 import { getSidePanelData } from "../../../services/CorpusMetaData";
 import { Context } from "../../../App";
 
@@ -32,6 +33,7 @@ export default function LeftSidePanel() {
   } = useContext(Context);
   const [fullData, setFullData] = useState({});
   const [fullDataLoading, setFullDataLoading] = useState(false);
+  const [textReuseTourRunning, setTextReuseTourRunning] = useState(false);
 
   // true when the drawer is showing a manuscript version rather than a text version
   const isManuscript = fullData?.manuscript != null;
@@ -111,6 +113,7 @@ export default function LeftSidePanel() {
         anchor="right"
         ModalProps={{ keepMounted: true }}
       >
+        <TextReuseTour run={textReuseTourRunning} onExit={() => setTextReuseTourRunning(false)} />
         {fullData && (
           <Box
             id="meta-drawer"
@@ -195,7 +198,22 @@ export default function LeftSidePanel() {
                     sx={{ padding: "0px 10px", fontSize: "12px" }}
                   />
                   <Tab
-                    label="Text Reuse"
+                    label={
+                      <Box display="flex" alignItems="center" gap={0.5}>
+                        Text Reuse
+                        {tabIndex === 3 && (
+                          <Tooltip title="Explain text reuse panel" arrow>
+                            <span
+                              id="text-reuse-drawer-info"
+                              onClick={(e) => { e.stopPropagation(); setTextReuseTourRunning(true); }}
+                              style={{ display: "flex", alignItems: "center", cursor: "pointer" }}
+                            >
+                              <i className="fa-solid fa-circle-info" style={{ fontSize: "14px" }} />
+                            </span>
+                          </Tooltip>
+                        )}
+                      </Box>
+                    }
                     {...a11yProps(4)}
                     sx={{ padding: "0px 10px", fontSize: "12px" }}
                   />

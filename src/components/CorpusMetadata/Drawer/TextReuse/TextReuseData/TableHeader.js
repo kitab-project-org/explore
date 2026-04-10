@@ -49,7 +49,7 @@ const TableHeader = ({ sortingOrder, setSortingOrder }) => {
           setSortingOrder={setSortingOrder}
         />
       </Box>
-      <Typography width={"20%"} padding={"0px 15px"}></Typography>
+      <Typography id="reuse-actions-header" width={"20%"} padding={"0px 15px"}>Actions</Typography>
     </Box>
   );
 };
