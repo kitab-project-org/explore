@@ -354,6 +354,7 @@ const NavigationAndStats = () => {
                 <Tooltip title={"Deselect All"} placement="top">
                   <span>
                     <IconButton
+                      id="deselect-all"
                       size="large"
                       variant="text"
                       sx={{ fontSize: "15px", color: "#d01f2f", padding: "10px" }}

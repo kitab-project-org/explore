@@ -150,13 +150,14 @@ const CorpusMetadataTour = ({ run, onExit, setFilterPanel, toggleSidePanel, setI
     });
 
     const handleDone = () => {
-      if (tourSearchTyped) setInputValue("#outlined-search", "");
-      if (tourCheckboxesChecked) {
-        document.querySelectorAll(".tour-row-checkbox input[type='checkbox']:checked")
-          .forEach((cb) => cb.click());
-      }
+      // reset the search query:
+      if (tourSearchTyped) document.getElementById("search-clear-btn")?.click();
+      // uncheck all selected boxes:
+      if (tourCheckboxesChecked) document.getElementById("deselect-all")?.click();
+      // close the filter panel and metadata drawer:
       setFilterPanel?.(false);
       setIsOpenDrawer?.(false);
+      // store value in the cookie so that the tour is not shown next time.
       localStorage.setItem(TOUR_KEY, "true");
       onExit?.();
     };

@@ -222,6 +222,7 @@ const SearchFilters = ({ handleResetFilters, getQuery }) => {
              
               {(searchParams.get("search") || text || searchField) && (
                 <Typography
+                  id="search-clear-btn"
                   sx={{
                     cursor: "pointer",
                     position: "absolute",
