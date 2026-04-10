@@ -7,7 +7,7 @@ export const srtFolders = {
     "2022.1.6": `${KITAB_DEV_URL}/2022.1.6-pairwise`,
     "2022.2.7": `${KITAB_DEV_URL}/2022.2.7-pairwise`,
     "2023.1.8": `${KITAB_DEV_URL}/2023.1.8-pairwise`,
-    "2025.1.9": `${KITAB_DEV_URL}/2025.1.9-pairwise`,
+    "2025.1.9": `${KITAB_DEV_URL}/passim2025.1.9-pairwise`,
 };
 
 
@@ -17,7 +17,7 @@ export const lightSrtFolders = {
     "2022.1.6": `${KITAB_DEV_URL}/2022.1.6-pairwise`,  // light folder doesn't exist
     "2022.2.7": `${KITAB_DEV_URL}/2022.2.7-pairwise-light`,
     "2023.1.8": `${KITAB_DEV_URL}/2023.1.8-pairwise-light`,
-    "2025.1.9": `${KITAB_DEV_URL}/2025.1.9-pairwise-light`,
+    "2025.1.9": `${KITAB_DEV_URL}/passim2025.1.9-pairwise-light`,
 };
 
 export const srtFoldersGitHub = {
