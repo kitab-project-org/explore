@@ -40,7 +40,7 @@ function MetaFilters() {
 
   return (
     <>
-      <FormControl my={0} fullWidth>
+      <FormControl id="filter-section-annotation" my={0} fullWidth>
         <FormLabel
           sx={{
             py: "10px",

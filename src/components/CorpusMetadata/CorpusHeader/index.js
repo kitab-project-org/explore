@@ -35,7 +35,7 @@ const CorpusHeader = ({ onStartTour }) => {
           id="take-a-tour-btn"
           size="small"
           variant="outlined"
-          startIcon={<TourIcon />}
+          startIcon={<i className="fa-solid fa-signs-post"></i>}
           onClick={onStartTour}
           sx={{ textTransform: "none", whiteSpace: "nowrap" }}
         >

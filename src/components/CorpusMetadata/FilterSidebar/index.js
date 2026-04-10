@@ -1,4 +1,4 @@
-import { useContext } from "react";
+import { useContext, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Box,
@@ -17,12 +17,14 @@ import {
 import FilterAltOffIcon from "@mui/icons-material/FilterAltOff";
 import CloseIcon from "@mui/icons-material/Close";
 import MetaFilters from "./MetaFilters";
+import FilterSidebarTour from "../../GuidedTour/FilterSidebarTour";
 import { Context } from "../../../App";
 import { cleanSearchPagination } from "../../../utility/Helper";
 
 
 
 const FilterSidebar = ({ handleResetFilters }) => {
+  const [filterTourRunning, setFilterTourRunning] = useState(false);
   const {
     showFilters, setFilterPanel,
     showPrimary, setShowPrimary,
@@ -94,20 +96,33 @@ const FilterSidebar = ({ handleResetFilters }) => {
   };
 
   const content = (
+    <>
+    <FilterSidebarTour run={filterTourRunning} onExit={() => setFilterTourRunning(false)} />
     <List subheader={
       <ListSubheader sx={{ fontSize: "1rem", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "space-between", pr: 0 }}>
         Filters
         <Box display="flex" alignItems="center">
-          {(searchParams.size > 3 ||
-            (searchParams.get("version") && searchParams.get("version") !== "pri") ||
-            (searchParams.get("text_type") && searchParams.get("text_type") !== "all") ||
-            (searchParams.get("language") && searchParams.get("language") !== "all")) && (
-            <Tooltip title="Clear filters">
-              <IconButton size="small" onClick={handleResetFilters}>
-                <FilterAltOffIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          )}
+          <Tooltip title="Explain filter options">
+            <IconButton size="small" onClick={() => setFilterTourRunning(true)}>
+              <i className="fa-solid fa-circle-info" style={{ fontSize: "16px" }} />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Clear filters">
+            <IconButton
+              id="filter-clear-btn"
+              size="small"
+              onClick={handleResetFilters}
+              sx={{
+                visibility: (searchParams.size > 3 ||
+                  (searchParams.get("version") && searchParams.get("version") !== "pri") ||
+                  (searchParams.get("text_type") && searchParams.get("text_type") !== "all") ||
+                  (searchParams.get("language") && searchParams.get("language") !== "all"))
+                  ? "visible" : "hidden",
+              }}
+            >
+              <FilterAltOffIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
           <Tooltip title="Close filters">
             <IconButton size="small" onClick={() => setFilterPanel(false)}>
               <CloseIcon fontSize="small" />
@@ -118,6 +133,7 @@ const FilterSidebar = ({ handleResetFilters }) => {
     }>
       <ListItem sx={{ px: 1 }}>
         <FormControl component="fieldset" variant="standard" fullWidth>
+          <Box id="filter-section-versions">
           <FormLabel
             sx={{
               py: "10px",
@@ -138,7 +154,9 @@ const FilterSidebar = ({ handleResetFilters }) => {
               </Box>
             ))}
           </Box>
+          </Box>
 
+          <Box id="filter-section-text-type">
           <FormLabel
             sx={{
               py: "10px",
@@ -177,11 +195,12 @@ const FilterSidebar = ({ handleResetFilters }) => {
               </Tooltip>
             ))}
           </Box>
+          </Box>
 
           {/* One toggle per language known across all releases; greyed out
               if the language is not present in the currently selected release */}
           {Object.keys(allLanguages).length > 0 && (
-            <>
+            <Box id="filter-section-languages">
               <FormLabel
                 sx={{
                   py: "10px",
@@ -216,6 +235,7 @@ const FilterSidebar = ({ handleResetFilters }) => {
                       arrow
                     >
                       <Box
+                        id={`filter-lang-${code}`}
                         display={"flex"}
                         alignItems={"center"}
                         justifyContent={"space-between"}
@@ -240,7 +260,7 @@ const FilterSidebar = ({ handleResetFilters }) => {
                   );
                 })}
               </Box>
-            </>
+            </Box>
           )}
         </FormControl>
       </ListItem>
@@ -248,6 +268,7 @@ const FilterSidebar = ({ handleResetFilters }) => {
         <MetaFilters />
       </ListItem>
     </List>
+    </>
   );
 
   if (isMobile) {
