@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import introJs from "intro.js";
+import oneToAllScreenshot from "../../assets/img/one-to-all-screenshot.png";
 import "intro.js/introjs.css";
 
 const TOUR_KEY = "kitab-corpus-tour-seen";
@@ -23,6 +24,38 @@ const steps = [
       "(we don't have metadata for all texts in Arabic script, so try transcription if you don't find what you're looking for)",
   },
   {
+    element: ".tour-reuse-count",
+    title: "Text Reuse Statistics",
+    intro:
+      "This number shows how many text reuse instances were found for this book in the corpus. Click it to open a side panel with pairwise text reuse statistics.",
+  },
+  {
+    element: "#meta-drawer",
+    title: "Metadata details",
+    intro:
+      "The panel gives more details about the text reuse data for this text version. At the top, you can access tabs with metadata on the author, the text and text version.",
+  },
+  {
+    element: "#drawer-info",
+    title: "Info icons",
+    intro:
+      'Wherever you see one of these info icons, click it to see more information. <br>This one will explain all the features of the metadata panel.',
+    position: "right",
+  },
+  {
+    element: ".tour-corpus-viz",
+    title: "Corpus-Wide Visualisation",
+    intro:
+      `Click this icon to open a visualisation of corpus-wide text reuse for this book — showing all books that share passages with it. <br><a href="https://kitab-project.org/data/viz#scatter-viz" target="_blank"><img src="${oneToAllScreenshot}" style="max-width:100%"/></a><br>Click the image to learn more about the visualization.`,
+  },
+  
+  {
+    element: ".tour-row-checkbox",
+    title: "Select Texts for Pairwise Comparison",
+    intro:
+      "Check two rows to select them, then use the panel that appears at the bottom of the page to view their pairwise text reuse data or download the metadata for the selected texts.",
+  },
+  {
     element: "#filter-sidebar-toggle",
     title: "Filter Sidebar",
     intro:
@@ -37,6 +70,14 @@ const steps = [
       "Here you can narrow the results to texts in specific languages, exclude uncorrected OCR, filter by annotation status, token count, and more.",
     position: "right",
   },
+  /*{
+    element: "#filter-options-info",
+    title: "Info icons",
+    intro:
+      'Wherever you see one of these info icons , click it to see more information. This one will explain all the filters.',
+    position: "right",
+  },*/
+  
   {
     element: ".tour-download-text",
     title: "Download a Text",
@@ -49,35 +90,17 @@ const steps = [
     intro:
       "You can click the VersionID to open a side panel with detailed metadata for that text version. Click 'Next' to see what it looks like.",
   },
-  {
+  /*{
     element: "#meta-drawer",
     title: "Metadata details",
     intro:
       "The panel contains metadata on this specific text version. At the top, you can access tabs with metadata on the author, the text and text reuse.",
-  },
+  },*/
   {
     element: ".tour-book-link",
     title: "Clickable Cells",
     intro:
       "The book title and author name are also clickable and open related information.",
-  },
-  {
-    element: ".tour-reuse-count",
-    title: "Text Reuse Statistics",
-    intro:
-      "This number shows how many text reuse instances were found for this book in the corpus. Click it to open a side panel with pairwise text reuse statistics.",
-  },
-  {
-    element: ".tour-corpus-viz",
-    title: "Corpus-Wide Visualisation",
-    intro:
-      "Click this icon to open a visualisation of corpus-wide text reuse for this book — showing all books that share passages with it.",
-  },
-  {
-    element: ".tour-row-checkbox",
-    title: "Select Texts for Pairwise Comparison",
-    intro:
-      "Check two rows to select them, then use the panel that appears at the bottom of the page to view their pairwise text reuse data or download the metadata for the selected texts.",
   },
   {
     element: "#version-dropdown",
@@ -151,7 +174,7 @@ const CorpusMetadataTour = ({ run, onExit, setFilterPanel, toggleSidePanel, setI
             version_id: "JK007501",
             release_code: "2025.1.9",
           },
-          2
+          3
         );
         setIsOpenDrawer?.(true);
         return new Promise((resolve) => {
@@ -160,7 +183,7 @@ const CorpusMetadataTour = ({ run, onExit, setFilterPanel, toggleSidePanel, setI
             resolve();
           }, 350);
         });
-      } else if (tourSidebarOpen) {
+      } else if (tourSidebarOpen && targetElement?.id !== "filter-options-info") {
         tourSidebarOpen = false;
         setFilterPanel?.(false);
         return new Promise((resolve) => setTimeout(resolve, 350));

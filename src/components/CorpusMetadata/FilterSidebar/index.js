@@ -103,7 +103,7 @@ const FilterSidebar = ({ handleResetFilters }) => {
         Filters
         <Box display="flex" alignItems="center">
           <Tooltip title="Explain filter options">
-            <IconButton size="small" onClick={() => setFilterTourRunning(true)}>
+            <IconButton size="small" onClick={() => setFilterTourRunning(true)} id="filter-options-info">
               <i className="fa-solid fa-circle-info" style={{ fontSize: "16px" }} />
             </IconButton>
           </Tooltip>
