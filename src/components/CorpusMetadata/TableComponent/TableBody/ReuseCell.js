@@ -31,7 +31,14 @@ const ReuseCell = ({ classes, row }) => {
       }}
     >
       {!row?.release_version?.reuse_stats ? (
-        <Typography sx={{ color: "rgba(0,0,0,0.4)", fontStyle: "italic" }}>
+        <Typography 
+          sx={{
+            color: "rgba(0,0,0,0.4)", 
+            fontStyle: "italic",
+            ml: "0px",
+            textAlign: "left"
+          }}
+        >
           No reuse data
         </Typography>
       ) : (
