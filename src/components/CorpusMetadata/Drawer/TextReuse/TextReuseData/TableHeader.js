@@ -5,6 +5,7 @@ import SortingComponent from "./SortingComponent";
 const TableHeader = ({ sortingOrder, setSortingOrder }) => {
   return (
     <Box
+      id="TextReuseData-TableHeader"
       sx={{
         width: "100%",
         display: "flex",

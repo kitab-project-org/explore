@@ -5,6 +5,7 @@ import VersionDropdown from "../../Common/VersionDropdown";
 const CorpusHeader = ({ onStartTour }) => {
   return (
     <Box
+      id="CorpusHeader"
       display={"flex"}
       justifyContent={"space-between"}
       alignItems={"center"}

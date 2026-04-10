@@ -16,7 +16,7 @@ const ManuscriptDetails = ({ fullData }) => {
   ];
 
   return (
-    <Box sx={{ width: "100%" }}>
+    <Box id="ManuscriptDetails" sx={{ width: "100%" }}>
       {/* Key metadata rows */}
       {metaRows.map(({ label, value }) =>
         value ? (

@@ -33,7 +33,7 @@ const DownloadSrt = ({ fullData, fullDataLoading }) => {
   ];
 
   return (
-    <Box sx={{ width: "100%" }}>
+    <Box id="TextReuse-Drawer" sx={{ width: "100%" }}>
       
       <Box>
         {data.length !== 0 &&

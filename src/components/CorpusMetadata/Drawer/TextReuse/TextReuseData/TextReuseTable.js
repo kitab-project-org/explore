@@ -229,7 +229,7 @@ const TextReuseTable = ({ b1Metadata, normalizedQuery, handleRedirectToChart, b1
   }
 
   return (
-    <Box sx={{ width: "100%" }}>
+    <Box id="TextReuseTable" sx={{ width: "100%" }}>
       <Box sx={{ float: "left", width: "100%" }}>
         <TableHeader
           sortingOrder={sortingOrder}

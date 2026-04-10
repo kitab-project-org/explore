@@ -49,7 +49,7 @@ const AuthorDetails = ({ fullData }) => {
   const hasNameElements = author?.name_elements?.length > 0;
 
   return (
-    <Box sx={{ width: "100%" }}>
+    <Box sx={{ width: "100%" }} id="AuthorDetails">
       {data.map((item, index) => {
         if (item.header === "Name Elements" && !hasNameElements) return null;
         return (

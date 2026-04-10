@@ -31,7 +31,7 @@ export default function NameElementsTable({ data }) {
   if (rows.length === 0) return null;
 
   return (
-    <>
+    <Box id="NameElementsTable">
       {/* Card layout for small screens */}
       <Box sx={{ display: { xs: "block", md: "none" }, mt: "3px" }}>
         {rows.map((item, i) => (
@@ -94,6 +94,6 @@ export default function NameElementsTable({ data }) {
           </TableBody>
         </Table>
       </TableContainer>
-    </>
+    </Box>
   );
 }

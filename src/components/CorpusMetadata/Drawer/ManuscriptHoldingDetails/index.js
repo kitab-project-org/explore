@@ -27,7 +27,7 @@ const ManuscriptHoldingDetails = ({ fullData }) => {
   ];
 
   return (
-    <Box sx={{ width: "100%" }}>
+    <Box id="ManuscriptHoldingDetails" sx={{ width: "100%" }}>
       {rows.map(({ label, value }) =>
         value.length > 0 ? (
           <Box
