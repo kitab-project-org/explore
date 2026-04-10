@@ -66,8 +66,8 @@ const FilterSidebarTour = ({ run, onExit }) => {
     introRef.current = introJs.tour()
       .setOptions({
         steps: availableSteps,
-        showProgress: true,
-        showBullets: false,
+        showProgress: false,
+        showBullets: true,
         exitOnOverlayClick: false,
         scrollToElement: false,
         disableInteraction: false,

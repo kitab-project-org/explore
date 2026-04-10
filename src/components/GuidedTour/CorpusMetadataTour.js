@@ -36,7 +36,7 @@ const steps = [
       "The panel gives more details about the text reuse data for this text version. At the top, you can access tabs with metadata on the author, the text and text version.",
   },
   {
-    element: "#drawer-info",
+    element: "#text-reuse-drawer-info",
     title: "Info icons",
     intro:
       'Wherever you see one of these info icons, click it to see more information. <br>This one will explain all the features of the metadata panel.',
@@ -144,8 +144,8 @@ const CorpusMetadataTour = ({ run, onExit, setFilterPanel, toggleSidePanel, setI
     introRef.current = introJs.tour()
       .setOptions({
         steps: availableSteps,
-        showProgress: true,
-        showBullets: false,
+        showProgress: false,
+        showBullets: true,
         exitOnOverlayClick: false,
         scrollToElement: true,
         disableInteraction: false,
