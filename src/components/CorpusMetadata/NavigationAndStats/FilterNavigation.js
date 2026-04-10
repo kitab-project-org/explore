@@ -87,6 +87,7 @@ const FilterNavigation = ({ showFilters }) => {
 
   return (
     <Box
+      id="FilterNavigation"
       display={showFilters || !hasChips ? "none" : "flex"}
       alignItems={"center"}
       flexWrap={"wrap"}
