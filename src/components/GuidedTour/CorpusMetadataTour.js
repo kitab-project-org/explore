@@ -7,21 +7,28 @@ const TOUR_KEY = "kitab-corpus-tour-seen";
 
 const steps = [
   {
-    title: "Welcome to the KITAB explore platform",
+    title: "Welcome to the KITAB explore portal",
     intro:
-      "The portal gives you access to the OpenITI corpus metadata and to the KITAB text reuse data and visualizations. This short tour introduces the main features of the platform. ",
+      `The portal gives you access to the <a href="https://openiti.org/projects/OpenITI%20Corpus.html" target="_blank">OpenITI corpus</a> metadata and to the <a href="https://kitab-project.org" target="_blank">KITAB</a> text reuse data and visualizations. <br>This short tour introduces the main features of the portal. `,
   },
   {
     element: "#outlined-search",
     title: "Search",
     intro:
-      "You can find OpenITI texts by searching their metadata, in Latin or Arabic script.",
+      "You can find OpenITI texts by searching their metadata, in Latin or Arabic script. <br>Press Enter to submit your search query.",
   },
   {
     element: "#outlined-search",
     title: "Search",
     intro:
-      "(we don't have metadata for all texts in Arabic script, so try transcription if you don't find what you're looking for)",
+      "We don't have metadata for all texts in Arabic script, so try transcription into Latin characters if you don't find what you're looking for. <br><b>Note that the search bar only searches the metadata, not the content of the texts!</b>",
+  },
+  {
+    element: "#text-reuse-header",
+    title: "Text Reuse Data and Visualisations",
+    intro:
+      `This column gives access to the KITAB <a href="https://kitab-project.org/data#passim-text-reuse-data-sets" target="_blank">text reuse data</a> and <a href="https://kitab-project.org/data/viz" target="_blank">visualizations</a>.`,
+    position: "right",
   },
   {
     element: ".tour-reuse-count",
@@ -33,13 +40,13 @@ const steps = [
     element: "#meta-drawer",
     title: "Metadata details",
     intro:
-      "The panel gives more details about the text reuse data for this text version. At the top, you can access tabs with metadata on the author, the text and text version.",
+      "The panel gives more details about the text reuse data for this text version. <br>At the top, you can access tabs with detailed metadata on the author, the text and text version.",
   },
   {
     element: "#text-reuse-drawer-info",
     title: "Info icons",
     intro:
-      'Wherever you see one of these info icons, click it to see more information. <br>This one will explain all the features of the metadata panel.',
+      'Wherever you see one of these info icons, click it to see more information. <br>This one will explain all the features of the text reuse panel.',
     position: "right",
   },
   {
@@ -53,7 +60,15 @@ const steps = [
     element: ".tour-row-checkbox",
     title: "Select Texts for Pairwise Comparison",
     intro:
-      "Check two rows to select them, then use the panel that appears at the bottom of the page to view their pairwise text reuse data or download the metadata for the selected texts.",
+      "Check two rows to select them in order to view the pairwise text reuse data or download the metadata for the selected texts.",
+    position: "right",
+  },
+  {
+    element: "#results-and-selection",
+    title: "Select Texts for Pairwise Comparison",
+    intro:
+      "When two rows rows are selected, buttons will appear above the table. <br>Click the <b>barcode</b> icon to see a pairwise visualization of their text reuse, <br>the <b>file</b> icon to download their text reuse data, <br>or the <b>table</b> icon to download their metadata.",
+    position: "right",
   },
   {
     element: "#filter-sidebar-toggle",
@@ -67,7 +82,7 @@ const steps = [
     element: "#filter-sidebar",
     title: "Filter Sidebar",
     intro:
-      "Here you can narrow the results to texts in specific languages, exclude uncorrected OCR, filter by annotation status, token count, and more.",
+      "Here you can narrow the results to texts in specific languages, exclude uncorrected OCR, filter by annotation status, token count, and more. <br>Click the <b>info</b> icon for more details.",
     position: "right",
   },
   /*{
@@ -88,7 +103,7 @@ const steps = [
     element: ".tour-version-link",
     title: "Clickable Cells",
     intro:
-      "You can click the VersionID to open a side panel with detailed metadata for that text version. Click 'Next' to see what it looks like.",
+      "You can click the VersionID to open a side panel with detailed metadata for that text version.",
   },
   /*{
     element: "#meta-drawer",
@@ -106,7 +121,7 @@ const steps = [
     element: "#version-dropdown",
     title: "Select Your OpenITI release version",
     intro:
-      "The OpenITI corpus changes all the time. We periodically release stable versions that can be cited. Select the OpenITI version here.",
+      `The OpenITI corpus changes all the time. We periodically <a href="https://doi.org/10.5281/zenodo.3082463" target="_blank">release stable versions</a> that can be cited. Select the OpenITI version here.`,
   },
   
   {
@@ -118,7 +133,7 @@ const steps = [
   },
 ];
 
-const DYNAMIC_ELEMENTS = new Set(["#filter-sidebar", "#meta-drawer"]);
+const DYNAMIC_ELEMENTS = new Set(["#filter-sidebar", "#meta-drawer", "#text-reuse-drawer-info"]);
 
 const CorpusMetadataTour = ({ run, onExit, setFilterPanel, toggleSidePanel, setIsOpenDrawer }) => {
   const introRef = useRef(null);
@@ -135,6 +150,11 @@ const CorpusMetadataTour = ({ run, onExit, setFilterPanel, toggleSidePanel, setI
     });
 
     const handleDone = () => {
+      if (tourSearchTyped) setInputValue("#outlined-search", "");
+      if (tourCheckboxesChecked) {
+        document.querySelectorAll(".tour-row-checkbox input[type='checkbox']:checked")
+          .forEach((cb) => cb.click());
+      }
       setFilterPanel?.(false);
       setIsOpenDrawer?.(false);
       localStorage.setItem(TOUR_KEY, "true");
@@ -154,9 +174,22 @@ const CorpusMetadataTour = ({ run, onExit, setFilterPanel, toggleSidePanel, setI
         doneLabel: "Done",
       });
 
+    // Helper: set a React-controlled input's value programmatically.
+    const setInputValue = (selector, value) => {
+      const input = document.querySelector(selector);
+      if (!input) return;
+      const nativeSetter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype, "value"
+      ).set;
+      nativeSetter.call(input, value);
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    };
+
     // Track whether the tour currently has the sidebar/drawer open.
     let tourSidebarOpen = false;
     let tourDrawerOpen = false;
+    let tourSearchTyped = false;
+    let tourCheckboxesChecked = false;
 
     // onBeforeChange: targetElement is the upcoming step's element.
     // Returning a Promise lets React finish rendering before intro.js highlights.
@@ -171,7 +204,7 @@ const CorpusMetadataTour = ({ run, onExit, setFilterPanel, toggleSidePanel, setI
         tourDrawerOpen = true;
         toggleSidePanel(
           {
-            version_id: "JK007501",
+            version_id: "Shamela0037022",
             release_code: "2025.1.9",
           },
           3
@@ -187,12 +220,43 @@ const CorpusMetadataTour = ({ run, onExit, setFilterPanel, toggleSidePanel, setI
         tourSidebarOpen = false;
         setFilterPanel?.(false);
         return new Promise((resolve) => setTimeout(resolve, 350));
-      } else if (tourDrawerOpen) {
+      } else if (tourDrawerOpen && targetElement?.id !== "text-reuse-drawer-info") {
         tourDrawerOpen = false;
         setIsOpenDrawer?.(false);
         return new Promise((resolve) => setTimeout(resolve, 350));
       } else {
         console.log(targetElement.id);
+      }
+    });
+
+    // Type a demo query when the first search step appears; check the first two
+    // rows when the checkbox step appears. Both are cleaned up in handleDone.
+    introRef.current.onAfterChange(function (targetElement) {
+      if (targetElement?.id === "outlined-search" && !tourSearchTyped) {
+        tourSearchTyped = true;
+        setTimeout(() => {
+          setInputValue("#outlined-search", "ابن خلدون");
+          const form = document.querySelector("#outlined-search")?.closest("form");
+          form?.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+        }, 400);
+      }
+      if (targetElement?.id === "outlined-search" && tourSearchTyped) {
+        tourSearchTyped = true;
+        setTimeout(() => {
+          setInputValue("#outlined-search", "Ibn Khaldun");
+        }, 400);
+      }
+      if (targetElement?.classList?.contains("tour-row-checkbox") && !tourCheckboxesChecked) {
+        tourCheckboxesChecked = true;
+        const checkboxes = document.querySelectorAll(".tour-row-checkbox input[type='checkbox']");
+        setTimeout(() => {
+          
+          if (!checkboxes[0].checked) checkboxes[0].click();
+        }, 1800);
+        setTimeout(() => {
+          
+          if (!checkboxes[2].checked) checkboxes[2].click();
+        }, 2200);
       }
     });
 

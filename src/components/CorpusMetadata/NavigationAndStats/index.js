@@ -310,9 +310,9 @@ const NavigationAndStats = () => {
     <div>
       <FilterNavigation showFilters={showFilters} />
 
-      <Grid container>
+      <Grid container id="NavigationAndStats">
         <Grid
-          
+          id="results-and-selection"
           item
           container
           sm={12}

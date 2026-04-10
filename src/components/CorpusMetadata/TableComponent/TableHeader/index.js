@@ -119,6 +119,7 @@ const TableHeader = ({ columns, classes }) => {
         {columns.map((column) => (
           <TableCell
             className={classes.tableHeaderCell}
+            id={column.field.replace("_", "-")+"-header"}
             key={column.field}
             sx={{
               width: `${getWidth(column.headerName)} !important`,

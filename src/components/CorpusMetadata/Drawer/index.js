@@ -201,17 +201,21 @@ export default function LeftSidePanel() {
                     label={
                       <Box display="flex" alignItems="center" gap={0.5}>
                         Text Reuse
-                        {tabIndex === 3 && (
-                          <Tooltip title="Explain text reuse panel" arrow>
-                            <span
-                              id="text-reuse-drawer-info"
-                              onClick={(e) => { e.stopPropagation(); setTextReuseTourRunning(true); }}
-                              style={{ display: "flex", alignItems: "center", cursor: "pointer" }}
-                            >
-                              <i className="fa-solid fa-circle-info" style={{ fontSize: "14px" }} />
-                            </span>
-                          </Tooltip>
-                        )}
+                        <Tooltip title="Explain text reuse panel" arrow>
+                          <span
+                            id="text-reuse-drawer-info"
+                            onClick={(e) => { e.stopPropagation(); setTextReuseTourRunning(true); }}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              cursor: "pointer",
+                              visibility: tabIndex === 3 ? "visible" : "hidden",
+                              pointerEvents: tabIndex === 3 ? "auto" : "none",
+                            }}
+                          >
+                            <i className="fa-solid fa-circle-info" style={{ fontSize: "14px" }} />
+                          </span>
+                        </Tooltip>
                       </Box>
                     }
                     {...a11yProps(4)}
