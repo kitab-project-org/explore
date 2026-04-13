@@ -1,9 +1,9 @@
 import { Typography, TableCell } from "@mui/material";
 
-const CountToken = ({ classes, row }) => {
+const TokenCountCell = ({ classes, row }) => {
   return (
     <TableCell
-      className={classes.tableCell}
+      className={`${classes.tableCell} token-count-cell`}
       sx={{
         width: {
           xs: "100%",
@@ -35,4 +35,4 @@ const CountToken = ({ classes, row }) => {
   );
 };
 
-export default CountToken;
+export default TokenCountCell;
