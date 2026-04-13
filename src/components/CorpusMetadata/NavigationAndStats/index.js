@@ -1,7 +1,7 @@
 import { useContext } from "react";
 import { Box, Grid, IconButton, Tooltip, Typography } from "@mui/material";
 import PaginationComponent from "../../Common/PaginationComponent";
-import DownloadData from "./DownloadData";
+import DownloadMetadata from "./DownloadMetadata";
 import FilterNavigation from "./FilterNavigation";
 import { Context } from "../../../App";
 // import {
@@ -387,7 +387,7 @@ const NavigationAndStats = () => {
             </>
           )}
           <>
-          <Box><DownloadData status={status} /></Box>
+          <Box><DownloadMetadata status={status} /></Box>
 
           {checkedBooks.length === 0 ? (
             ""

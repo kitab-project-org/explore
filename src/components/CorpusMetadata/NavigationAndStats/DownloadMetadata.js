@@ -35,7 +35,7 @@ const flattenItem = (item) => ({
 });
 
 
-const DownloadData = ({ status }) => {
+const DownloadMetadata = ({ status }) => {
   const {
     checkedBooks,
     query,
@@ -89,7 +89,7 @@ const DownloadData = ({ status }) => {
     <Tooltip title={tooltipTitle} placement="top">
       <span>
         {isLoading ? (
-          <IconButton size="large" variant="text" sx={{ fontSize: "15px" }}>
+          <IconButton id="download-metadata" size="large" variant="text" sx={{ fontSize: "15px" }}>
             <CircularProgress size={"15px"} sx={{ color: "green" }} />
           </IconButton>
         ) : hasSelection ? (
@@ -105,7 +105,7 @@ const DownloadData = ({ status }) => {
               color: "#6b7280",
             }}
           >
-            <IconButton size="large" variant="text" sx={{ fontSize: "15px", padding: "5px" }}>
+            <IconButton id="download-metadata" size="large" variant="text" sx={{ fontSize: "15px", padding: "5px" }}>
               <i className="fa-solid fa-table-list" style={{ color: "#2863A5" }}></i>
             </IconButton>
           </CSVLink>
@@ -124,4 +124,4 @@ const DownloadData = ({ status }) => {
   );
 };
 
-export default DownloadData;
+export default DownloadMetadata;
