@@ -5,7 +5,7 @@ import { Context } from "../../../App";
 import { cleanSearchPagination } from "../../../utility/Helper"
 
 
-function MetaFilters() {
+function AnnotationFilters() {
   const { annotationFilter, setAnnotationFilter } = useContext(Context);
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -136,4 +136,4 @@ function MetaFilters() {
   );
 }
 
-export default MetaFilters;
+export default AnnotationFilters;

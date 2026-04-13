@@ -16,7 +16,7 @@ import {
 } from "@mui/material";
 import FilterAltOffIcon from "@mui/icons-material/FilterAltOff";
 import CloseIcon from "@mui/icons-material/Close";
-import MetaFilters from "./MetaFilters";
+import AnnotationFilters from "./AnnotationFilters";
 import FilterSidebarTour from "../../GuidedTour/FilterSidebarTour";
 import { Context } from "../../../App";
 import { cleanSearchPagination } from "../../../utility/Helper";
@@ -265,7 +265,7 @@ const FilterSidebar = ({ handleResetFilters }) => {
         </FormControl>
       </ListItem>
       <ListItem sx={{ px: 1 }}>
-        <MetaFilters />
+        <AnnotationFilters />
       </ListItem>
     </List>
     </>
