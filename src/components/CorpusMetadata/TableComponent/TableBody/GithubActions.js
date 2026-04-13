@@ -40,7 +40,7 @@ const GitHubActions = ({ versionURI }) => {
   ];
 
   return (
-    <>
+    <Box className={"github-actions"}>
       <Tooltip title={openDropdown ? "" : "Click to see GitHub options"}>
         <IconButton
           onMouseEnter={() => setOpenDropdown(true)}
@@ -88,7 +88,7 @@ const GitHubActions = ({ versionURI }) => {
           )}
         </IconButton>
       </Tooltip>
-    </>
+    </Box>
   );
 };
 
