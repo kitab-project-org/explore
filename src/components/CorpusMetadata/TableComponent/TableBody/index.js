@@ -11,7 +11,7 @@ import TokenCountCell from "./TokenCountCell";
 const TableBodyComponent = ({ classes }) => {
   const { rows } = useContext(Context);
   return (
-    <TableBody>
+    <TableBody id="table-body">
       {rows.map((row, index) => (
         <TableRow
           key={index}
