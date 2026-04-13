@@ -17,7 +17,7 @@ const BookTitleCell = ({ row, classes }) => {
 
   return (
     <TableCell
-      className={classes.tableCell}
+      className={`${classes.tableCell} book-title-cell`}
       sx={{
         width: {
           xs: "100%",

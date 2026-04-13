@@ -24,7 +24,7 @@ const AuthorCell = ({ row, classes }) => {
 
   return (
     <TableCell
-      className={classes.tableCell}
+      className={`${classes.tableCell} author-cell`}
       sx={{
         width: {
           xs: "100%",

@@ -37,7 +37,7 @@ const MoreCell = ({ classes, row }) => {
 
   return (
     <TableCell
-      className={classes.tableCell}
+      className={`${classes.tableCell} more-cell`}
       sx={{
         width: {
           xs: "100%",

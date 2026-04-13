@@ -9,7 +9,7 @@ const ReuseCell = ({ classes, row }) => {
 
   return (
     <TableCell
-      className={classes.tableCell}
+      className={`${classes.tableCell} reuse-cell`}
       sx={{
         width: {
           xs: "100%",

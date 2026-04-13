@@ -73,7 +73,7 @@ const VersionIdCell = ({ row, classes }) => {
 
   return (
     <TableCell
-      className={classes.tableCell}
+      className={`${classes.tableCell} version-id-cell`}
       sx={{
         width: {
           xs: "100%",
