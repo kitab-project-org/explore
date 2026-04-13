@@ -94,6 +94,7 @@ const TableHeader = ({ columns, classes }) => {
 
   return (
     <TableHead
+      id="table-header"
       sx={{
         color: "text.primary",
         fontSize: 34,
