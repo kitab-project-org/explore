@@ -35,7 +35,7 @@ const TableComponent = ({ classes }) => {
   ];
 
   return (
-    <TableContainer component={Paper} dir="rtl">
+    <TableContainer id="corpus-metadata-table-component" component={Paper} dir="rtl">
       <Table
         sx={{ display: "flex", flexDirection: "column" }}
         size="small"

@@ -328,7 +328,7 @@ const MetadataTable = ({ isHome }) => {
         toggleSidePanel={toggleSidePanel}
         setIsOpenDrawer={setIsOpenDrawer}
       />
-      <Grid container className={classes.gridContainer}>
+      <Grid container id="corpus-metadata" className={classes.gridContainer}>
         <CorpusHeader onStartTour={() => setTourRunning(true)} />
 
         <Box
