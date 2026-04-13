@@ -92,7 +92,7 @@ const VersionDetails = ({ fullData }) => {
   ];
 
   return (
-    <Box sx={{ width: "100%" }} size="small" aria-label="a dense table">
+    <Box id="VersionDetails" sx={{ width: "100%" }} size="small" aria-label="a dense table">
       <Box>
         {data.map((item, index) => (
           <Box

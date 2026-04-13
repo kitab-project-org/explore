@@ -116,7 +116,7 @@ export default function LeftSidePanel() {
         <TextReuseTour run={textReuseTourRunning} onExit={() => setTextReuseTourRunning(false)} />
         {fullData && (
           <Box
-            id="meta-drawer"
+            id="CorpusMetadata-Drawer"
             sx={{
               width: {
                 xl: "850px",
