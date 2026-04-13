@@ -112,6 +112,7 @@ export default function AdvanceSearch() {
 
   return (
     <Drawer
+      id="advanced-search"
       open={advanceSearchModal}
       onClose={() => setAdvanceSearchModal(false)}
       sx={{

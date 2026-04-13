@@ -150,7 +150,7 @@ const SearchFilters = ({ handleResetFilters, getQuery }) => {
   }, [updateText]);
 
   return (
-    <Box display={"flex"} justifyContent={"space-between"} gap={2} my={2}>
+    <Box id="search-filter" display={"flex"} justifyContent={"space-between"} gap={2} my={2}>
       <Grid container item md={12} xs={12}>
         <AdvanceSearch />
         <SetSearchField />

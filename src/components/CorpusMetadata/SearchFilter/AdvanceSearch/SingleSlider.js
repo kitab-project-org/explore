@@ -13,6 +13,7 @@ export default function SingleSlider({ max, handler, label, value }) {
     <Box sx={{ width: "100%", boxSizing: "border-box" }}>
       <Typography gutterBottom>{label}</Typography>
       <Slider
+        class="single-slider"
         value={value2}
         defaultValue={value}
         onChange={handleChange2}

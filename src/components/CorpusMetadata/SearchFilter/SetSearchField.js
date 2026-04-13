@@ -74,6 +74,7 @@ export default function SetSearchField() {
 
   return (
     <Box
+      id="set-search-field"
       display="flex"
       justifyContent="flex-end"
       alignItems="flex-center"
