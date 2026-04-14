@@ -393,7 +393,7 @@ const VisualisationPage = () => {
         msdataFile = upload[1];
         statsFile = upload[0];
       }
-      const book_names = [book1Code, ];
+      //const book_names = [book1Code, ];
       const book1 = buildPlaceholderMeta(book1Code);
       setMainVersionCode(book1Code);
       console.log(book1);

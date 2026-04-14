@@ -4,7 +4,7 @@ import "intro.js/introjs.css";
 import oneToAllScreenshot from "../../assets/img/one-to-all-screenshot.png";
 import pairwiseScreenshot from "../../assets/img/pairwise-screenshot.png";
 
-const DYNAMIC_ELEMENTS = new Set([".tour-reuse-viz-icon", ".tour-reuse-download"]);
+//const DYNAMIC_ELEMENTS = new Set([".tour-reuse-viz-icon", ".tour-reuse-download"]);
 
 
 // Static steps whose elements are always in the DOM when the tour runs.

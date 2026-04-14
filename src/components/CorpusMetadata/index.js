@@ -46,7 +46,7 @@ const MetadataTable = ({ isHome }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [tourRunning, setTourRunning] = useState(false);
   const { version } = useParams();
-  const location = useLocation();
+  //const location = useLocation();
   const navigate = useNavigate();
   const classes = useStyles();
   const {

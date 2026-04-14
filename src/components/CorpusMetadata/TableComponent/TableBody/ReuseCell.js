@@ -1,5 +1,5 @@
 import { useContext } from "react";
-import { Box, TableCell, Tooltip, Link, Typography } from "@mui/material";
+import { TableCell, Tooltip, Link, Typography } from "@mui/material";
 import { Context } from "../../../../App";
 import { oneToAllFolders } from "../../../../assets/srtFolders";
 import { REPO_NAME } from "../../../Common/NavigationBar";

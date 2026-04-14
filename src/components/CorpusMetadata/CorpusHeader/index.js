@@ -1,5 +1,4 @@
 import { Box, Button, Typography } from "@mui/material";
-import TourIcon from "@mui/icons-material/Tour";
 import VersionDropdown from "../../Common/VersionDropdown";
 
 const CorpusHeader = ({ onStartTour }) => {

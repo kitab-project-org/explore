@@ -34,7 +34,6 @@ const NavigationAndStats = () => {
     // setBooks,
     showFilters,
     totalRecords,
-    rows,
     status,
     rowsPerPage,
     page,
