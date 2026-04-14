@@ -1,5 +1,5 @@
 import { config } from "../config";
-const { KITAB_DEV_URL, ONE_TO_ALL_URL, GITHUB_PAIRWISE_URL, GITHUB_PAIRWISE_LIGHT_URL } = config;
+const { KITAB_DEV_URL, ONE_TO_ALL_URL, GITHUB_PAIRWISE_URL } = config;
 
 // folders containing the full srt files (including alignment strings):
 export const srtFolders = {
