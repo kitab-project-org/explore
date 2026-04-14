@@ -1,5 +1,5 @@
 import { useEffect, useCallback, useContext, useState } from "react";
-import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Grid, Typography } from "@mui/material";
 import { Box } from "@mui/system"; // CHECK: Should this be imported from @mui/material?
 import { makeStyles } from "@mui/styles";
