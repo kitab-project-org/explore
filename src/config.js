@@ -1,8 +1,9 @@
 // change this
 
 export const config = {
-  DEV_BASE_URL: "https://dev-kitab-metadata-api.azurewebsites.net",
+  //DEV_BASE_URL: "https://dev-kitab-metadata-api.azurewebsites.net",
   //DEV_BASE_URL: "http://127.0.0.1:8000",
+  DEV_BASE_URL: "https://labelstudio.kitab-project.org/kitab-api",
   PROD_BASE_URL: "https://kitab-metadata-api.azurewebsites.net",
   DEV_ENV: true,
   GITHUB_BASE_URL: "https://github.com/OpenITI",
