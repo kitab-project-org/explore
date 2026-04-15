@@ -37,7 +37,7 @@ const steps = [
       "This number shows how many text reuse instances were found for this book in the corpus. Click it to open a side panel with pairwise text reuse statistics.",
   },
   {
-    element: "#meta-drawer",
+    element: "#CorpusMetadata-Drawer",
     title: "Metadata details",
     intro:
       "The panel gives more details about the text reuse data for this text version. <br>At the top, you can access tabs with detailed metadata on the author, the text and text version.",
@@ -106,7 +106,7 @@ const steps = [
       "You can click the VersionID to open a side panel with detailed metadata for that text version.",
   },
   /*{
-    element: "#meta-drawer",
+    element: "#CorpusMetadata-Drawer",
     title: "Metadata details",
     intro:
       "The panel contains metadata on this specific text version. At the top, you can access tabs with metadata on the author, the text and text reuse.",
@@ -133,7 +133,7 @@ const steps = [
   },
 ];
 
-const DYNAMIC_ELEMENTS = new Set(["#filter-sidebar", "#meta-drawer", "#text-reuse-drawer-info"]);
+const DYNAMIC_ELEMENTS = new Set(["#filter-sidebar", "#CorpusMetadata-Drawer", "#text-reuse-drawer-info"]);
 
 const CorpusMetadataTour = ({ run, onExit, setFilterPanel, toggleSidePanel, setIsOpenDrawer }) => {
   const introRef = useRef(null);
@@ -200,7 +200,7 @@ const CorpusMetadataTour = ({ run, onExit, setFilterPanel, toggleSidePanel, setI
         tourSidebarOpen = true;
         setFilterPanel?.(true);
         return new Promise((resolve) => setTimeout(resolve, 350));
-      } else if (targetElement?.id === "meta-drawer") {
+      } else if (targetElement?.id === "CorpusMetadata-Drawer") {
         console.log("META DRAWER TOUR")
         tourDrawerOpen = true;
         toggleSidePanel(
