@@ -196,12 +196,10 @@ const CorpusMetadataTour = ({ run, onExit, setFilterPanel, toggleSidePanel, setI
     // Returning a Promise lets React finish rendering before intro.js highlights.
     introRef.current.onBeforeChange(function (targetElement) {
       if (targetElement?.id === "filter-sidebar") {
-        console.log("FILTER SIDEBAR TOUR")
         tourSidebarOpen = true;
         setFilterPanel?.(true);
         return new Promise((resolve) => setTimeout(resolve, 350));
       } else if (targetElement?.id === "CorpusMetadata-Drawer") {
-        console.log("META DRAWER TOUR")
         tourDrawerOpen = true;
         toggleSidePanel(
           {
@@ -225,9 +223,7 @@ const CorpusMetadataTour = ({ run, onExit, setFilterPanel, toggleSidePanel, setI
         tourDrawerOpen = false;
         setIsOpenDrawer?.(false);
         return new Promise((resolve) => setTimeout(resolve, 350));
-      } else {
-        console.log(targetElement.id);
-      }
+      } 
     });
 
     // Type a demo query when the first search step appears; check the first two
