@@ -836,7 +836,7 @@ const Visual = (props) => {
       // reset the milestones to be displayed in the reader:
       setDisplayMs({ book1: {}, book2: {} });
 
-      setBooksAlignment({
+      setBooksAlignment([{
         s1: d1?.s1,
         s2: d1?.s2,
         bw1: d1?.bw1,
@@ -851,7 +851,7 @@ const Visual = (props) => {
         afterAlignment1: "",
         beforeAlignment2: "",
         afterAlignment2: "",
-      });
+      }]);
 
     } else {
       setTextAvailable(true);
@@ -921,7 +921,7 @@ const Visual = (props) => {
       let beforeAlignment2 = ms2Text.slice(0, startChar2);
       let afterAlignment2 = ms2Text.slice(endChar2, ms2Text.length);
 
-      setBooksAlignment({
+      setBooksAlignment([{
         s1: s1,
         s2: s2,
         bw1: d1?.bw1,
@@ -936,7 +936,7 @@ const Visual = (props) => {
         afterAlignment1: afterAlignment1,
         beforeAlignment2: beforeAlignment2,
         afterAlignment2: afterAlignment2,
-      });
+      }]);
     }
 
     

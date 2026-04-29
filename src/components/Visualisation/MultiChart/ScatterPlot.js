@@ -93,51 +93,48 @@ const ScatterPlot = (props) => {
     console.log("updating scatter");
 
     async function handleClickedDot(e, d) {
-    //const handleClickedDot = useCallback(async function (e, d) {
       console.log("Dot clicked: ");
       console.log(d);
 
-      // Capture s1/s2 before d is reshaped below
-      // (undefined when the uploaded TSV has no s1/s2 column):
-      const s1FromData = d.alignments[0].s1;
-      const s2FromData = d.alignments[0].s2;
+      // Capture all alignments before d is reshaped below:
+      const originalAlignments = d.alignments;
+      // s1FromData is undefined when the uploaded TSV has no s1/s2 column:
+      const s1FromData = originalAlignments[0].s1;
 
-      // TO DO: for the moment, we only show the first milestone from book2
-      // that has text reuse in common with the main milestone!
       d = {
         ms1: d.ms1,
         id2: d.id2,
         date: d.date,
         bookIndex: d.bookIndex,
-        ms2: d.alignments[0].ms2,
-        b1: d.alignments[0].b1,
-        e1: d.alignments[0].e1,
-        b2: d.alignments[0].b2,
-        e2: d.alignments[0].e2,
-        matches_percent: d.alignments[0].matches_percent,
-        ch_match: d.alignments[0].ch_match,
-        id: d.alignments[0].id,
+        ms2: originalAlignments[0].ms2,
+        b1: originalAlignments[0].b1,
+        e1: originalAlignments[0].e1,
+        b2: originalAlignments[0].b2,
+        e2: originalAlignments[0].e2,
+        matches_percent: originalAlignments[0].matches_percent,
+        ch_match: originalAlignments[0].ch_match,
+        id: originalAlignments[0].id,
       }
 
       // setting the msPairData will trigger a re-render!
       let versionCode2 = d.id2.split("-")[0];
       setMsPairData({
-        book1: {
-          versionCode: mainVersionCode,
-          b: d.b1,
-          e: d.e1,
-          ms: d.ms1
-        },
-        book2: {
-          versionCode: versionCode2,
-          b: d.b2,
-          e: d.e2,
-          ms: d.ms2
-        },
-      })
+        book1: { versionCode: mainVersionCode, b: d.b1, e: d.e1, ms: d.ms1 },
+        book2: { versionCode: versionCode2, b: d.b2, e: d.e2, ms: d.ms2 },
+      });
 
       if (isUploadRef.current && s1FromData !== undefined) {
-        // Use s1/s2 strings directly from the uploaded TSV data.
+        // Build one entry per alignment from TSV s1/s2 strings:
+        const allAlignments = originalAlignments.map(al => ({
+          s1: al.s1,
+          s2: al.s2,
+          bw1: null, ew1: null, bw2: null, ew2: null,
+          bc1: null, ec1: null, bc2: null, ec2: null,
+          beforeAlignment1: "",
+          afterAlignment1: "",
+          beforeAlignment2: "",
+          afterAlignment2: "",
+        }));
         // setBooks must be called (with null content) to make the Books
         // component mount — it only renders when `books` state is truthy:
         setBooks({
@@ -158,30 +155,37 @@ const ScatterPlot = (props) => {
             last_ms: null,
           },
         });
-        setBooksAlignment({
-          s1: s1FromData,
-          s2: s2FromData,
-          bw1: null,
-          ew1: null,
-          bw2: null,
-          ew2: null,
-          bc1: null,
-          ec1: null,
-          bc2: null,
-          ec2: null,
-          beforeAlignment1: "",
-          afterAlignment1: "",
-          beforeAlignment2: "",
-          afterAlignment2: "",
-        });
+        setBooksAlignment(allAlignments);
       } else {
         setDataLoading({ ...dataLoading, books: true });
 
-        let ms1Text = await getMilestoneText(
+        // Fetch ms1 text once — it is the same for every alignment in this dot:
+        const ms1Text = await getMilestoneText(
           releaseCode, mainVersionCode, d.ms1, downloadedTexts, setDownloadedTexts
         );
-        let ms2Text = await getMilestoneText(
-          releaseCode, versionCode2, d.ms2, downloadedTexts, setDownloadedTexts
+
+        // Fetch ms2 text and extract strings for every alignment in parallel.
+        // getMilestoneText caches by milestone file, so alignments in the same
+        // 300-milestone chunk cost only one network request after the first:
+        const allAlignments = await Promise.all(
+          originalAlignments.map(async (al) => {
+            const ms2Text = await getMilestoneText(
+              releaseCode, versionCode2, al.ms2, downloadedTexts, setDownloadedTexts
+            );
+            const [s1, startChar1, endChar1] = extractAlignment(ms1Text, al.b1, al.e1, "char");
+            const [s2, startChar2, endChar2] = extractAlignment(ms2Text, al.b2, al.e2, "char");
+            return {
+              s1,
+              s2,
+              bw1: null, ew1: null, bw2: null, ew2: null,
+              bc1: startChar1, ec1: endChar1,
+              bc2: startChar2, ec2: endChar2,
+              beforeAlignment1: ms1Text.slice(0, startChar1),
+              afterAlignment1: ms1Text.slice(endChar1),
+              beforeAlignment2: ms2Text.slice(0, startChar2),
+              afterAlignment2: ms2Text.slice(endChar2),
+            };
+          })
         );
 
         setDataLoading({ ...dataLoading, books: false });
@@ -206,57 +210,10 @@ const ScatterPlot = (props) => {
             first_ms: null,
             last_ms: null,
           },
-        })
-
-        // reset the milestones to be displayed in the reader:
-        setDisplayMs({ book1: {}, book2: {} });
-
-        // extract the alignment text from the milestone
-        // if it is not in the csv data:
-        let [s1, startChar1, endChar1] = extractAlignment(
-          ms1Text,
-          d?.b1,
-          d?.e1,
-          "char"
-        );
-        let [s2, startChar2, endChar2] = extractAlignment(
-          ms2Text,
-          d?.b2,
-          d?.e2,
-          "char"
-        );
-
-        let beforeAlignment1 = ms1Text.slice(0, startChar1);
-        let afterAlignment1 = ms1Text.slice(endChar1, ms1Text.length);
-        let beforeAlignment2 = ms2Text.slice(0, startChar2);
-        let afterAlignment2 = ms2Text.slice(endChar2, ms2Text.length);
-        // Earlier: tried to use the character offsets directly,
-        // but that didn't work (includes non-Arabic chars)!
-        /*let s1 = ms1Text.slice(d?.b1, d?.e1);
-        let s2 = ms2Text.slice(d?.b2, d?.e2);
-        let beforeAlignment1 = ms1Text.slice(0, d?.b1);
-        let afterAlignment1 = ms1Text.slice(d?.e1, ms1Text.length);
-        let beforeAlignment2 = ms2Text.slice(0, d?.b2);
-        let afterAlignment2 = ms2Text.slice(d?.e2, ms2Text.length);*/
-
-        setBooksAlignment({
-          //s1: d1?.s1,
-          //s2: d1?.s2,
-          s1: s1,
-          s2: s2,
-          bw1: null,
-          ew1: null,
-          bw2: null,
-          ew2: null,
-          bc1: startChar1,
-          ec1: endChar1,
-          bc2: startChar2,
-          ec2: endChar2,
-          beforeAlignment1: beforeAlignment1,
-          afterAlignment1: afterAlignment1,
-          beforeAlignment2: beforeAlignment2,
-          afterAlignment2: afterAlignment2,
         });
+
+        setDisplayMs({ book1: {}, book2: {} });
+        setBooksAlignment(allAlignments);
       }
 
       document.getElementById("belowBooks").scrollIntoView({behavior: "smooth", block: "end"});

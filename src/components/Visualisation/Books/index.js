@@ -1,4 +1,4 @@
-import { Box, Button } from "@mui/material";
+import { Box, Button, IconButton, Typography } from "@mui/material";
 import { useContext, useState, useEffect } from "react";
 import DiffGrid from "./DiffGrid";
 import WikiEdDiffModal from "../BooksAlignment/WikiEdDiffModal";
@@ -26,6 +26,7 @@ const Books = ({ chartSpecificBar }) => {
     textAvailable
   } = useContext(Context);
   const [toggle, setToggle] = useState(true);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [wikiDiffBook, setWikiDiffBook] = useState("");
   const [parsedBookAlignment, setParsedBookAlignment] = useState({
     s1: "",
@@ -109,15 +110,20 @@ const Books = ({ chartSpecificBar }) => {
   };
   */
 
+  // Reset to the first alignment whenever a new dot is clicked:
+  useEffect(() => { setCurrentIndex(0); }, [booksAlignment]);
+
+  const currentAlignment = booksAlignment[currentIndex] ?? {};
+
   useEffect(() => {
     // get the html representation of the diff:
     const getData = async () => {
       /* eslint-disable no-unused-vars */
 
-      let [wikEdDiffHtml, aHtml, bHtml] = booksAlignment?.s1
+      let [wikEdDiffHtml, aHtml, bHtml] = currentAlignment?.s1
         ? await kitabDiff(
             cleanBeforeDiff(
-              booksAlignment?.s1,
+              currentAlignment?.s1,
               normalizeAlif,
               normalizeYa,
               normalizeHa,
@@ -125,7 +131,7 @@ const Books = ({ chartSpecificBar }) => {
               removeTags
             ),
             cleanBeforeDiff(
-              booksAlignment?.s2,
+              currentAlignment?.s2,
               normalizeAlif,
               normalizeYa,
               normalizeHa,
@@ -143,16 +149,15 @@ const Books = ({ chartSpecificBar }) => {
       setParsedBookAlignment({
         s1: aHtml,
         s2: bHtml,
-        beforeAlignment1: booksAlignment?.beforeAlignment1,
-        afterAlignment1: booksAlignment?.afterAlignment1,
-        beforeAlignment2: booksAlignment?.beforeAlignment2,
-        afterAlignment2: booksAlignment?.afterAlignment2,
+        beforeAlignment1: currentAlignment?.beforeAlignment1 ?? "",
+        afterAlignment1: currentAlignment?.afterAlignment1 ?? "",
+        beforeAlignment2: currentAlignment?.beforeAlignment2 ?? "",
+        afterAlignment2: currentAlignment?.afterAlignment2 ?? "",
       });
     };
     getData();
   }, [
-    setBooksAlignment,
-    booksAlignment,
+    currentAlignment,
     bookIntoRows,
     nRefineChars,
     nSharedChars,
@@ -177,6 +182,27 @@ const Books = ({ chartSpecificBar }) => {
       </SectionHeaderLayout>
       {toggle && (
         <>
+          {booksAlignment.length > 1 && (
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 1, mb: 1 }}>
+              <IconButton
+                onClick={() => setCurrentIndex(i => i - 1)}
+                disabled={currentIndex === 0}
+                size="small"
+              >
+                <i className="fa-solid fa-chevron-left" />
+              </IconButton>
+              <Typography variant="body2">
+                Alignment {currentIndex + 1} of {booksAlignment.length}
+              </Typography>
+              <IconButton
+                onClick={() => setCurrentIndex(i => i + 1)}
+                disabled={currentIndex === booksAlignment.length - 1}
+                size="small"
+              >
+                <i className="fa-solid fa-chevron-right" />
+              </IconButton>
+            </Box>
+          )}
           <Box
             ref={bookSectionRef}
             id="bookSectionRef"

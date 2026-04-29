@@ -149,28 +149,8 @@ function App() {
   const focusMilestone1 = useRef();
   const focusMilestone2 = useRef();
   const [chartSpecificBar, setChartSpecificBar] = useState({});
-  // contains alignment string and start+end indices of alignment:
-  const [booksAlignment, setBooksAlignment] = useState({
-    // alignment strings:
-    s1: "",
-    s2: "",
-    // part of the milestones before the alignment:
-    beforeAlignment1: "",
-    beforeAlignment2: "",
-    // part of the milestones after the alignment:
-    afterAlignment1: "",
-    afterAlignment2: "",
-    // token (*w*ord) offset of *b*eginning and *e*nd of the alignment:
-    bw1: 0,
-    ew1: 0,
-    bw2: 0,
-    ew2: 0,
-    // *c*haracter offset of *b*eginning and *e*nd of the alignment:
-    bc1: 0,
-    ec1: 0,
-    bc2: 0,
-    ec2: 0,
-  });
+  // contains alignment strings for all alignments of the selected dot/bar:
+  const [booksAlignment, setBooksAlignment] = useState([]);
   const [focusedDataIndex, setFocusedDataIndex] = useState(null);
   const [bookIntoRows, setBookIntoRows] = useState(false);
   const [selectedLine, setSelectedLine] = useState({});
