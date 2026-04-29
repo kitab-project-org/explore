@@ -707,7 +707,7 @@ const VisualisationPage = () => {
                 isPairwiseViz ? (
                   <Visual isPairwiseViz={isPairwiseViz} />
                 ) : (
-                  <MultiVisual isPairwiseViz={isPairwiseViz} />
+                  <MultiVisual isPairwiseViz={isPairwiseViz} handleUpload={handleUpload} />
                 )
               ) : chartData?.dataSets?.length ? (
                 <CircularInterminate />

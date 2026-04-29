@@ -1,5 +1,11 @@
-import { useContext, useState } from "react";
-import { Box } from "@mui/material";
+import { useContext, useRef, useState } from "react";
+import {
+  Box,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  Typography,
+} from "@mui/material";
 import * as d3 from "d3";
 import ScatterPlot from "./ScatterPlot";
 import BottomBar from "./BottomBar";
@@ -52,6 +58,12 @@ const MultiVisual = (props) => {
 
   
   const [dateRange, setDateRange] = useState([0, 1500]);
+  const [uploadDialogBook, setUploadDialogBook] = useState(null);
+  const pairwiseUploadRef = useRef(null);
+  const handlePairwiseUpload = (files) => {
+    setUploadDialogBook(null);
+    props.handleUpload(files);
+  };
   let maxbc = getHighestValueInArrayOfObjects(bookStats, "ch_match");
   const [bookCharRange, setBookCharRange] = useState([1, maxbc]);
   let maxalign = getHighestValueInArrayOfObjects(bookStats, "alignments");
@@ -247,7 +259,55 @@ const MultiVisual = (props) => {
             dateRange={dataDateRange}
             isUpload={isUpload}
             hasDates={hasDates}
+            onUploadRequest={(d) => setUploadDialogBook(d)}
           />
+          <Dialog
+            open={uploadDialogBook !== null}
+            onClose={() => setUploadDialogBook(null)}
+            maxWidth="sm"
+            fullWidth
+          >
+            <DialogTitle>Upload pairwise TSV file</DialogTitle>
+            <DialogContent>
+              <Typography sx={{ mb: 2 }}>
+                Please upload the pairwise TSV file for{" "}
+                <strong>{uploadDialogBook?.book}</strong>:
+              </Typography>
+              <Typography
+                sx={{ mb: 2, fontFamily: "monospace", wordBreak: "break-all" }}
+              >
+                {versionCode}_{uploadDialogBook?.id}.csv
+              </Typography>
+              <Box
+                sx={{
+                  border: "2px dashed grey",
+                  borderRadius: "8px",
+                  p: 4,
+                  textAlign: "center",
+                  cursor: "pointer",
+                  "&:hover": { borderColor: "#2862a5", color: "#2862a5" },
+                }}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  handlePairwiseUpload(e.dataTransfer.files);
+                }}
+                onClick={() => pairwiseUploadRef.current?.click()}
+              >
+                <i
+                  className="fa-solid fa-cloud-arrow-up"
+                  style={{ fontSize: "2em", display: "block", marginBottom: "8px" }}
+                />
+                <Typography>Drag &amp; drop a TSV file here, or click to browse</Typography>
+                <input
+                  ref={pairwiseUploadRef}
+                  type="file"
+                  style={{ display: "none" }}
+                  onChange={(e) => handlePairwiseUpload(e.target.files)}
+                />
+              </Box>
+            </DialogContent>
+          </Dialog>
         </>
         <div className={"vizTooltip"} sx={{ style: "opacity: 0" }} />
       </Box>
