@@ -97,6 +97,11 @@ const ScatterPlot = (props) => {
       console.log("Dot clicked: ");
       console.log(d);
 
+      // Capture s1/s2 before d is reshaped below
+      // (undefined when the uploaded TSV has no s1/s2 column):
+      const s1FromData = d.alignments[0].s1;
+      const s2FromData = d.alignments[0].s2;
+
       // TO DO: for the moment, we only show the first milestone from book2
       // that has text reuse in common with the main milestone!
       d = {
@@ -130,88 +135,129 @@ const ScatterPlot = (props) => {
           ms: d.ms2
         },
       })
-      setDataLoading({ ...dataLoading, books: true });
 
-      let ms1Text = await getMilestoneText(
-        releaseCode, mainVersionCode, d.ms1, downloadedTexts, setDownloadedTexts
-      );
-      let ms2Text = await getMilestoneText(
-        releaseCode, versionCode2, d.ms2, downloadedTexts, setDownloadedTexts
-      );
+      if (isUploadRef.current && s1FromData !== undefined) {
+        // Use s1/s2 strings directly from the uploaded TSV data.
+        // setBooks must be called (with null content) to make the Books
+        // component mount — it only renders when `books` state is truthy:
+        setBooks({
+          book1: {
+            versionCode: mainVersionCode,
+            title: chartData.bookUriDict[mainVersionCode],
+            content: null,
+            ms: d?.ms1,
+            first_ms: null,
+            last_ms: null,
+          },
+          book2: {
+            versionCode: versionCode2,
+            title: chartData.bookUriDict[versionCode2],
+            content: null,
+            ms: d?.ms2,
+            first_ms: null,
+            last_ms: null,
+          },
+        });
+        setBooksAlignment({
+          s1: s1FromData,
+          s2: s2FromData,
+          bw1: null,
+          ew1: null,
+          bw2: null,
+          ew2: null,
+          bc1: null,
+          ec1: null,
+          bc2: null,
+          ec2: null,
+          beforeAlignment1: "",
+          afterAlignment1: "",
+          beforeAlignment2: "",
+          afterAlignment2: "",
+        });
+      } else {
+        setDataLoading({ ...dataLoading, books: true });
 
-      setDataLoading({ ...dataLoading, books: false });
+        let ms1Text = await getMilestoneText(
+          releaseCode, mainVersionCode, d.ms1, downloadedTexts, setDownloadedTexts
+        );
+        let ms2Text = await getMilestoneText(
+          releaseCode, versionCode2, d.ms2, downloadedTexts, setDownloadedTexts
+        );
 
-      let b1Downloaded = downloadedTexts[releaseCode][mainVersionCode]["downloadedMs"];
-      let b2Downloaded = downloadedTexts[releaseCode][versionCode2]["downloadedMs"];
+        setDataLoading({ ...dataLoading, books: false });
 
-      setBooks({
-        book1: {
-          versionCode: mainVersionCode,
-          title: chartData.bookUriDict[mainVersionCode],
-          content: b1Downloaded?.msTexts,
-          ms: d?.ms1,
-          first_ms: null,
-          last_ms: null,
-        },
-        book2: {
-          versionCode: versionCode2,
-          title: chartData.bookUriDict[versionCode2],
-          content: b2Downloaded,
-          ms: d?.ms2,
-          first_ms: null,
-          last_ms: null,
-        },      
-      })
+        let b1Downloaded = downloadedTexts[releaseCode][mainVersionCode]["downloadedMs"];
+        let b2Downloaded = downloadedTexts[releaseCode][versionCode2]["downloadedMs"];
 
-      // reset the milestones to be displayed in the reader:
-      setDisplayMs({ book1: {}, book2: {} });
+        setBooks({
+          book1: {
+            versionCode: mainVersionCode,
+            title: chartData.bookUriDict[mainVersionCode],
+            content: b1Downloaded?.msTexts,
+            ms: d?.ms1,
+            first_ms: null,
+            last_ms: null,
+          },
+          book2: {
+            versionCode: versionCode2,
+            title: chartData.bookUriDict[versionCode2],
+            content: b2Downloaded,
+            ms: d?.ms2,
+            first_ms: null,
+            last_ms: null,
+          },
+        })
 
-      // extract the alignment text from the milestone
-      // if it is not in the csv data:
-      let [s1, startChar1, endChar1] = extractAlignment(
-        ms1Text,
-        d?.b1,
-        d?.e1,
-        "char"
-      );
-      let [s2, startChar2, endChar2] = extractAlignment(
-        ms2Text,
-        d?.b2,
-        d?.e2,
-        "char"
-      );
+        // reset the milestones to be displayed in the reader:
+        setDisplayMs({ book1: {}, book2: {} });
 
-      let beforeAlignment1 = ms1Text.slice(0, startChar1);
-      let afterAlignment1 = ms1Text.slice(endChar1, ms1Text.length);
-      let beforeAlignment2 = ms2Text.slice(0, startChar2);
-      let afterAlignment2 = ms2Text.slice(endChar2, ms2Text.length);
-      // Earlier: tried to use the character offsets directly, 
-      // but that didn't work (includes non-Arabic chars)!
-      /*let s1 = ms1Text.slice(d?.b1, d?.e1);
-      let s2 = ms2Text.slice(d?.b2, d?.e2);
-      let beforeAlignment1 = ms1Text.slice(0, d?.b1);
-      let afterAlignment1 = ms1Text.slice(d?.e1, ms1Text.length);
-      let beforeAlignment2 = ms2Text.slice(0, d?.b2);
-      let afterAlignment2 = ms2Text.slice(d?.e2, ms2Text.length);*/
+        // extract the alignment text from the milestone
+        // if it is not in the csv data:
+        let [s1, startChar1, endChar1] = extractAlignment(
+          ms1Text,
+          d?.b1,
+          d?.e1,
+          "char"
+        );
+        let [s2, startChar2, endChar2] = extractAlignment(
+          ms2Text,
+          d?.b2,
+          d?.e2,
+          "char"
+        );
 
-      setBooksAlignment({
-        //s1: d1?.s1,
-        //s2: d1?.s2,
-        s1: s1,
-        s2: s2,
-        bw1: null,
-        ew1: null,
-        bw2: null,
-        ew2: null,
-        bc1: startChar1,
-        ec1: endChar1,
-        bc2: startChar2,
-        ec2: endChar2,
-        beforeAlignment1: beforeAlignment1,
-        afterAlignment1: afterAlignment1,
-        beforeAlignment2: beforeAlignment2,
-        afterAlignment2: afterAlignment2,
-      });
+        let beforeAlignment1 = ms1Text.slice(0, startChar1);
+        let afterAlignment1 = ms1Text.slice(endChar1, ms1Text.length);
+        let beforeAlignment2 = ms2Text.slice(0, startChar2);
+        let afterAlignment2 = ms2Text.slice(endChar2, ms2Text.length);
+        // Earlier: tried to use the character offsets directly,
+        // but that didn't work (includes non-Arabic chars)!
+        /*let s1 = ms1Text.slice(d?.b1, d?.e1);
+        let s2 = ms2Text.slice(d?.b2, d?.e2);
+        let beforeAlignment1 = ms1Text.slice(0, d?.b1);
+        let afterAlignment1 = ms1Text.slice(d?.e1, ms1Text.length);
+        let beforeAlignment2 = ms2Text.slice(0, d?.b2);
+        let afterAlignment2 = ms2Text.slice(d?.e2, ms2Text.length);*/
+
+        setBooksAlignment({
+          //s1: d1?.s1,
+          //s2: d1?.s2,
+          s1: s1,
+          s2: s2,
+          bw1: null,
+          ew1: null,
+          bw2: null,
+          ew2: null,
+          bc1: startChar1,
+          ec1: endChar1,
+          bc2: startChar2,
+          ec2: endChar2,
+          beforeAlignment1: beforeAlignment1,
+          afterAlignment1: afterAlignment1,
+          beforeAlignment2: beforeAlignment2,
+          afterAlignment2: afterAlignment2,
+        });
+      }
 
       document.getElementById("belowBooks").scrollIntoView({behavior: "smooth", block: "end"});
     };
@@ -329,7 +375,8 @@ const ScatterPlot = (props) => {
               .attr("r", props.dotSize)
               .style("fill", function (d) { return colorScale(d.ch_match) } )
               .style("cursor", function (d) {
-                return (!props.isUpload && d.id2 !== versionCode) ? "pointer" : "default";
+                const hasStrings = d.alignments[0]?.s1 !== undefined;
+                return ((!props.isUpload || hasStrings) && d.id2 !== versionCode) ? "pointer" : "default";
               })
               // add tooltip:
               .on("mouseover", function(event, d) {
@@ -344,9 +391,13 @@ const ScatterPlot = (props) => {
                     ? `<br/>Milestone ${d.alignments[0].ms2} in ${props.bookUriDict[d.id2]}`
                     : `<br/>Milestones ${d.alignments.map(el => el.ms2)} in ${props.bookUriDict[d.id2]}`;
                   tooltipMsg += `<br/>Characters matched: ${d.ch_match}`;
-                  tooltipMsg += props.isUpload
-                    ? "<br/>(Text comparison not available for uploaded files)"
-                    : "<br/>(Click dot to compare milestones)";
+                  if (!props.isUpload) {
+                    tooltipMsg += "<br/>(Click dot to compare milestones)";
+                  } else if (d.alignments[0]?.s1 !== undefined) {
+                    tooltipMsg += "<br/>(Click dot to compare alignment strings)";
+                  } else {
+                    tooltipMsg += "<br/>(Text comparison not available for uploaded files)";
+                  }
                 }
                 // position the tooltip (making sure it does not extend outside view):
                 const [x, y] = calculateTooltipPos(event, tooltipDiv, tooltipMsg, "multiVis");
@@ -361,7 +412,8 @@ const ScatterPlot = (props) => {
                       .style("opacity", 0);
               })
               .on("click", function(event, d){
-                if (d.id2 !== versionCode && !isUploadRef.current) {
+                const hasStrings = d.alignments[0]?.s1 !== undefined;
+                if (d.id2 !== versionCode && (!isUploadRef.current || hasStrings)) {
                   handleClickedDot(event, d);
                 }
               })
