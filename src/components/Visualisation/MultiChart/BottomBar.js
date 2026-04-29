@@ -69,7 +69,9 @@ const BottomBar = (props) => {
     // Add X axis label: 
     barSvg.selectAll(".xLabel").remove();
     const lineHeight = axisLabelFontSize * 1.3;
-    const xLabelText = "Books for which passim detected text reuse with "+props.mainBookURI+" (chronologically arranged)";
+    const xLabelText = props.hasDates
+      ? "Books for which passim detected text reuse with " + props.mainBookURI + " (chronologically arranged)"
+      : "Books for which passim detected text reuse with " + props.mainBookURI + " (alphabetically arranged)";
     const xLabelLines = wrapTextToSvgWidth(
       xLabelText, 
       width, 

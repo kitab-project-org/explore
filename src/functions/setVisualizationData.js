@@ -131,9 +131,8 @@ function prepareMsData(
   for (let i = 0; i < msData.length; i++) {
     try {
       msData[i]["bookIndex"] = bookIndexDict[msData[i]["id2"]];
-      msData[i]["date"] = parseInt(
-        bookUriDict[msData[i]["id2"]][0].substring(0, 4)
-      );
+      const rawMsDate = parseInt(bookUriDict[msData[i]["id2"]][0].substring(0, 4));
+      msData[i]["date"] = isNaN(rawMsDate) ? null : rawMsDate;
     } catch (error) {}
   }
   return [msData, msStats, msBooks];
@@ -158,8 +157,8 @@ function prepareStats(stats, mainBookID, mainBookURI, mainBookMilestones) {
     stats[i]["bookIndex"] = i + 1;
     bookIndexDict[stats[i]["id"]] = stats[i]["bookIndex"];
     bookUriDict[stats[i]["id"]] = [stats[i]["book"]];
-    let date = parseInt(stats[i]["book"].substring(0, 4));
-    stats[i]["date"] = date;
+    const rawDate = parseInt(stats[i]["book"].substring(0, 4));
+    stats[i]["date"] = isNaN(rawDate) ? null : rawDate;
   }
   return [stats, bookIndexDict, bookUriDict];
 }

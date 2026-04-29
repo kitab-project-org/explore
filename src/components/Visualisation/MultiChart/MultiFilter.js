@@ -16,10 +16,12 @@ const MultiFilter = (props) => {
       }}
     >
       <SelfReuseFilter/>
-      <DateFilter
-        dateRange={props.dateRange}
-        setDateRange={props.setDateRange}
-      />
+      {props.hasDates && (
+        <DateFilter
+          dateRange={props.dateRange}
+          setDateRange={props.setDateRange}
+        />
+      )}
       <AlignmentsFilter
         bookAlignRange={props.bookAlignRange}
         setBookAlignRange={props.setBookAlignRange}

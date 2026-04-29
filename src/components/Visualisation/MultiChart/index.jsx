@@ -60,6 +60,7 @@ const MultiVisual = (props) => {
   const [msCharsRange, setMsCharsRange] = useState([1, maxmschars]);
 
   // FILTER DATA:
+  const hasDates = bookStats.some(d => d.date !== null);
   let dataDateRange = dateRange;
   if (selfReuseOnly) {
     // only keep the items whose author is the same as the author of the main book:
@@ -67,7 +68,7 @@ const MultiVisual = (props) => {
       (d) => bookUriDict[d.id2][0].split(".")[0] === mainAuthor
     );
     bookStats = bookStats.filter((d) => d.book.split(".")[0] === mainAuthor);
-    dataDateRange = [mainAuthorDate, mainAuthorDate + 1];
+    dataDateRange = isNaN(mainAuthorDate) ? [0, 1500] : [mainAuthorDate, mainAuthorDate + 1];
   }
   /*console.log("AFTER SELFREUSE FILTER:");
   console.log(msData);
@@ -82,16 +83,14 @@ const MultiVisual = (props) => {
 
   msData = msData.filter((d) => {
     return (
-      d.date >= minDate &&
-      d.date <= maxDate &&
+      (d.date === null || (d.date >= minDate && d.date <= maxDate)) &&
       d.ch_match <= maxMsChars &&
       d.ch_match >= minMsChars
     );
   });
   bookStats = bookStats.filter((d) => {
     return (
-      d.date >= minDate &&
-      d.date <= maxDate &&
+      (d.date === null || (d.date >= minDate && d.date <= maxDate)) &&
       (selfReuseOnly && d.book === mainBookURI
         ? 1
         : d.ch_match >= minBookChars) &&
@@ -247,11 +246,13 @@ const MultiVisual = (props) => {
             mainBookURI={mainBookURI}
             dateRange={dataDateRange}
             isUpload={isUpload}
+            hasDates={hasDates}
           />
         </>
         <div className={"vizTooltip"} sx={{ style: "opacity: 0" }} />
       </Box>
       <MultiFilter
+        hasDates={hasDates}
         dateRange={dateRange}
         setDateRange={setDateRange}
         bookCharRange={bookCharRange}
