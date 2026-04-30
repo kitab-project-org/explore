@@ -107,28 +107,28 @@ const Visual = (props) => {
     currentXDomain,
     duration1 = 700;
 
-  let lastMsFirst = Math.ceil(chartData?.tokens?.first / chunkSize);
-  let lastMsSecond = Math.ceil(chartData?.tokens?.second / chunkSize);
+  let lastMs1 = Math.ceil(chartData?.tokens?.first / chunkSize);
+  let lastMs2 = Math.ceil(chartData?.tokens?.second / chunkSize);
   // if the number of tokens is not found from the metadata, 
   // use the last milestone for which reuse was found as a proxy
   let showBookEnd1 = true;
   let showBookEnd2 = true;
-  if (lastMsFirst === 0) {
+  if (lastMs1 === 0) {
     console.log(chartData);
-    lastMsFirst = getHighestValueInArrayOfObjects(chartData.dataSets, "seq1");
+    lastMs1 = getHighestValueInArrayOfObjects(chartData.dataSets, "seq1");
     showBookEnd1 = false;
   }
-  if (lastMsSecond === 0) {
-    lastMsSecond = getHighestValueInArrayOfObjects(chartData.dataSets, "seq2");
+  if (lastMs2 === 0) {
+    lastMs2 = getHighestValueInArrayOfObjects(chartData.dataSets, "seq2");
     showBookEnd2 = false;
   }
   //console.log(`showBookEnd1: ${showBookEnd1}, showBookEnd2: ${showBookEnd2}`);
 
 
   var maxValues = {
-    book1: isFlipped ? lastMsSecond : lastMsFirst, //13000,
-    book2: isFlipped ? lastMsFirst : lastMsSecond, //13500,
-    peak: Math.max(lastMsFirst, lastMsSecond), //13871,
+    book1: isFlipped ? lastMs2 : lastMs1, //13000,
+    book2: isFlipped ? lastMs1 : lastMs2, //13500,
+    peak: Math.max(lastMs1, lastMs2), //13871,
   };
 
   /////////////// CHART HELPER FUNCTIONS: DRAWING ////////////////////
@@ -236,9 +236,9 @@ const Visual = (props) => {
       [width, height],
     ]);
     refLinesData = [
-      { x: 1, y: 0, yScale: y0Scale, solid: true },
+      { x: 0, y: 0, yScale: y0Scale, solid: true },
       { x: max.book1, y: 0, yScale: y0Scale, solid: showBookEnd1 },
-      { x: 1, y: barMaxHeight * 2, yScale: y1Scale, solid: true },
+      { x: 0, y: barMaxHeight * 2, yScale: y1Scale, solid: true },
       { x: max.book2, y: barMaxHeight * 2, yScale: y1Scale, solid: showBookEnd2  },
     ];
 
