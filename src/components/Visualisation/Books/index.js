@@ -1,5 +1,5 @@
 import { Box, Button, IconButton, Typography } from "@mui/material";
-import { useContext, useState, useEffect } from "react";
+import { useContext, useState, useEffect, useMemo } from "react";
 import DiffGrid from "./DiffGrid";
 import WikiEdDiffModal from "../BooksAlignment/WikiEdDiffModal";
 import CircularInterminate from "../CircularIndeterminate";
@@ -112,7 +112,10 @@ const Books = ({ chartSpecificBar }) => {
   // Reset to the first alignment whenever a new dot is clicked:
   useEffect(() => { setCurrentIndex(0); }, [booksAlignment]);
 
-  const currentAlignment = booksAlignment[currentIndex] ?? {};
+  const currentAlignment = useMemo(
+    () => booksAlignment[currentIndex] ?? {},
+    [booksAlignment, currentIndex]
+  );
 
   useEffect(() => {
     // get the html representation of the diff:
