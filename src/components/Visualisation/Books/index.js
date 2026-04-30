@@ -14,7 +14,6 @@ const Books = ({ chartSpecificBar }) => {
     bookSectionRef,
     dataLoading,
     booksAlignment,
-    setBooksAlignment,
     bookIntoRows,
     nRefineChars,
     nSharedChars,
