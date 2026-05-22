@@ -8,7 +8,7 @@ const BookAlignmentHeader = () => {
 
   return (
     <Box sx={{ postion: "relative" }}>
-      {booksAlignment?.s1 && (
+      {booksAlignment[0]?.s1 && (
         <Box display="flex" justifyContent="space-between">
           <Link
             href="https://kitab-project.org/data/viz#diff-viewer"
