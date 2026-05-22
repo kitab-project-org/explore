@@ -156,9 +156,10 @@ function prepareStats(stats, mainBookID, mainBookURI, mainBookMilestones) {
   for (var i = 0; i < stats.length; i++) {
     stats[i]["bookIndex"] = i + 1;
     bookIndexDict[stats[i]["id"]] = stats[i]["bookIndex"];
-    bookUriDict[stats[i]["id"]] = [stats[i]["book"]];
-    const rawDate = parseInt(stats[i]["book"].substring(0, 4));
+    bookUriDict[stats[i]["id"]] = [stats[i]["book"] ?? stats[i]["id"]];
+    const rawDate = stats[i]["book"] ? parseInt(stats[i]["book"].substring(0, 4)) : NaN;
     stats[i]["date"] = isNaN(rawDate) ? null : rawDate;
+    stats[i]["manuscript"] = stats[i]["book"] ? null : stats[i]["id"];
   }
   return [stats, bookIndexDict, bookUriDict];
 }
@@ -342,7 +343,7 @@ export const setMultiVizData = (values) => {
       // Parse the CSV files and set the chart data:
       const parseCSVData = async (msdataFile, statsFile, book1) => {
         let mainBookID = book1.version_code;
-        let mainBookURI = book1.text.text_uri;
+        let mainBookURI = book1.text?.text_uri ? book1.text.text_uri : book1.manuscript.manuscript_uri;
 
         // parse msdata csv file
         // (contains all text reuse data for book 1, arranged per milestone):

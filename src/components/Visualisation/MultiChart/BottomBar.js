@@ -165,7 +165,8 @@ const BottomBar = (props) => {
                     .duration(200)
                     .style("opacity", .9);
                 // create the text for the tooltip:
-                let tooltipMsg = d.book;
+                console.log("++++++++++++++")
+                let tooltipMsg = d.book ?? d.manuscript;
                 tooltipMsg += "<br/>Total characters matched: " + d3.format(",")(d.ch_match);
                 tooltipMsg += isUploadRef.current
                   ? "<br/>(Click bar to upload pairwise TSV file)"

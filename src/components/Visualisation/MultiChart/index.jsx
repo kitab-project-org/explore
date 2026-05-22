@@ -35,7 +35,7 @@ const MultiVisual = (props) => {
   var height = 600 - visMargins.top - visMargins.bottom;
 
   const book1 = metaData.book1;
-  const mainBookURI = book1.bookTitle.path;
+  const mainBookURI = book1.bookTitle?.path ?? book1.shelfmark ?? book1.versionCode ?? "";
   const mainAuthor = mainBookURI.split(".")[0];
   const mainAuthorDate = parseInt(mainAuthor.slice(0, 4));
 
@@ -79,7 +79,7 @@ const MultiVisual = (props) => {
     msData = msData.filter(
       (d) => bookUriDict[d.id2][0].split(".")[0] === mainAuthor
     );
-    bookStats = bookStats.filter((d) => d.book.split(".")[0] === mainAuthor);
+    bookStats = bookStats.filter((d) => (d.book ?? "").split(".")[0] === mainAuthor);
     dataDateRange = isNaN(mainAuthorDate) ? [0, 1500] : [mainAuthorDate, mainAuthorDate + 1];
   }
   /*console.log("AFTER SELFREUSE FILTER:");
@@ -271,7 +271,7 @@ const MultiVisual = (props) => {
             <DialogContent>
               <Typography sx={{ mb: 2 }}>
                 Please upload the pairwise TSV file for{" "}
-                <strong>{uploadDialogBook?.book}</strong>:
+                <strong>{uploadDialogBook?.book ?? uploadDialogBook?.id}</strong>:
               </Typography>
               <Typography
                 sx={{ mb: 2, fontFamily: "monospace", wordBreak: "break-all" }}
