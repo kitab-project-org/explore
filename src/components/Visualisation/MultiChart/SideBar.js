@@ -46,7 +46,7 @@ const SideBar = (props) => {
       .range([ 0, props.width ]);
     // build Y axis scale:
     let yScale = d3.scaleLinear()
-      .domain([props.mainBookMilestones+1,0])   // flip the axis!
+      .domain([props.msRange[1]+1, props.msRange[0]-1])   // flip the axis!
       .range([props.height, 0]);
 
 
@@ -144,8 +144,8 @@ const SideBar = (props) => {
         )
       )    
     
-  }, [props.msStats, props.height, props.mainBookMilestones, props.width, 
-      tickFontSize, axisLabelFontSize, props.margin.top]);
+  }, [props.msStats, props.height, props.mainBookMilestones, props.msRange,
+      props.width, tickFontSize, axisLabelFontSize, props.margin.top]);
   
   return (
     <svg 

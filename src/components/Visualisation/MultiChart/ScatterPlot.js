@@ -334,7 +334,7 @@ const ScatterPlot = (props) => {
       .domain([0, props.bookStats.length+2])  // each book will have its own space on the X axis
       .range([ 0, width ]); // props.width ]);
     let yScale = d3.scaleLinear()
-      .domain([props.mainBookMilestones+1,0])   // flip the axis!
+      .domain([props.msRange[1]+1, props.msRange[0]-1])   // flip the axis!
       .range([props.height, 0]);
 
     // Add/update X axis in-place (avoid remove+append which triggers mouseover on re-render):

@@ -7,49 +7,48 @@ const noSpinnerSx = {
   "& input[type=number]": { MozAppearance: "textfield" },
 };
 
-const DateFilter = ({ setDateRange, fullDateRange }) => {
-  const [sliderVal, setSliderVal] = useState(fullDateRange);
+const MilestoneFilter = ({ setMsRange, fullMilestoneRange }) => {
+  const [sliderVal, setSliderVal] = useState(fullMilestoneRange);
   // textVal holds the raw string while the user is typing:
-  const [textVal, setTextVal] = useState(fullDateRange.map(String));
+  const [textVal, setTextVal] = useState(fullMilestoneRange.map(String));
 
   // Sync when a new book's data is loaded:
   useEffect(() => {
-    setSliderVal(fullDateRange);
-    setTextVal(fullDateRange.map(String));
-    setDateRange(fullDateRange);
-  }, [fullDateRange[0], fullDateRange[1]]); // eslint-disable-line react-hooks/exhaustive-deps
+    setSliderVal(fullMilestoneRange);
+    setTextVal(fullMilestoneRange.map(String));
+    setMsRange(fullMilestoneRange);
+  }, [fullMilestoneRange[0], fullMilestoneRange[1]]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const commit = (index, raw) => {
     const num = parseInt(raw, 10);
     if (isNaN(num)) {
-      // revert text to current slider value:
       setTextVal(prev => { const n = [...prev]; n[index] = String(sliderVal[index]); return n; });
       return;
     }
     const clamped = index === 0
-      ? Math.min(Math.max(num, fullDateRange[0]), sliderVal[1])
-      : Math.min(Math.max(num, sliderVal[0]), fullDateRange[1]);
+      ? Math.min(Math.max(num, fullMilestoneRange[0]), sliderVal[1])
+      : Math.min(Math.max(num, sliderVal[0]), fullMilestoneRange[1]);
     const next = index === 0 ? [clamped, sliderVal[1]] : [sliderVal[0], clamped];
     setSliderVal(next);
     setTextVal(next.map(String));
-    setDateRange(next);
+    setMsRange(next);
   };
 
   const handleReset = () => {
-    setSliderVal(fullDateRange);
-    setTextVal(fullDateRange.map(String));
-    setDateRange(fullDateRange);
+    setSliderVal(fullMilestoneRange);
+    setTextVal(fullMilestoneRange.map(String));
+    setMsRange(fullMilestoneRange);
   };
 
   return (
     <Box sx={{ width: 200, margin: "20px" }}>
-      <Typography gutterBottom sx={{ textAlign: "center" }}>Filter by date:</Typography>
+      <Typography gutterBottom sx={{ textAlign: "center" }}>Milestone range:</Typography>
       <Slider
         value={sliderVal}
         onChange={(_, newRange) => { setSliderVal(newRange); setTextVal(newRange.map(String)); }}
-        onChangeCommitted={(_, newRange) => setDateRange(newRange)}
-        min={fullDateRange[0]}
-        max={fullDateRange[1]}
+        onChangeCommitted={(_, newRange) => setMsRange(newRange)}
+        min={fullMilestoneRange[0]}
+        max={fullMilestoneRange[1]}
       />
       <Box sx={{ display: "flex", justifyContent: "space-between", gap: 1, mt: 1 }}>
         <TextField
@@ -60,7 +59,7 @@ const DateFilter = ({ setDateRange, fullDateRange }) => {
           onChange={(e) => setTextVal(prev => [e.target.value, prev[1]])}
           onBlur={(e) => commit(0, e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter") commit(0, e.target.value); }}
-          inputProps={{ min: fullDateRange[0], max: sliderVal[1], step: 1 }}
+          inputProps={{ min: fullMilestoneRange[0], max: sliderVal[1], step: 1 }}
           sx={noSpinnerSx}
         />
         <TextField
@@ -71,7 +70,7 @@ const DateFilter = ({ setDateRange, fullDateRange }) => {
           onChange={(e) => setTextVal(prev => [prev[0], e.target.value])}
           onBlur={(e) => commit(1, e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter") commit(1, e.target.value); }}
-          inputProps={{ min: sliderVal[0], max: fullDateRange[1], step: 1 }}
+          inputProps={{ min: sliderVal[0], max: fullMilestoneRange[1], step: 1 }}
           sx={noSpinnerSx}
         />
       </Box>
@@ -82,4 +81,4 @@ const DateFilter = ({ setDateRange, fullDateRange }) => {
   );
 };
 
-export default DateFilter;
+export default MilestoneFilter;

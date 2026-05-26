@@ -56,8 +56,18 @@ const MultiVisual = (props) => {
 
   console.log(chartData);
 
-  
-  const [dateRange, setDateRange] = useState([0, 1500]);
+  // Full date range of the loaded dataset (used as slider bounds and for reset):
+  let _minDate = Infinity, _maxDate = -Infinity;
+  for (const b of chartData.bookStats) {
+    if (b.date !== null) {
+      if (b.date < _minDate) _minDate = b.date;
+      if (b.date > _maxDate) _maxDate = b.date;
+    }
+  }
+  const fullDateRange = isFinite(_minDate) ? [_minDate, _maxDate] : [0, 1500];
+
+  const [dateRange, setDateRange] = useState(fullDateRange);
+  const [msRange, setMsRange] = useState([1, storedMainBookMilestones ?? Math.ceil(tokens?.first / 300)]);
   const [uploadDialogBook, setUploadDialogBook] = useState(null);
   const pairwiseUploadRef = useRef(null);
   const handlePairwiseUpload = (files) => {
@@ -92,12 +102,14 @@ const MultiVisual = (props) => {
   let [minBookChars, maxBookChars] = bookCharRange;
   let [minAlignments, maxAlignments] = bookAlignRange;
   let [minMsChars, maxMsChars] = msCharsRange;
+  let [minMs, maxMs] = msRange;
 
   msData = msData.filter((d) => {
     return (
       (d.date === null || (d.date >= minDate && d.date <= maxDate)) &&
       d.ch_match <= maxMsChars &&
-      d.ch_match >= minMsChars
+      d.ch_match >= minMsChars &&
+      d.ms1 >= minMs && d.ms1 <= maxMs
     );
   });
   bookStats = bookStats.filter((d) => {
@@ -158,6 +170,7 @@ const MultiVisual = (props) => {
   };
 
   const mainBookMilestones = storedMainBookMilestones ?? Math.ceil(tokens.first / 300);
+  const fullMilestoneRange = [1, mainBookMilestones];
 
   // build variables needed to create axes:
   /*const maxChMatch = msData.reduce(
@@ -217,6 +230,7 @@ const MultiVisual = (props) => {
             <div style={{ float: "left" }}>
               <ScatterPlot
                 mainBookMilestones={mainBookMilestones}
+                msRange={msRange}
                 mainBookURI={mainBookURI}
                 versionCode={versionCode}
                 isUpload={isUpload}
@@ -243,6 +257,7 @@ const MultiVisual = (props) => {
             >
               <SideBar
                 mainBookMilestones={mainBookMilestones}
+                msRange={msRange}
                 msStats={msStats}
                 width={100}
                 height={height}
@@ -313,8 +328,10 @@ const MultiVisual = (props) => {
       </Box>
       <MultiFilter
         hasDates={hasDates}
-        dateRange={dateRange}
+        fullDateRange={fullDateRange}
         setDateRange={setDateRange}
+        fullMilestoneRange={fullMilestoneRange}
+        setMsRange={setMsRange}
         bookCharRange={bookCharRange}
         setBookCharRange={setBookCharRange}
         bookAlignRange={bookAlignRange}
