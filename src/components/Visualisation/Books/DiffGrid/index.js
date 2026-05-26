@@ -16,11 +16,12 @@ import { Context } from "../../../../App";
 import "../../../../index.css";
 
 
-const DiffGrid = ({ parsedBookAlignment, alignmentOnly }) => {
+const DiffGrid = ({ parsedBookAlignment, alignmentOnly, currentMs2 }) => {
   const { isFlipped, books, displayMs, setDisplayMs } = useContext(Context);
 
   const [open, setOpen] = useState(false);
 
+  const ms2 = currentMs2 ?? books.book2.ms;
   let columns = [
     {
       field: "book1",
@@ -28,7 +29,7 @@ const DiffGrid = ({ parsedBookAlignment, alignmentOnly }) => {
     },
     {
       field: "book2",
-      headerName: `${books.book2.title} (milestone ${books.book2.ms})`,
+      headerName: `${books.book2.title} (milestone ${ms2})`,
     },
   ];
   columns = isFlipped ? columns.reverse() : columns;
@@ -76,7 +77,7 @@ const DiffGrid = ({ parsedBookAlignment, alignmentOnly }) => {
     displayMs.book1
   );
   const [before2, after2] = createMsContext(
-    books.book2.ms,
+    ms2,
     parsedBookAlignment.beforeAlignment2,
     parsedBookAlignment.afterAlignment2,
     displayMs.book2

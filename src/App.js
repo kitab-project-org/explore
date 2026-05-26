@@ -149,8 +149,12 @@ function App() {
   const focusMilestone1 = useRef();
   const focusMilestone2 = useRef();
   const [chartSpecificBar, setChartSpecificBar] = useState({});
+  // currently highlighted marker in the visualisation ({ms1, id2}):
+  const [selectedMarker, setSelectedMarker] = useState(null);
   // contains alignment strings for all alignments of the selected dot/bar:
   const [booksAlignment, setBooksAlignment] = useState([]);
+  // alignment index to restore when booksAlignment loads from a URL param (null = default to 0):
+  const [initialAlignmentIndex, setInitialAlignmentIndex] = useState(null);
   const [focusedDataIndex, setFocusedDataIndex] = useState(null);
   const [bookIntoRows, setBookIntoRows] = useState(false);
   const [selectedLine, setSelectedLine] = useState({});
@@ -316,8 +320,12 @@ function App() {
         focusMilestone2,
         chartSpecificBar,
         setChartSpecificBar,
+        selectedMarker,
+        setSelectedMarker,
         booksAlignment,
         setBooksAlignment,
+        initialAlignmentIndex,
+        setInitialAlignmentIndex,
         selectedLine,
         setSelectedLine,
         showWikiEdDiff,

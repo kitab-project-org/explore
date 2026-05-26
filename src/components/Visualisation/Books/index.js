@@ -1,5 +1,6 @@
 import { Box, Button, IconButton, Typography } from "@mui/material";
 import { useContext, useState, useEffect, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import DiffGrid from "./DiffGrid";
 import WikiEdDiffModal from "../BooksAlignment/WikiEdDiffModal";
 import CircularInterminate from "../CircularIndeterminate";
@@ -22,8 +23,12 @@ const Books = ({ chartSpecificBar }) => {
     normalizeHa,
     removePunct,
     removeTags,
-    textAvailable
+    textAvailable,
+    books,
+    initialAlignmentIndex,
+    setInitialAlignmentIndex,
   } = useContext(Context);
+  const [, setSearchParams] = useSearchParams();
   const [toggle, setToggle] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [wikiDiffBook, setWikiDiffBook] = useState("");
@@ -109,8 +114,30 @@ const Books = ({ chartSpecificBar }) => {
   };
   */
 
-  // Reset to the first alignment whenever a new dot is clicked:
-  useEffect(() => { setCurrentIndex(0); }, [booksAlignment]);
+  // Reset to first alignment on new dot click, or to the URL-requested index on initial load:
+  useEffect(() => {
+    if (initialAlignmentIndex !== null) {
+      setCurrentIndex(initialAlignmentIndex);
+      setInitialAlignmentIndex(null);
+    } else {
+      setCurrentIndex(0);
+    }
+    console.log("RESETTING currentIndex to 0 in Books/index.js");
+  }, [booksAlignment]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Sync currentIndex → URL param (align_no) on user navigation.
+  useEffect(() => {
+    if (booksAlignment.length === 0) return;
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      if (currentIndex > 0) {
+        next.set("align_no", (currentIndex + 1).toString());
+      } else {
+        next.delete("align_no");
+      }
+      return next;
+    }, { replace: true });
+  }, [currentIndex]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const currentAlignment = useMemo(
     () => booksAlignment[currentIndex] ?? {},
@@ -119,6 +146,7 @@ const Books = ({ chartSpecificBar }) => {
 
   useEffect(() => {
     // get the html representation of the diff:
+    let cancelled = false;
     const getData = async () => {
       /* eslint-disable no-unused-vars */
 
@@ -146,6 +174,7 @@ const Books = ({ chartSpecificBar }) => {
           )
         : ["", "", ""];
 
+      if (cancelled) return;
       // store the kitabDiff output in the state:
       setWikiDiffBook(wikEdDiffHtml);
       setParsedBookAlignment({
@@ -158,6 +187,7 @@ const Books = ({ chartSpecificBar }) => {
       });
     };
     getData();
+    return () => { cancelled = true; };
   }, [
     currentAlignment,
     bookIntoRows,
@@ -184,39 +214,13 @@ const Books = ({ chartSpecificBar }) => {
       </SectionHeaderLayout>
       {toggle && (
         <>
-          {booksAlignment.length > 1 && (
-            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 1, mb: 1 }}>
-              <IconButton
-                onClick={() => setCurrentIndex(i => i - 1)}
-                disabled={currentIndex === 0}
-                size="small"
-              >
-                <i className="fa-solid fa-chevron-left" />
-              </IconButton>
-              <Typography variant="body2">
-                Alignment {currentIndex + 1} of {booksAlignment.length}
-              </Typography>
-              <IconButton
-                onClick={() => setCurrentIndex(i => i + 1)}
-                disabled={currentIndex === booksAlignment.length - 1}
-                size="small"
-              >
-                <i className="fa-solid fa-chevron-right" />
-              </IconButton>
-            </Box>
-          )}
           <Box
             ref={bookSectionRef}
             id="bookSectionRef"
             position={"relative"}
-            display={"flex"}
-            justifyContent={"space-between"}
             sx={{
-              p: {
-                xs: "0px",
-                md: "20px",
-              },
-              py: "20px",
+              px: { xs: "0px", md: "20px" },
+              pb: "20px",
             }}
           >
             {dataLoading?.books ? (
@@ -228,12 +232,43 @@ const Books = ({ chartSpecificBar }) => {
                 {/* The modal in which the inline diff is displayed: */}
                 <WikiEdDiffModal data={wikiDiffBook} />
 
+                {/* Navigation between multiple alignments for the same dot,
+                    styled to sit flush above the DiffGrid header */}
+                {booksAlignment.length > 1 && (
+                  <Box sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 1,
+                    bgcolor: "#f0f0f5",
+                  }}>
+                    <IconButton
+                      onClick={() => setCurrentIndex(i => i - 1)}
+                      disabled={currentIndex === 0}
+                      size="small"
+                    >
+                      <i className="fa-solid fa-chevron-left" />
+                    </IconButton>
+                    <Typography variant="body2">
+                      Alignment {currentIndex + 1} of {booksAlignment.length}
+                    </Typography>
+                    <IconButton
+                      onClick={() => setCurrentIndex(i => i + 1)}
+                      disabled={currentIndex === booksAlignment.length - 1}
+                      size="small"
+                    >
+                      <i className="fa-solid fa-chevron-right" />
+                    </IconButton>
+                  </Box>
+                )}
+
                 {/* The table in which the split diff is displayed: */}
                 <DiffGrid
                   chartSpecificBar={chartSpecificBar}
                   parsedBookAlignment={parsedBookAlignment}
                   isLeft={false}
                   alignmentOnly={alignmentOnly}
+                  currentMs2={currentAlignment?.ms2}
                 />
               </>
             )}
