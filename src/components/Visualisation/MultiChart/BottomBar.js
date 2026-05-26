@@ -44,6 +44,8 @@ const BottomBar = (props) => {
       .domain([maxTotalChMatch, 0])
       .range([0, height]);
 
+    barSvg.selectAll(".bottom-bar-plot").remove();
+
     // Add X axis:
     let allYears = props.bookStats.map(d => d.date);
     let tickIndices = [];

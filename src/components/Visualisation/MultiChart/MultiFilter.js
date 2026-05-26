@@ -28,11 +28,11 @@ const MultiFilter = (props) => {
         setMsRange={props.setMsRange}
       />
       <AlignmentsFilter
-        bookAlignRange={props.bookAlignRange}
+        fullAlignRange={props.fullAlignRange}
         setBookAlignRange={props.setBookAlignRange}
       />
       <BookCharsFilter
-        bookCharRange={props.bookCharRange}
+        fullBookCharRange={props.fullBookCharRange}
         setBookCharRange={props.setBookCharRange}
       />
     </Box>

@@ -74,10 +74,12 @@ const MultiVisual = (props) => {
     setUploadDialogBook(null);
     props.handleUpload(files);
   };
-  let maxbc = getHighestValueInArrayOfObjects(bookStats, "ch_match");
-  const [bookCharRange, setBookCharRange] = useState([1, maxbc]);
-  let maxalign = getHighestValueInArrayOfObjects(bookStats, "alignments");
-  const [bookAlignRange, setBookAlignRange] = useState([1, maxalign]);
+  let maxbc = getHighestValueInArrayOfObjects(bookStats.filter(d => d.id !== versionCode), "ch_match");
+  const fullBookCharRange = [1, maxbc];
+  const [bookCharRange, setBookCharRange] = useState(fullBookCharRange);
+  let maxalign = getHighestValueInArrayOfObjects(bookStats.filter(d => d.id !== versionCode), "alignments");
+  const fullAlignRange = [1, maxalign];
+  const [bookAlignRange, setBookAlignRange] = useState(fullAlignRange);
   let maxmschars = getHighestValueInArrayOfObjects(msData, "ch_match");
   const [msCharsRange, setMsCharsRange] = useState([1, maxmschars]);
 
@@ -106,7 +108,7 @@ const MultiVisual = (props) => {
 
   msData = msData.filter((d) => {
     return (
-      (d.date === null || (d.date >= minDate && d.date <= maxDate)) &&
+      (d.id2 === versionCode || d.date === null || (d.date >= minDate && d.date <= maxDate)) &&
       d.ch_match <= maxMsChars &&
       d.ch_match >= minMsChars &&
       d.ms1 >= minMs && d.ms1 <= maxMs
@@ -114,15 +116,14 @@ const MultiVisual = (props) => {
   });
   bookStats = bookStats.filter((d) => {
     return (
-      (d.date === null || (d.date >= minDate && d.date <= maxDate)) &&
+      (d.id === versionCode || d.date === null || (d.date >= minDate && d.date <= maxDate)) &&
       (selfReuseOnly && d.book === mainBookURI
         ? 1
         : d.ch_match >= minBookChars) &&
       (selfReuseOnly && d.book === mainBookURI
         ? 1
         : d.ch_match <= maxBookChars) &&
-      d.alignments >= minAlignments &&
-      d.alignments <= maxAlignments
+      (d.id === versionCode || (d.alignments >= minAlignments && d.alignments <= maxAlignments))
     );
   });
 
@@ -332,9 +333,9 @@ const MultiVisual = (props) => {
         setDateRange={setDateRange}
         fullMilestoneRange={fullMilestoneRange}
         setMsRange={setMsRange}
-        bookCharRange={bookCharRange}
+        fullBookCharRange={fullBookCharRange}
         setBookCharRange={setBookCharRange}
-        bookAlignRange={bookAlignRange}
+        fullAlignRange={fullAlignRange}
         setBookAlignRange={setBookAlignRange}
         msCharsRange={msCharsRange}
         setMsCharsRange={setMsCharsRange}
