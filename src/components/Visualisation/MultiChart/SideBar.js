@@ -2,12 +2,26 @@ import { useEffect, useRef, useContext } from "react";
 import * as d3 from "d3";
 import "../../../index.css";
 import { calculateTooltipPos, wrapTextToSvgWidth } from "../../../utility/Helper";
+import { getMilestoneHeadings } from "../../../utility/TocHelper";
 import { Context } from "../../../App";
 
 
 const SideBar = (props) => {
   const ref = useRef();
-  const { tickFontSize, axisLabelFontSize } = useContext(Context); // add axisLabelFontSize
+  const { tickFontSize, axisLabelFontSize, releaseCode, metaData } = useContext(Context);
+  const tocDataRef = useRef(null);
+
+  useEffect(() => {
+    const versionCode = metaData?.book1?.versionCode?.split("-")[0];
+    if (!versionCode || !releaseCode) return;
+    const url = `https://raw.githubusercontent.com/OpenITI/openiti_toc/refs/heads/v${releaseCode}/tocs/${versionCode}_TOC.json`;
+    let cancelled = false;
+    fetch(url)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (!cancelled) tocDataRef.current = data; })
+      .catch(() => { if (!cancelled) tocDataRef.current = null; });
+    return () => { cancelled = true; };
+  }, [metaData?.book1?.versionCode, releaseCode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // initialize the svg on mount:
   useEffect(() => {
@@ -100,18 +114,17 @@ const SideBar = (props) => {
             .style("stroke", "#3FB8AF")
             // add tooltip:
             .on("mouseover", function(event, d) {
-                // make the tooltip visible:
-                tooltipDiv.transition()
-                    .duration(200)
-                    .style("opacity", .9);
-                // create the text for the tooltip:
-                let tooltipMsg = "Milestone "+d.ms_id+":";
+                tooltipDiv.transition().duration(200).style("opacity", .9);
+                let tooltipMsg = "Milestone " + d.ms_id + ":";
                 tooltipMsg += "<br/>Total characters matched: " + d3.format(",")(d.ch_match_total);
-                // position the tooltip so that it remains in sight:
+                const headings = getMilestoneHeadings(tocDataRef.current, d.ms_id);
+                if (headings) {
+                  tooltipMsg += "<br/><b>Section(s):</b>" + headings;
+                }
                 const [x, y] = calculateTooltipPos(event, tooltipDiv, tooltipMsg, "multiVis");
                 tooltipDiv.html(tooltipMsg)
                   .style("left", `${x}px`)
-                  .style("top", `${y}px`); 
+                  .style("top", `${y}px`);
             })
             .on("mouseout", function(event, d) {
                 // hide the tooltip:
