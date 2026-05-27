@@ -8,20 +8,9 @@ import { Context } from "../../../App";
 
 const SideBar = (props) => {
   const ref = useRef();
-  const { tickFontSize, axisLabelFontSize, releaseCode, metaData } = useContext(Context);
-  const tocDataRef = useRef(null);
-
-  useEffect(() => {
-    const versionCode = metaData?.book1?.versionCode?.split("-")[0];
-    if (!versionCode || !releaseCode) return;
-    const url = `https://raw.githubusercontent.com/OpenITI/openiti_toc/refs/heads/v${releaseCode}/tocs/${versionCode}_TOC.json`;
-    let cancelled = false;
-    fetch(url)
-      .then(r => r.ok ? r.json() : null)
-      .then(data => { if (!cancelled) tocDataRef.current = data; })
-      .catch(() => { if (!cancelled) tocDataRef.current = null; });
-    return () => { cancelled = true; };
-  }, [metaData?.book1?.versionCode, releaseCode]); // eslint-disable-line react-hooks/exhaustive-deps
+  const { tickFontSize, axisLabelFontSize } = useContext(Context);
+  const tocRef = useRef(props.toc);
+  useEffect(() => { tocRef.current = props.toc; });
 
   // initialize the svg on mount:
   useEffect(() => {
@@ -117,7 +106,7 @@ const SideBar = (props) => {
                 tooltipDiv.transition().duration(200).style("opacity", .9);
                 let tooltipMsg = "Milestone " + d.ms_id + ":";
                 tooltipMsg += "<br/>Total characters matched: " + d3.format(",")(d.ch_match_total);
-                const headings = getMilestoneHeadings(tocDataRef.current, d.ms_id);
+                const headings = getMilestoneHeadings(tocRef.current, d.ms_id);
                 if (headings) {
                   tooltipMsg += "<br/><b>Section(s):</b>" + headings;
                 }

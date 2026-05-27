@@ -1,4 +1,4 @@
-import { useContext, useRef, useState } from "react";
+﻿import { useContext, useEffect, useRef, useState } from "react";
 import {
   Box,
   Dialog,
@@ -28,6 +28,7 @@ const MultiVisual = (props) => {
     colorScale,
     selfReuseOnly,
     visMargins,
+    releaseCode,
   } = useContext(Context);
 
   // TODO: let user set width/height (with resizable component or input field?)
@@ -83,6 +84,21 @@ const MultiVisual = (props) => {
   let maxmschars = getHighestValueInArrayOfObjects(msData, "ch_match");
   const [msCharsRange, setMsCharsRange] = useState([1, maxmschars]);
 
+  const [toc, setToc] = useState(null);
+  const [selectedSectionIds, setSelectedSectionIds] = useState(null);
+  useEffect(() => {
+    setSelectedSectionIds(null);
+    const vc = metaData?.book1?.versionCode?.split("-")[0];
+    if (!vc || !releaseCode) return;
+    const url = `https://raw.githubusercontent.com/OpenITI/openiti_toc/refs/heads/v${releaseCode}/tocs/${vc}_TOC.json`;
+    let cancelled = false;
+    fetch(url)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (!cancelled) setToc(data); })
+      .catch(() => { if (!cancelled) setToc(null); });
+    return () => { cancelled = true; };
+  }, [metaData?.book1?.versionCode, releaseCode]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // FILTER DATA:
   const hasDates = bookStats.some(d => d.date !== null);
   let dataDateRange = dateRange;
@@ -126,6 +142,21 @@ const MultiVisual = (props) => {
       (d.id === versionCode || (d.alignments >= minAlignments && d.alignments <= maxAlignments))
     );
   });
+
+  // TOC section filter + Y axis zoom:
+  let displayMsRange = msRange;
+  if (selectedSectionIds && selectedSectionIds.size > 0 && toc) {
+    const sectionRanges = Array.from(selectedSectionIds).map(id => {
+      const sec = toc.sections[id];
+      return [sec.start_ms, sec.end_ms];
+    });
+    msData = msData.filter(d =>
+      sectionRanges.some(([start, end]) => d.ms1 >= start && d.ms1 <= end)
+    );
+    const minDisplay = Math.max(msRange[0], Math.min(...sectionRanges.map(([s]) => s)));
+    const maxDisplay = Math.min(msRange[1], Math.max(...sectionRanges.map(([, e]) => e)));
+    if (minDisplay <= maxDisplay) displayMsRange = [minDisplay, maxDisplay];
+  }
 
   // recalculate the index numbers (X values):
   let bookIndexDict = {}; // keys: versionID, values: bookIndex
@@ -231,7 +262,7 @@ const MultiVisual = (props) => {
             <div style={{ float: "left" }}>
               <ScatterPlot
                 mainBookMilestones={mainBookMilestones}
-                msRange={msRange}
+                msRange={displayMsRange}
                 mainBookURI={mainBookURI}
                 versionCode={versionCode}
                 isUpload={isUpload}
@@ -258,8 +289,9 @@ const MultiVisual = (props) => {
             >
               <SideBar
                 mainBookMilestones={mainBookMilestones}
-                msRange={msRange}
+                msRange={displayMsRange}
                 msStats={msStats}
+                toc={toc}
                 width={100}
                 height={height}
                 margin={visMargins}
@@ -339,6 +371,9 @@ const MultiVisual = (props) => {
         setBookAlignRange={setBookAlignRange}
         msCharsRange={msCharsRange}
         setMsCharsRange={setMsCharsRange}
+        toc={toc}
+        selectedSectionIds={selectedSectionIds}
+        setSelectedSectionIds={setSelectedSectionIds}
       />
     </Box>
   );

@@ -4,6 +4,7 @@ import BookCharsFilter from "./filters/BookCharsFilter";
 import DateFilter from "./filters/DateFilter";
 import MilestoneFilter from "./filters/MilestoneFilter";
 import SelfReuseFilter from "./filters/SelfReuseFilter";
+import TocFilter from "./filters/TocFilter";
 
 
 
@@ -13,6 +14,7 @@ const MultiFilter = (props) => {
       sx={{
         display: "flex",
         flexDirection: "row",
+        flexWrap: "wrap",
         marginLeft: "50px",
       }}
     >
@@ -34,6 +36,11 @@ const MultiFilter = (props) => {
       <BookCharsFilter
         fullBookCharRange={props.fullBookCharRange}
         setBookCharRange={props.setBookCharRange}
+      />
+      <TocFilter
+        toc={props.toc}
+        selectedSectionIds={props.selectedSectionIds}
+        setSelectedSectionIds={props.setSelectedSectionIds}
       />
     </Box>
   );
