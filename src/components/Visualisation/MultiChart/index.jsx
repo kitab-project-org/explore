@@ -14,6 +14,7 @@ import MultiFilter from "./MultiFilter";
 import SectionHeaderLayout from "../SectionHeader/SectionHeaderLayout";
 import VisualizationHeader from "../SectionHeader/VisualizationHeader";
 import { getHighestValueInArrayOfObjects } from "../../../utility/Helper";
+import { useSearchParams } from "react-router-dom";
 import { Context } from "../../../App";
 
 
@@ -29,7 +30,10 @@ const MultiVisual = (props) => {
     selfReuseOnly,
     visMargins,
     releaseCode,
+    setSelectedMarker,
   } = useContext(Context);
+
+  const [, setSearchParams] = useSearchParams();
 
   // TODO: let user set width/height (with resizable component or input field?)
   var width = 1000 - visMargins.left - visMargins.right;
@@ -82,7 +86,8 @@ const MultiVisual = (props) => {
   const fullAlignRange = [1, maxalign];
   const [bookAlignRange, setBookAlignRange] = useState(fullAlignRange);
   let maxmschars = getHighestValueInArrayOfObjects(msData, "ch_match");
-  const [msCharsRange, setMsCharsRange] = useState([1, maxmschars]);
+  const fullMsCharsRange = [1, maxmschars];
+  const [msCharsRange, setMsCharsRange] = useState(fullMsCharsRange);
 
   const [toc, setToc] = useState(null);
   const [selectedSectionIds, setSelectedSectionIds] = useState(null);
@@ -198,9 +203,22 @@ const MultiVisual = (props) => {
       selectedSectionIds, toc]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const restoreCanvas = () => {
-    // reload without filter search params
-    //setSearchParams((prev) => ({books: prev.books}))
-    console.log("TO DO: restore canvas");
+    setDateRange(fullDateRange);
+    setMsRange([1, storedMainBookMilestones ?? Math.ceil(tokens?.first / 300)]);
+    setBookCharRange(fullBookCharRange);
+    setBookAlignRange(fullAlignRange);
+    setMsCharsRange(fullMsCharsRange);
+    setSelectedSectionIds(null);
+    setSelectedMarker(null);
+    setFilterResetKey(k => k + 1);
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      next.delete("ms1");
+      next.delete("id2");
+      next.delete("align_no");
+      next.delete("ms2");
+      return next;
+    }, { replace: true });
   };
 
   const mainBookMilestones = storedMainBookMilestones ?? Math.ceil(tokens.first / 300);
@@ -221,6 +239,7 @@ const MultiVisual = (props) => {
     5
   );
 
+  const [filterResetKey, setFilterResetKey] = useState(0);
   const [toggle, setToggle] = useState(false);
 
   return (
@@ -362,6 +381,7 @@ const MultiVisual = (props) => {
         <div className={"vizTooltip"} sx={{ style: "opacity: 0" }} />
       </Box>
       <MultiFilter
+        key={filterResetKey}
         hasDates={hasDates}
         fullDateRange={fullDateRange}
         setDateRange={setDateRange}
