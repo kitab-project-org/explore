@@ -1,4 +1,4 @@
-﻿import { useContext, useEffect, useRef, useState } from "react";
+﻿import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import {
   Box,
   Dialog,
@@ -99,101 +99,103 @@ const MultiVisual = (props) => {
     return () => { cancelled = true; };
   }, [metaData?.book1?.versionCode, releaseCode]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // FILTER DATA:
-  const hasDates = bookStats.some(d => d.date !== null);
-  let dataDateRange = dateRange;
-  if (selfReuseOnly) {
-    // only keep the items whose author is the same as the author of the main book:
-    msData = msData.filter(
-      (d) => bookUriDict[d.id2][0].split(".")[0] === mainAuthor
-    );
-    bookStats = bookStats.filter((d) => (d.book ?? "").split(".")[0] === mainAuthor);
-    dataDateRange = isNaN(mainAuthorDate) ? [0, 1500] : [mainAuthorDate, mainAuthorDate + 1];
-  }
-  /*console.log("AFTER SELFREUSE FILTER:");
-  console.log(msData);
-  console.log(bookStats);
-  console.log(msStats);*/
+  // hasDates uses unfiltered data (for MultiFilter display):
+  const hasDates = chartData.bookStats.some(d => d.date !== null);
 
-  // filter by date:
-  let [minDate, maxDate] = dateRange;
-  let [minBookChars, maxBookChars] = bookCharRange;
-  let [minAlignments, maxAlignments] = bookAlignRange;
-  let [minMsChars, maxMsChars] = msCharsRange;
-  let [minMs, maxMs] = msRange;
+  // Memoize the entire filter + index pipeline so that array references are stable
+  // when only selectedMarker changes (selectedMarker is not a dep here).
+  const {
+    filteredMsData,
+    filteredBookStats,
+    filteredBookUriDict,
+    filteredMsStats,
+    displayMsRange,
+    dataDateRange,
+  } = useMemo(() => {
+    const origBookUriDict = chartData.bookUriDict;
+    let msData = chartData.msData;
+    let bStats = chartData.bookStats;
+    let dataDateRange = dateRange;
 
-  msData = msData.filter((d) => {
-    return (
+    if (selfReuseOnly) {
+      msData = msData.filter(
+        (d) => origBookUriDict[d.id2]?.[0]?.split(".")[0] === mainAuthor
+      );
+      bStats = bStats.filter((d) => (d.book ?? "").split(".")[0] === mainAuthor);
+      dataDateRange = isNaN(mainAuthorDate) ? [0, 1500] : [mainAuthorDate, mainAuthorDate + 1];
+    }
+
+    const [minDate, maxDate] = dateRange;
+    const [minBookChars, maxBookChars] = bookCharRange;
+    const [minAlignments, maxAlignments] = bookAlignRange;
+    const [minMsChars, maxMsChars] = msCharsRange;
+    const [minMs, maxMs] = msRange;
+
+    msData = msData.filter((d) =>
       (d.id2 === versionCode || d.date === null || (d.date >= minDate && d.date <= maxDate)) &&
       d.ch_match <= maxMsChars &&
       d.ch_match >= minMsChars &&
       d.ms1 >= minMs && d.ms1 <= maxMs
     );
-  });
-  bookStats = bookStats.filter((d) => {
-    return (
+    bStats = bStats.filter((d) =>
       (d.id === versionCode || d.date === null || (d.date >= minDate && d.date <= maxDate)) &&
-      (selfReuseOnly && d.book === mainBookURI
-        ? 1
-        : d.ch_match >= minBookChars) &&
-      (selfReuseOnly && d.book === mainBookURI
-        ? 1
-        : d.ch_match <= maxBookChars) &&
+      (selfReuseOnly && d.book === mainBookURI ? 1 : d.ch_match >= minBookChars) &&
+      (selfReuseOnly && d.book === mainBookURI ? 1 : d.ch_match <= maxBookChars) &&
       (d.id === versionCode || (d.alignments >= minAlignments && d.alignments <= maxAlignments))
     );
-  });
 
-  // TOC section filter + Y axis zoom:
-  let displayMsRange = msRange;
-  if (selectedSectionIds && selectedSectionIds.size > 0 && toc) {
-    const sectionRanges = Array.from(selectedSectionIds).map(id => {
-      const sec = toc.sections[id];
-      return [sec.start_ms, sec.end_ms];
-    });
-    msData = msData.filter(d =>
-      sectionRanges.some(([start, end]) => d.ms1 >= start && d.ms1 <= end)
-    );
-    const minDisplay = Math.max(msRange[0], Math.min(...sectionRanges.map(([s]) => s)));
-    const maxDisplay = Math.min(msRange[1], Math.max(...sectionRanges.map(([, e]) => e)));
-    if (minDisplay <= maxDisplay) displayMsRange = [minDisplay, maxDisplay];
-  }
-
-  // recalculate the index numbers (X values):
-  let bookIndexDict = {}; // keys: versionID, values: bookIndex
-  bookUriDict = {}; // keys: versionID, values: textURI
-  for (let i = 0; i < bookStats.length; i++) {
-    bookStats[i]["bookIndex"] = i + 1;
-    bookIndexDict[bookStats[i]["id"]] = i + 1;
-    bookUriDict[bookStats[i]["id"]] = [bookStats[i]["book"]];
-  }
-  for (let i = 0; i < msData.length; i++) {
-    try {
-      msData[i]["bookIndex"] = bookIndexDict[msData[i]["id2"]];
-    } catch (error) {}
-  }
-
-  // recalculate msStats:
-  msStats = {};
-  //msBooks = {};
-  for (let i = 0; i < msData.length; i++) {
-    if (msData[i]["id2"] !== versionCode) {
-      // add the length of the alignment in book 2 to the aggregator for ms1:
-      msStats[msData[i]["ms1"]] =
-        (msStats[msData[i]["ms1"]] || 0) + msData[i]["ch_match"];
-      // count the number of books that have text reuse for ms1:
-      //msBooks[msData[i]["ms1"]] = (msBooks[msData[i]["ms1"]] || 0) + 1;
+    // TOC section filter + Y axis zoom:
+    let displayMsRange = msRange;
+    if (selectedSectionIds && selectedSectionIds.size > 0 && toc) {
+      const sectionRanges = Array.from(selectedSectionIds).map(id => {
+        const sec = toc.sections[id];
+        return [sec.start_ms, sec.end_ms];
+      });
+      msData = msData.filter(d =>
+        sectionRanges.some(([start, end]) => d.ms1 >= start && d.ms1 <= end)
+      );
+      const minDisplay = Math.max(msRange[0], Math.min(...sectionRanges.map(([s]) => s)));
+      const maxDisplay = Math.min(msRange[1], Math.max(...sectionRanges.map(([, e]) => e)));
+      if (minDisplay <= maxDisplay) displayMsRange = [minDisplay, maxDisplay];
     }
-  }
-  // convert msStats Object into an array of objects:
-  msStats = Object.keys(msStats).map((key) => ({
-    ms_id: parseInt(key),
-    ch_match_total: msStats[key],
-  }));
 
-  /*console.log("AFTER OTHER FILTERS:");
-  console.log(msData);
-  console.log(bookStats);
-  console.log(msStats);*/
+    // Recalculate index numbers — create new objects to avoid mutating chartData:
+    const bookIndexDict = {};
+    const newBookUriDict = {};
+    const filteredBookStats = bStats.map((d, i) => {
+      const bookIndex = i + 1;
+      bookIndexDict[d.id] = bookIndex;
+      newBookUriDict[d.id] = [d.book ?? d.manuscript];
+      return { ...d, bookIndex };
+    });
+    const filteredMsData = msData.map(d => ({
+      ...d,
+      bookIndex: bookIndexDict[d.id2],
+    }));
+
+    // Recalculate msStats:
+    const msStatsObj = {};
+    for (const d of filteredMsData) {
+      if (d.id2 !== versionCode) {
+        msStatsObj[d.ms1] = (msStatsObj[d.ms1] || 0) + d.ch_match;
+      }
+    }
+    const filteredMsStats = Object.keys(msStatsObj).map(key => ({
+      ms_id: parseInt(key),
+      ch_match_total: msStatsObj[key],
+    }));
+
+    return {
+      filteredMsData,
+      filteredBookStats,
+      filteredBookUriDict: newBookUriDict,
+      filteredMsStats,
+      displayMsRange,
+      dataDateRange,
+    };
+  }, [chartData, selfReuseOnly, mainAuthor, mainAuthorDate, mainBookURI, versionCode,
+      dateRange, bookCharRange, bookAlignRange, msCharsRange, msRange,
+      selectedSectionIds, toc]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const restoreCanvas = () => {
     // reload without filter search params
@@ -211,10 +213,10 @@ const MultiVisual = (props) => {
   const minChMatch = msData.reduce(
     (a,b) => a.ch_match < b.ch_match ? a : b
     ).ch_match;*/
-  const [minChMatch, maxChMatch] = d3.extent(msData, (d) => d.ch_match);
+  const [minChMatch, maxChMatch] = d3.extent(filteredMsData, (d) => d.ch_match);
 
   let dotSize = Math.min(
-    Math.ceil(width / bookStats.length / 2),
+    Math.ceil(width / filteredBookStats.length / 2),
     Math.ceil(height / mainBookMilestones / 2),
     5
   );
@@ -266,16 +268,16 @@ const MultiVisual = (props) => {
                 mainBookURI={mainBookURI}
                 versionCode={versionCode}
                 isUpload={isUpload}
-                bookStats={bookStats}
+                bookStats={filteredBookStats}
                 maxTotalChMatch={maxTotalChMatch}
-                msdata={msData}
+                msdata={filteredMsData}
                 maxChMatch={maxChMatch}
                 minChMatch={minChMatch}
                 margin={visMargins}
                 width={width}
                 height={height}
                 dotSize={dotSize}
-                bookUriDict={bookUriDict}
+                bookUriDict={filteredBookUriDict}
                 setXScale={setXScale}
                 setYScale={setYScale}
               />
@@ -290,7 +292,7 @@ const MultiVisual = (props) => {
               <SideBar
                 mainBookMilestones={mainBookMilestones}
                 msRange={displayMsRange}
-                msStats={msStats}
+                msStats={filteredMsStats}
                 toc={toc}
                 width={100}
                 height={height}
@@ -302,7 +304,7 @@ const MultiVisual = (props) => {
             margin={{ ...visMargins, top: 0 }}
             width={width}
             height={120}
-            bookStats={bookStats}
+            bookStats={filteredBookStats}
             mainBookURI={mainBookURI}
             dateRange={dataDateRange}
             isUpload={isUpload}

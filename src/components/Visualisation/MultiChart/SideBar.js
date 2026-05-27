@@ -12,7 +12,7 @@ const SideBar = (props) => {
   const tocRef = useRef(props.toc);
   useEffect(() => { tocRef.current = props.toc; });
 
-  // initialize the svg on mount:
+  // initialize the svg on mount (or when margin/font changes):
   useEffect(() => {
     const t = `translate(${tickFontSize}, ${props.margin.top})`;
     d3.select(ref.current)
@@ -20,7 +20,7 @@ const SideBar = (props) => {
       .append("g")
         .attr("transform", t)
         .attr("class", "side-bar");
-  });
+  }, [tickFontSize, props.margin.top]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // create the axes etc. for every change of relevant variables:
   useEffect(() => {
@@ -78,6 +78,7 @@ const SideBar = (props) => {
     barSvg
       .selectAll(`.tick text`).style("font-size", `${tickFontSize}px`);  
 
+    barSvg.selectAll(".side-bar-plot").remove();
     let barPlot = barSvg.append('g')
       .attr("class", "side-bar-plot");
     

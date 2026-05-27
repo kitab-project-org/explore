@@ -1,4 +1,4 @@
-import { useEffect, useRef, useContext } from "react";
+import { useEffect, useMemo, useRef, useContext } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Box } from "@mui/material";
 import * as d3 from "d3";
@@ -10,78 +10,62 @@ import { calculateTooltipPos, wrapTextToSvgWidth } from "../../../utility/Helper
 
 /**
  * Given the currently selected marker {ms1, id2}, return the adjacent marker
- * in the given direction using the filtered msdata array.
+ * in the given direction using pre-computed lookup maps.
  *
  * right/left: move between book2s at the same ms1, spilling into the next/prev
  *   ms1 when the edge is reached; wraps around at the global extremes.
  * down/up: move between ms1s within the same book2 column, spilling into the
  *   top/bottom of the next/prev column when the edge is reached.
  */
-function getNextMarker(current, direction, msdata, versionCode) {
-  const dots = msdata.filter(d => d.id2 !== versionCode);
-  if (!dots.length) return null;
-
-  const byMs1ThenBook = (a, b) => a.ms1 - b.ms1 || a.bookIndex - b.bookIndex;
-  const allSorted = [...dots].sort(byMs1ThenBook);
-
-  const dotsAtMs1 = (ms1) =>
-    dots.filter(d => d.ms1 === ms1).sort((a, b) => a.bookIndex - b.bookIndex);
-  const dotsAtId2 = (id2) =>
-    dots.filter(d => d.id2 === id2).sort((a, b) => a.ms1 - b.ms1);
-
-  const uniqueMs1s = [...new Set(dots.map(d => d.ms1))].sort((a, b) => a - b);
-  const uniqueId2s = [...new Set(dots.map(d => d.id2))].sort((a, b) => {
-    const biA = dots.find(d => d.id2 === a)?.bookIndex ?? 0;
-    const biB = dots.find(d => d.id2 === b)?.bookIndex ?? 0;
-    return biA - biB;
-  });
+function getNextMarker(current, direction, navData) {
+  const { allSorted, uniqueMs1s, uniqueId2s, dotsByMs1, dotsById2 } = navData;
+  if (!allSorted.length) return null;
 
   if (direction === 'right') {
-    const row = dotsAtMs1(current.ms1);
+    const row = dotsByMs1[current.ms1] ?? [];
     const idx = row.findIndex(d => d.id2 === current.id2);
     if (idx < row.length - 1) return { ms1: row[idx + 1].ms1, id2: row[idx + 1].id2 };
-    // spill to next ms1:
     const ms1Idx = uniqueMs1s.indexOf(current.ms1);
     if (ms1Idx < uniqueMs1s.length - 1) {
-      const first = dotsAtMs1(uniqueMs1s[ms1Idx + 1])[0];
-      return { ms1: first.ms1, id2: first.id2 };
+      const first = (dotsByMs1[uniqueMs1s[ms1Idx + 1]] ?? [])[0];
+      return first ? { ms1: first.ms1, id2: first.id2 } : null;
     }
     return { ms1: allSorted[0].ms1, id2: allSorted[0].id2 }; // wrap
   }
 
   if (direction === 'left') {
-    const row = dotsAtMs1(current.ms1);
+    const row = dotsByMs1[current.ms1] ?? [];
     const idx = row.findIndex(d => d.id2 === current.id2);
     if (idx > 0) return { ms1: row[idx - 1].ms1, id2: row[idx - 1].id2 };
     const ms1Idx = uniqueMs1s.indexOf(current.ms1);
     if (ms1Idx > 0) {
-      const prevRow = dotsAtMs1(uniqueMs1s[ms1Idx - 1]);
+      const prevRow = dotsByMs1[uniqueMs1s[ms1Idx - 1]] ?? [];
       const last = prevRow[prevRow.length - 1];
-      return { ms1: last.ms1, id2: last.id2 };
+      return last ? { ms1: last.ms1, id2: last.id2 } : null;
     }
     const last = allSorted[allSorted.length - 1];
     return { ms1: last.ms1, id2: last.id2 }; // wrap
   }
 
   if (direction === 'down') {
-    const col = dotsAtId2(current.id2);
+    const col = dotsById2[current.id2] ?? [];
     const idx = col.findIndex(d => d.ms1 === current.ms1);
     if (idx < col.length - 1) return { ms1: col[idx + 1].ms1, id2: current.id2 };
-    // spill to top of next column:
     const id2Idx = uniqueId2s.indexOf(current.id2);
     const nextId2 = uniqueId2s[(id2Idx + 1) % uniqueId2s.length];
-    return { ms1: dotsAtId2(nextId2)[0].ms1, id2: nextId2 };
+    const firstInNext = (dotsById2[nextId2] ?? [])[0];
+    return firstInNext ? { ms1: firstInNext.ms1, id2: nextId2 } : null;
   }
 
   if (direction === 'up') {
-    const col = dotsAtId2(current.id2);
+    const col = dotsById2[current.id2] ?? [];
     const idx = col.findIndex(d => d.ms1 === current.ms1);
     if (idx > 0) return { ms1: col[idx - 1].ms1, id2: current.id2 };
-    // spill to bottom of previous column:
     const id2Idx = uniqueId2s.indexOf(current.id2);
     const prevId2 = uniqueId2s[(id2Idx - 1 + uniqueId2s.length) % uniqueId2s.length];
-    const prevCol = dotsAtId2(prevId2);
-    return { ms1: prevCol[prevCol.length - 1].ms1, id2: prevId2 };
+    const prevCol = dotsById2[prevId2] ?? [];
+    const last = prevCol[prevCol.length - 1];
+    return last ? { ms1: last.ms1, id2: prevId2 } : null;
   }
 
   return null;
@@ -136,6 +120,34 @@ const ScatterPlot = (props) => {
   const showSelectedTooltipRef = useRef(null);
   // Guard so the URL-param effect only fires once:
   const urlParamsProcessedRef = useRef(false);
+
+  // Pre-computed lookup maps for O(1) keyboard navigation:
+  const navData = useMemo(() => {
+    const data = props.msdata ?? [];
+    const dotsByMs1 = {};
+    for (const d of data) {
+      if (!dotsByMs1[d.ms1]) dotsByMs1[d.ms1] = [];
+      dotsByMs1[d.ms1].push(d);
+    }
+    for (const key of Object.keys(dotsByMs1)) {
+      dotsByMs1[key].sort((a, b) => a.bookIndex - b.bookIndex);
+    }
+    const dotsById2 = {};
+    for (const d of data) {
+      if (!dotsById2[d.id2]) dotsById2[d.id2] = [];
+      dotsById2[d.id2].push(d);
+    }
+    for (const key of Object.keys(dotsById2)) {
+      dotsById2[key].sort((a, b) => a.ms1 - b.ms1);
+    }
+    const allSorted = [...data].sort((a, b) => a.ms1 - b.ms1 || a.bookIndex - b.bookIndex);
+    const uniqueMs1s = [...new Set(data.map(d => d.ms1))].sort((a, b) => a - b);
+    const uniqueId2s = [...new Set(data.map(d => d.id2))];
+    uniqueId2s.sort((a, b) => (dotsById2[a]?.[0]?.bookIndex ?? 0) - (dotsById2[b]?.[0]?.bookIndex ?? 0));
+    return { allSorted, uniqueMs1s, uniqueId2s, dotsByMs1, dotsById2 };
+  }, [props.msdata]);
+  const navDataRef = useRef(navData);
+  useEffect(() => { navDataRef.current = navData; }, [navData]);
 
   const width = props.width;
 
@@ -478,11 +490,10 @@ const ScatterPlot = (props) => {
           exit.remove();
         }
       )
-  /*}, [props.msdata, props.minChMatch, props.maxChMatch, colorScale,
-      props.bookStats.length, props.bookUriDict,
-      props.dotSize, props.height, props.mainBookMilestones,
-      props.mainBookURI, props.width, versionCode])*/
-  });
+  }, [props.msdata, props.bookStats.length, props.msRange, props.height, width,
+      tickFontSize, axisLabelFontSize, props.mainBookURI, props.mainBookMilestones,
+      visMargins, yTickWidth, showDownloadOptions, includeURL, url,
+      props.dotSize, colorScale, props.bookUriDict, props.isUpload, versionCode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Keyboard navigation — document-level so it works regardless of scroll position.
   // Uses refs so the listener registered once always sees current data.
@@ -497,7 +508,7 @@ const ScatterPlot = (props) => {
       const dirMap = { ArrowRight: 'right', ArrowLeft: 'left', ArrowDown: 'down', ArrowUp: 'up' };
       if (dirMap[e.key]) {
         e.preventDefault();
-        const next = getNextMarker(cur, dirMap[e.key], msdataRef.current ?? [], versionCodeRef.current);
+        const next = getNextMarker(cur, dirMap[e.key], navDataRef.current);
         if (next) {
           console.log("[keydown] navigating to", next);
           setSelectedMarker(next);
