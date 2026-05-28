@@ -162,9 +162,7 @@ function App() {
   const [isError, setIsError] = useState(false);
   const [errorType, setErrorType] =  useState(["We may not have text reuse data for these texts, or there might be another problem.", "Error Type: Unknown"])
   const [showOptions, setShowOptions] = useState(false);
-  const [showDownloadOptions, setShowDownloadOptions] = useState(false);
   const [url, setUrl] = useState("");
-  const [includeURL, setIncludeURL] = useState(false);
   const [defaultMargins, setDefaultMargins] = useState({ top: 40, right: 20, bottom: 20, left: 60 });
   const [visMargins, setVisMargins] = useState({ top: 40, right: 20, bottom: 20, left: 60 });
   const [yTickWidth, setYTickWidth] = useState(0);
@@ -345,12 +343,8 @@ function App() {
         setErrorType,
         showOptions,
         setShowOptions,
-        showDownloadOptions, 
-        setShowDownloadOptions,
-        textAvailable, 
+        textAvailable,
         setTextAvailable,
-        includeURL, 
-        setIncludeURL,
         url,
         setUrl,
         visMargins, 

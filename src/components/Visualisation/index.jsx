@@ -140,9 +140,8 @@ const VisualisationPage = () => {
     setUrl,
     defaultReleaseCode,
     setMainVersionCode,
-    setVisMargins, 
-    defaultMargins, 
-    includeURL, 
+    setVisMargins,
+    defaultMargins,
     includeMetaInDownload, 
     metaPositionInDownload,
     axisLabelFontSize,
@@ -151,6 +150,7 @@ const VisualisationPage = () => {
   } = useContext(Context);
 
   const [isPairwiseViz, setIsPairwiseViz] = useState(false);
+  const [includeURL, setIncludeURL] = useState(false);
 
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -705,9 +705,9 @@ const VisualisationPage = () => {
             <>
               {chartData?.dataSets?.length || chartData?.msData?.length ? (
                 isPairwiseViz ? (
-                  <Visual isPairwiseViz={isPairwiseViz} />
+                  <Visual isPairwiseViz={isPairwiseViz} includeURL={includeURL} setIncludeURL={setIncludeURL} />
                 ) : (
-                  <MultiVisual isPairwiseViz={isPairwiseViz} handleUpload={handleUpload} />
+                  <MultiVisual isPairwiseViz={isPairwiseViz} handleUpload={handleUpload} includeURL={includeURL} setIncludeURL={setIncludeURL} />
                 )
               ) : chartData?.dataSets?.length ? (
                 <CircularInterminate />

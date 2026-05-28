@@ -20,7 +20,7 @@ import { useSearchParams } from "react-router-dom";
 import { Context } from "../../../App";
 
 
-const MultiVisual = (props) => {
+const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
   console.log("RENDERING MULTI CHART");
 
   const {
@@ -241,9 +241,37 @@ const MultiVisual = (props) => {
     5
   );
 
+  const [showDownloadOptions, setShowDownloadOptions] = useState(false);
   const [filterResetKey, setFilterResetKey] = useState(0);
   const [showFilterPanel, setShowFilterPanel] = useState(false);
   const [toggle, setToggle] = useState(false);
+
+  useEffect(() => {
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+
+      const setOrDelete = (key, condition, value) =>
+        condition ? next.set(key, String(value)) : next.delete(key);
+
+      setOrDelete("minDate", hasDates && dateRange[0] !== fullDateRange[0], dateRange[0]);
+      setOrDelete("maxDate", hasDates && dateRange[1] !== fullDateRange[1], dateRange[1]);
+      setOrDelete("minMs",   msRange[0] !== fullMilestoneRange[0], msRange[0]);
+      setOrDelete("maxMs",   msRange[1] !== fullMilestoneRange[1], msRange[1]);
+      setOrDelete("minBookChars", bookCharRange[0] !== fullBookCharRange[0], bookCharRange[0]);
+      setOrDelete("maxBookChars", bookCharRange[1] !== fullBookCharRange[1], bookCharRange[1]);
+      setOrDelete("minAlignments", bookAlignRange[0] !== fullAlignRange[0], bookAlignRange[0]);
+      setOrDelete("maxAlignments", bookAlignRange[1] !== fullAlignRange[1], bookAlignRange[1]);
+      setOrDelete("minMsChars", msCharsRange[0] !== fullMsCharsRange[0], msCharsRange[0]);
+      setOrDelete("maxMsChars", msCharsRange[1] !== fullMsCharsRange[1], msCharsRange[1]);
+      if (selectedSectionIds?.size > 0) {
+        next.set("sections", Array.from(selectedSectionIds).join(","));
+      } else {
+        next.delete("sections");
+      }
+
+      return next;
+    }, { replace: true });
+  }, [dateRange, msRange, bookCharRange, bookAlignRange, msCharsRange, selectedSectionIds]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const activeFilters = [
     hasDates && (dateRange[0] !== fullDateRange[0] || dateRange[1] !== fullDateRange[1]) &&
@@ -270,6 +298,9 @@ const MultiVisual = (props) => {
         toggle={toggle}
         setToggle={setToggle}
         mb={(showFilterPanel || activeFilters.length > 0) ? 0 : "20px"}
+        showDownloadOptions={showDownloadOptions}
+        includeURL={includeURL}
+        setIncludeURL={setIncludeURL}
       >
         <VisualizationHeader
           restoreCanvas={restoreCanvas}
@@ -279,6 +310,8 @@ const MultiVisual = (props) => {
           width={width}
           showFilterPanel={showFilterPanel}
           setShowFilterPanel={setShowFilterPanel}
+          showDownloadOptions={showDownloadOptions}
+          setShowDownloadOptions={setShowDownloadOptions}
         />
       </SectionHeaderLayout>
 
@@ -372,6 +405,8 @@ const MultiVisual = (props) => {
                 bookUriDict={filteredBookUriDict}
                 setXScale={setXScale}
                 setYScale={setYScale}
+                showDownloadOptions={showDownloadOptions}
+                includeURL={includeURL}
               />
             </div>
             <div

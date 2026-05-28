@@ -1,12 +1,9 @@
-import { useContext } from "react";
 import { Box, Button, IconButton, Link, Tooltip } from "@mui/material";
 import FlipButton from "./FlipButton";
 import ScatterLegend from "../../MultiChart/ScatterLegend";
-import { Context } from "../../../../App";
 
 
-const VisualizationHeader = ({ restoreCanvas, isPairwiseViz, colorScale, width, showFilterPanel, setShowFilterPanel }) => {
-    const { showDownloadOptions, setShowDownloadOptions } = useContext(Context);
+const VisualizationHeader = ({ restoreCanvas, isPairwiseViz, colorScale, width, showFilterPanel, setShowFilterPanel, showDownloadOptions, setShowDownloadOptions }) => {
   
   return (
     <Box sx={{ postion: "relative" }}>

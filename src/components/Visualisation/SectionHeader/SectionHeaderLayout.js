@@ -5,10 +5,9 @@ import BAExtra from "./BookAlignmentHeader/BAExtra";
 import DownloadPanel from "./VisualizationHeader/DownloadPanel";
 import { Context } from "../../../App";
 
-const SectionHeaderLayout = ({ item, children, toggle, setToggle, mb = "20px" }) => {
-  const { 
-    showOptions, 
-    showDownloadOptions,
+const SectionHeaderLayout = ({ item, children, toggle, setToggle, mb = "20px", showDownloadOptions = false, includeURL = false, setIncludeURL }) => {
+  const {
+    showOptions,
     isFlipped,
     releaseCode,
     metaData,
@@ -63,6 +62,8 @@ const SectionHeaderLayout = ({ item, children, toggle, setToggle, mb = "20px" })
                 ? `KITAB_explore_${releaseCode}_${metaData?.book2?.versionCode}_${metaData?.book1?.versionCode}.png`
                 : `KITAB_explore_${releaseCode}_${metaData?.book1?.versionCode}_${metaData?.book2?.versionCode}.png`
             }
+            includeURL={includeURL}
+            setIncludeURL={setIncludeURL}
           />
         </Box>
       )}
@@ -71,6 +72,8 @@ const SectionHeaderLayout = ({ item, children, toggle, setToggle, mb = "20px" })
           <DownloadPanel
             isPairwiseViz={false}
             downloadFileName={`KITAB_explore_${releaseCode}_${metaData?.book1?.versionCode}_all.png`}
+            includeURL={includeURL}
+            setIncludeURL={setIncludeURL}
           />
         </Box>
       )}

@@ -7,11 +7,9 @@ import { downloadPNG, downloadSVG, isChrome } from "../../../../utility/Helper";
 import { Context } from "../../../../App";
 
 
-const DownloadPanel = ( {isPairwiseViz, downloadFileName} ) => {
-  const { 
-    tickFontSize, 
-    includeURL,
-    setIncludeURL,
+const DownloadPanel = ( {isPairwiseViz, downloadFileName, includeURL, setIncludeURL} ) => {
+  const {
+    tickFontSize,
     outputImageWidth,
     dpi
   } = useContext(Context);

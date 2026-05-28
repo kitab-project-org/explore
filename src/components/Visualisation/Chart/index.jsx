@@ -32,18 +32,19 @@ const Visual = (props) => {
     setDownloadedTexts,
     releaseCode,
     setTextAvailable,
-    visMargins, 
-    includeURL, 
-    includeMetaInDownload, 
-    metaPositionInDownload, 
+    visMargins,
+    includeMetaInDownload,
+    metaPositionInDownload,
     url,
     axisLabelFontSize,
     tickFontSize,
-    showDownloadOptions,
     defaultMargins,
-    yTickWidth
+    yTickWidth,
   } = useContext(Context);
 
+  const { isPairwiseViz, includeURL, setIncludeURL } = props;
+
+  const [showDownloadOptions, setShowDownloadOptions] = useState(false);
   const [toggle, setToggle] = useState(false);
 
   const [toolTip, setToolTip] = useState({
@@ -253,92 +254,6 @@ const Visual = (props) => {
 
     // update the margins of the graph:
 
-    if (showDownloadOptions){
-      const charHeight = axisLabelFontSize;
-      const lineHeight = charHeight * 1.3;
-      if (includeURL) {
-        svgD3.append("text")
-          .attr("x", visMargins.left)             
-          .attr("y", lineHeight)
-          .attr("text-anchor", "left")  
-          .style("font-size", `${axisLabelFontSize}px`)
-          .style("text-decoration", "underline")  
-          .text(window.location.origin + url);
-      } 
-      if (includeMetaInDownload !== "no") {
-        // get the metadata to be displayed for each book:
-        const b1 = isFlipped ? metaData?.book2 : metaData?.book1;
-        const b2 = isFlipped ? metaData?.book1 : metaData?.book2;
-        let textContentb1 = getMetaLabel(b1, includeMetaInDownload);
-        let textContentb2 = getMetaLabel(b2, includeMetaInDownload);
-        
-        if (metaPositionInDownload === "left") {
-          // in order to put the metadata along the Y axis,
-          // we may need to break it into lines. 
-
-          const labelLinesb1 = wrapTextToSvgWidth(textContentb1, 200, axisLabelFontSize);
-          const labelLinesb2 = wrapTextToSvgWidth(textContentb2, 200, axisLabelFontSize);
-
-          // Add b1 metadata at the top of the Y axis:
-          // define the starting space between the axis and the label
-          // (space = visMargins.left would put the text on the axis)
-          let space = visMargins.left - yTickWidth - lineHeight;
-          labelLinesb1.reverse().forEach((line) => {
-            // define the point where the text ends ("text-anchor", "end"): 
-            const x = space
-            const y = visMargins.top;  // center the rotation at the top of the Y axis
-            svgD3.append("text")
-              .attr("class", "yLabel")
-              .attr("text-anchor", "end") // text will end at x,y
-              .attr("x", x) 
-              .attr("y", y) 
-              // rotate the text around its end point:
-              .attr("transform", `rotate(-90, ${x}, ${y})`)
-              .style("font-size", `${axisLabelFontSize}px`) 
-              .text(line);
-            space -= lineHeight;  // move the 
-          });
-
-          // Add b2 metadata at the bottom of the Y axis:
-          space = visMargins.left - yTickWidth - lineHeight;
-          labelLinesb2.reverse().forEach((line) => {
-            // define the point where the text should start: 
-            const x = space
-            const y = visMargins.top + 450;  // center the rotation at the top of the Y axis
-            svgD3.append("text")
-              .attr("class", "yLabel")
-              .attr("text-anchor", "start") // text will start at x,y
-              .attr("x", x) 
-              .attr("y", y) 
-              // rotate the text around its starting point:
-              .attr("transform", `rotate(-90, ${x}, ${y})`)
-              .style("font-size", `${axisLabelFontSize}px`) 
-              .text(line);
-            space -= lineHeight; // move the next line to the left
-          });
-
-        } else {
-
-          // Add b1 metadata at the top:
-          svgD3.append("text")
-            .attr("x", visMargins.left)             
-            //.attr("y", includeURL ? 2.5*lineHeight : lineHeight)
-            .attr("y", includeURL ? 3*axisLabelFontSize : axisLabelFontSize)
-            .attr("text-anchor", "left")  
-            .style("font-size", `${axisLabelFontSize}px`)
-            .text(textContentb1);
-
-          // add b2 metadata at the bottom:
-          svgD3.append("text")
-            .attr("x", visMargins.left)             
-            //.attr("y", outerHeight-lineHeight*2)
-            .attr("y", outerHeight-0.9*visMargins.bottom)
-            .attr("text-anchor", "left")  
-            .style("font-size", `${axisLabelFontSize}px`)
-            .text(textContentb2);
-        }      
-      }
-    } 
   }
 
 
@@ -1004,7 +919,71 @@ const Visual = (props) => {
   useEffect(() => {
     normalChart();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visMargins, axisLabelFontSize, tickFontSize, showDownloadOptions, includeURL]);
+  }, [visMargins, axisLabelFontSize, tickFontSize]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Render download annotations (URL, metadata labels) separately so toggling the
+  // download panel doesn't re-run the expensive normalChart effect.
+  useEffect(() => {
+    const svg = d3.select("#svgChart");
+    svg.selectAll(".download-annotation").remove();
+    if (!showDownloadOptions) return;
+    const charHeight = axisLabelFontSize;
+    const lineHeight = charHeight * 1.3;
+    if (includeURL) {
+      const urlFontSize = Math.min(axisLabelFontSize, 12);
+      const urlLines = wrapTextToSvgWidth(window.location.href, innerWidth, urlFontSize);
+      urlLines.forEach((line, i) => {
+        svg.append("text")
+          .attr("class", "download-annotation")
+          .attr("x", visMargins.left)
+          .attr("y", urlFontSize * 1.3 * (i + 1))
+          .attr("text-anchor", "left")
+          .style("font-size", `${urlFontSize}px`)
+          .style("text-decoration", "underline")
+          .text(line);
+      });
+    }
+    if (includeMetaInDownload !== "no") {
+      const b1 = isFlipped ? metaData?.book2 : metaData?.book1;
+      const b2 = isFlipped ? metaData?.book1 : metaData?.book2;
+      const textContentb1 = getMetaLabel(b1, includeMetaInDownload);
+      const textContentb2 = getMetaLabel(b2, includeMetaInDownload);
+      if (metaPositionInDownload === "left") {
+        const labelLinesb1 = wrapTextToSvgWidth(textContentb1, 200, axisLabelFontSize);
+        const labelLinesb2 = wrapTextToSvgWidth(textContentb2, 200, axisLabelFontSize);
+        let space = visMargins.left - yTickWidth - lineHeight;
+        labelLinesb1.reverse().forEach((line) => {
+          const x = space, y = visMargins.top;
+          svg.append("text").attr("class", "download-annotation yLabel")
+            .attr("text-anchor", "end").attr("x", x).attr("y", y)
+            .attr("transform", `rotate(-90, ${x}, ${y})`)
+            .style("font-size", `${axisLabelFontSize}px`).text(line);
+          space -= lineHeight;
+        });
+        space = visMargins.left - yTickWidth - lineHeight;
+        labelLinesb2.reverse().forEach((line) => {
+          const x = space, y = visMargins.top + 450;
+          svg.append("text").attr("class", "download-annotation yLabel")
+            .attr("text-anchor", "start").attr("x", x).attr("y", y)
+            .attr("transform", `rotate(-90, ${x}, ${y})`)
+            .style("font-size", `${axisLabelFontSize}px`).text(line);
+          space -= lineHeight;
+        });
+      } else {
+        svg.append("text").attr("class", "download-annotation")
+          .attr("x", visMargins.left)
+          .attr("y", includeURL ? 3 * axisLabelFontSize : axisLabelFontSize)
+          .attr("text-anchor", "left").style("font-size", `${axisLabelFontSize}px`)
+          .text(textContentb1);
+        svg.append("text").attr("class", "download-annotation")
+          .attr("x", visMargins.left)
+          .attr("y", outerHeight - 0.9 * visMargins.bottom)
+          .attr("text-anchor", "left").style("font-size", `${axisLabelFontSize}px`)
+          .text(textContentb2);
+      }
+    }
+  }, [showDownloadOptions, includeURL, includeMetaInDownload, metaPositionInDownload, // eslint-disable-line react-hooks/exhaustive-deps
+      isFlipped, axisLabelFontSize, visMargins, url, yTickWidth, metaData]);
 
   return (
     <>
@@ -1015,10 +994,15 @@ const Visual = (props) => {
         }}
         toggle={toggle}
         setToggle={setToggle}
+        showDownloadOptions={showDownloadOptions}
+        includeURL={includeURL}
+        setIncludeURL={setIncludeURL}
       >
         <VisualizationHeader
           restoreCanvas={restoreCanvas}
           isPairwiseViz={props.isPairwiseViz}
+          showDownloadOptions={showDownloadOptions}
+          setShowDownloadOptions={setShowDownloadOptions}
         />
       </SectionHeaderLayout>
       <Box
