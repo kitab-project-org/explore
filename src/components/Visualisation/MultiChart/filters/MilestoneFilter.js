@@ -2,7 +2,7 @@ import { Box, Checkbox, FormControlLabel, Typography } from "@mui/material";
 import RangeSlider from "./RangeSlider";
 
 const MilestoneFilter = ({ fullMilestoneRange, setMsRange, initialValue, filterBooksToMsRange, setFilterBooksToMsRange }) => (
-  <Box>
+  <Box id="milestone-filter">
     <RangeSlider title="Milestone range:" fullRange={fullMilestoneRange} setRange={setMsRange} initialValue={initialValue} />
     <FormControlLabel
       control={

@@ -10,6 +10,7 @@ import SelfReuseFilter from "./filters/SelfReuseFilter";
 const MultiFilter = (props) => {
   return (
     <Box
+      id="multi-filter"
       sx={{
         display: "flex",
         flexDirection: "row",
@@ -17,7 +18,6 @@ const MultiFilter = (props) => {
         marginLeft: "50px",
       }}
     >
-      <SelfReuseFilter/>
       {props.hasDates && (
         <DateFilter
           fullDateRange={props.fullDateRange}
@@ -42,6 +42,7 @@ const MultiFilter = (props) => {
         setBookCharRange={props.setBookCharRange}
         initialValue={props.initialBookCharRange}
       />
+      <SelfReuseFilter/>
     </Box>
   );
 };

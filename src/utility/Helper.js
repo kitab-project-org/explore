@@ -50,6 +50,47 @@ const mergeChartSVGs = (svgIds) => {
   return combined;
 };
 
+// When the bottom bar is not included in the merged SVG, inject its X axis
+// (date ticks + axis label) at the same position it would normally occupy.
+const injectBottomBarXAxis = (mergedSvg, includedIds) => {
+  const ns = "http://www.w3.org/2000/svg";
+  const bottomBarEl = document.getElementById('bottom-bar');
+  const innerBarG   = bottomBarEl?.querySelector('.bottom-bar');
+  if (!bottomBarEl || !innerBarG) return;
+
+  const includedRects = includedIds
+    .map(id => document.getElementById(id)).filter(Boolean)
+    .map(el => el.getBoundingClientRect());
+  if (!includedRects.length) return;
+  const minLeft = Math.min(...includedRects.map(r => r.left));
+  const minTop  = Math.min(...includedRects.map(r => r.top));
+
+  const bbRect  = bottomBarEl.getBoundingClientRect();
+  const outerG  = document.createElementNS(ns, "g");
+  outerG.setAttribute("transform",
+    `translate(${bbRect.left - minLeft}, ${bbRect.top - minTop})`);
+
+  // Shallow-clone the inner group (preserves its translate transform) then
+  // only copy .xAxis and .xLabel into it, leaving out bars and yAxis.
+  const innerG = innerBarG.cloneNode(false);
+  ['.xAxis', '.xLabel'].forEach(sel =>
+    innerBarG.querySelectorAll(sel).forEach(el =>
+      innerG.appendChild(el.cloneNode(true))
+    )
+  );
+  outerG.appendChild(innerG);
+  mergedSvg.appendChild(outerG);
+
+  // Extend the merged SVG height so the axis labels are not clipped.
+  const neededHeight = bbRect.bottom - minTop;
+  const currentHeight = parseFloat(mergedSvg.getAttribute("height")) || 0;
+  if (neededHeight > currentHeight) {
+    mergedSvg.setAttribute("height", neededHeight);
+    const bg = mergedSvg.querySelector("rect");
+    if (bg) bg.setAttribute("height", neededHeight);
+  }
+};
+
 const getSvgEl = (svgIdOrEl) =>
   typeof svgIdOrEl === "string" ? document.getElementById(svgIdOrEl) : svgIdOrEl;
 
@@ -681,6 +722,7 @@ function getMetaLabel(d, metaType) {
 export {
   isChrome,
   mergeChartSVGs,
+  injectBottomBarXAxis,
   downloadSVG,
   downloadPNG,
   getHighestValueInArrayOfObjects,

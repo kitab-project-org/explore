@@ -3,7 +3,7 @@ import { Alert, Box, Button, Typography, Tooltip } from "@mui/material";
 import * as d3 from "d3";
 import IncludeMetaDropdown from "./IncludeMetaDropdown";
 import OutputDimensions from "./OutputDimensions";
-import { downloadPNG, downloadSVG, isChrome, mergeChartSVGs } from "../../../../utility/Helper";
+import { downloadPNG, downloadSVG, isChrome, mergeChartSVGs, injectBottomBarXAxis } from "../../../../utility/Helper";
 import { Context } from "../../../../App";
 
 
@@ -43,7 +43,10 @@ const DownloadPanel = ( {isPairwiseViz, downloadFileName, includeURL, setInclude
       if (includeURL)       ids.push('url-label-svg');
       if (includeSidebar)   ids.push('side-bar');
       if (includeBottomBar) ids.push('bottom-bar');
-      return mergeChartSVGs(ids) ?? svgSelector;
+      const merged = mergeChartSVGs(ids);
+      if (!merged) return svgSelector;
+      if (!includeBottomBar) injectBottomBarXAxis(merged, ids);
+      return merged;
     }
     return svgSelector;
   };
@@ -66,6 +69,7 @@ const DownloadPanel = ( {isPairwiseViz, downloadFileName, includeURL, setInclude
         </Alert>
       )}
       <Box
+        id="download-panel"
         display={"flex"}
         justifyContent={"right"}
         flexWrap={"wrap"}

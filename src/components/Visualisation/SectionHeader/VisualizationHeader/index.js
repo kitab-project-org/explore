@@ -6,7 +6,7 @@ import ScatterLegend from "../../MultiChart/ScatterLegend";
 const VisualizationHeader = ({ restoreCanvas, isPairwiseViz, colorScale, width, showFilterPanel, setShowFilterPanel, showDownloadOptions, setShowDownloadOptions }) => {
   
   return (
-    <Box sx={{ postion: "relative" }}>
+    <Box sx={{ postion: "relative" }} id="visualization-header">
       <Box display="flex" justifyContent="space-between">
         <Link
           href={isPairwiseViz 

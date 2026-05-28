@@ -13,6 +13,7 @@ const SelfReuseFilter = () => {
 
   return (
     <Box 
+      id="self-reuse-filter"
       sx={{ 
         width: 200,
         margin: "20px"
