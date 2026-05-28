@@ -15,7 +15,7 @@ import MultiFilter from "./MultiFilter";
 import TocFilter from "./filters/TocFilter";
 import SectionHeaderLayout from "../SectionHeader/SectionHeaderLayout";
 import VisualizationHeader from "../SectionHeader/VisualizationHeader";
-import { getHighestValueInArrayOfObjects } from "../../../utility/Helper";
+import { getHighestValueInArrayOfObjects, wrapTextToSvgWidth } from "../../../utility/Helper";
 import { useSearchParams } from "react-router-dom";
 import { Context } from "../../../App";
 
@@ -33,6 +33,7 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
     visMargins,
     releaseCode,
     setSelectedMarker,
+    axisLabelFontSize,
   } = useContext(Context);
 
   const [searchParams, setSearchParams] = useSearchParams();
@@ -277,6 +278,8 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
   );
 
   const [showDownloadOptions, setShowDownloadOptions] = useState(false);
+  const [includeSidebar,      setIncludeSidebar]      = useState(false);
+  const [includeBottomBar,    setIncludeBottomBar]    = useState(false);
   const [filterResetKey, setFilterResetKey] = useState(0);
   const [showFilterPanel, setShowFilterPanel] = useState(false);
   const [toggle, setToggle] = useState(false);
@@ -338,6 +341,10 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
         showDownloadOptions={showDownloadOptions}
         includeURL={includeURL}
         setIncludeURL={setIncludeURL}
+        includeSidebar={includeSidebar}
+        setIncludeSidebar={setIncludeSidebar}
+        includeBottomBar={includeBottomBar}
+        setIncludeBottomBar={setIncludeBottomBar}
       >
         <VisualizationHeader
           restoreCanvas={restoreCanvas}
@@ -409,6 +416,40 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
         />
       </Box>
 
+      {(() => {
+        if (!showDownloadOptions || !includeURL) return null;
+        const urlFontSize = Math.min(axisLabelFontSize, 12);
+        const scatterSvgWidth = width + visMargins.left + visMargins.right;
+        const sidebarSvgWidth = 100 + visMargins.left + visMargins.right;
+        const urlSvgWidth = includeSidebar
+          ? scatterSvgWidth + 20 + sidebarSvgWidth
+          : scatterSvgWidth;
+        const urlLines = wrapTextToSvgWidth(
+          window.location.href, urlSvgWidth - visMargins.left - 10, urlFontSize
+        );
+        const urlSvgHeight = urlFontSize * 1.3 * urlLines.length + 4;
+        return (
+          <svg
+            id="url-label-svg"
+            width={urlSvgWidth}
+            height={urlSvgHeight}
+            style={{ display: "block", fontFamily: "Arial" }}
+          >
+            {urlLines.map((line, i) => (
+              <text
+                key={i}
+                x={visMargins.left}
+                y={urlFontSize * 1.3 * (i + 1)}
+                textAnchor="start"
+                style={{ fontSize: `${urlFontSize}px`, textDecoration: "underline" }}
+              >
+                {line}
+              </text>
+            ))}
+          </svg>
+        );
+      })()}
+
       <Box
         id="multiVis"
         sx={{
@@ -448,8 +489,6 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
                 bookUriDict={filteredBookUriDict}
                 setXScale={setXScale}
                 setYScale={setYScale}
-                showDownloadOptions={showDownloadOptions}
-                includeURL={includeURL}
               />
             </div>
             <div

@@ -480,26 +480,6 @@ const ScatterPlot = (props) => {
       visMargins, yTickWidth,
       props.dotSize, colorScale, props.bookUriDict, props.isUpload, versionCode]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Show/hide URL text in the SVG for download — kept separate so toggling the
-  // download panel doesn't re-run the expensive main D3 effect.
-  useEffect(() => {
-    d3.select("#scatterChart").selectAll(".url-label").remove();
-    if (props.showDownloadOptions && props.includeURL) {
-      const urlFontSize = Math.min(axisLabelFontSize, 12);
-      const lines = wrapTextToSvgWidth(window.location.href, props.width, urlFontSize);
-      lines.forEach((line, i) => {
-        d3.select("#scatterChart").append("text")
-          .attr("class", "url-label")
-          .attr("x", visMargins.left)
-          .attr("y", urlFontSize * 1.3 * (i + 1))
-          .attr("text-anchor", "left")
-          .style("font-size", `${urlFontSize}px`)
-          .style("text-decoration", "underline")
-          .text(line);
-      });
-    }
-  }, [props.showDownloadOptions, props.includeURL, visMargins, axisLabelFontSize, searchParams, props.width]); // eslint-disable-line react-hooks/exhaustive-deps
-
   // Keyboard navigation — document-level so it works regardless of scroll position.
   // Uses refs so the listener registered once always sees current data.
   useEffect(() => {

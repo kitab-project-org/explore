@@ -242,11 +242,6 @@ const VisualisationPage = () => {
 
       // TOP MARGIN: 
 
-      // make space for the URL at the top of the graph, if user wants to include it:
-      if (includeURL) {
-        margins.top += 1.5*lineHeight;
-      }
-
       // update the top margin of the pairwise graph in case user wants to include metadata there:
       if (isPairwiseViz && includeMetaInDownload !== "no" && metaPositionInDownload !== "left") {
         margins.top += lineHeight;
@@ -289,8 +284,7 @@ const VisualisationPage = () => {
   }, [
     chartData,
     setVisMargins, 
-    defaultMargins, 
-    includeURL, 
+    defaultMargins,
     includeMetaInDownload, 
     metaPositionInDownload,
     axisLabelFontSize,

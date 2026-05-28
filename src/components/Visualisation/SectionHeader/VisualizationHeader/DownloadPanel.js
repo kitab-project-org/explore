@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect } from "react";
 import { Alert, Box, Button, Typography, Tooltip } from "@mui/material";
 import * as d3 from "d3";
 import IncludeMetaDropdown from "./IncludeMetaDropdown";
@@ -7,15 +7,12 @@ import { downloadPNG, downloadSVG, isChrome, mergeChartSVGs } from "../../../../
 import { Context } from "../../../../App";
 
 
-const DownloadPanel = ( {isPairwiseViz, downloadFileName, includeURL, setIncludeURL} ) => {
+const DownloadPanel = ( {isPairwiseViz, downloadFileName, includeURL, setIncludeURL, includeSidebar = false, setIncludeSidebar, includeBottomBar = false, setIncludeBottomBar} ) => {
   const {
     tickFontSize,
     outputImageWidth,
     dpi
   } = useContext(Context);
-
-  const [includeSidebar,   setIncludeSidebar]   = useState(false);
-  const [includeBottomBar, setIncludeBottomBar] = useState(false);
 
   const svgSelector = isPairwiseViz ? 'svgChart' : 'scatterChart';
 
@@ -41,8 +38,9 @@ const DownloadPanel = ( {isPairwiseViz, downloadFileName, includeURL, setInclude
 
   // Resolve the SVG element(s) to download: merge when extra components are selected.
   const getSvgTarget = () => {
-    if (!isPairwiseViz && (includeSidebar || includeBottomBar)) {
+    if (!isPairwiseViz && (includeURL || includeSidebar || includeBottomBar)) {
       const ids = ['scatterChart'];
+      if (includeURL)       ids.push('url-label-svg');
       if (includeSidebar)   ids.push('side-bar');
       if (includeBottomBar) ids.push('bottom-bar');
       return mergeChartSVGs(ids) ?? svgSelector;
