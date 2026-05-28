@@ -24,7 +24,6 @@ const Books = ({ chartSpecificBar }) => {
     removePunct,
     removeTags,
     textAvailable,
-    books,
     initialAlignmentIndex,
     setInitialAlignmentIndex,
   } = useContext(Context);
