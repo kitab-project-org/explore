@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from "react";
-import { Alert, Box, Button, Checkbox, FormControlLabel, Typography, Tooltip } from "@mui/material";
+import { Alert, Box, Button, Typography, Tooltip } from "@mui/material";
 import * as d3 from "d3";
 import IncludeMetaDropdown from "./IncludeMetaDropdown";
 import OutputDimensions from "./OutputDimensions";
@@ -109,26 +109,30 @@ const DownloadPanel = ( {isPairwiseViz, downloadFileName, includeURL, setInclude
         </Tooltip>
         {!isPairwiseViz && (
           <>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  size="small"
-                  checked={includeSidebar}
-                  onChange={(e) => setIncludeSidebar(e.target.checked)}
-                />
-              }
-              label={<Typography variant="body2" sx={{ color: "#333" }}>Include sidebar</Typography>}
-            />
-            <FormControlLabel
-              control={
-                <Checkbox
-                  size="small"
-                  checked={includeBottomBar}
-                  onChange={(e) => setIncludeBottomBar(e.target.checked)}
-                />
-              }
-              label={<Typography variant="body2" sx={{ color: "#333" }}>Include bottom bar</Typography>}
-            />
+            <Button onClick={() => setIncludeSidebar(v => !v)}>
+              <Box display="flex" alignItems="center">
+                <Typography sx={{ textTransform: "none", color: "#333" }}>
+                  Include sidebar:&nbsp;
+                </Typography>
+                <Typography sx={{ mr: "8px", mt: "2px" }}>
+                  {includeSidebar
+                    ? <i className="fa-solid fa-square-check"></i>
+                    : <i className="fa-regular fa-square"></i>}
+                </Typography>
+              </Box>
+            </Button>
+            <Button onClick={() => setIncludeBottomBar(v => !v)}>
+              <Box display="flex" alignItems="center">
+                <Typography sx={{ textTransform: "none", color: "#333" }}>
+                  Include bottom bar:&nbsp;
+                </Typography>
+                <Typography sx={{ mr: "8px", mt: "2px" }}>
+                  {includeBottomBar
+                    ? <i className="fa-solid fa-square-check"></i>
+                    : <i className="fa-regular fa-square"></i>}
+                </Typography>
+              </Box>
+            </Button>
           </>
         )}
         <Button
