@@ -56,7 +56,8 @@ const injectBottomBarXAxis = (mergedSvg, includedIds) => {
   const ns = "http://www.w3.org/2000/svg";
   const bottomBarEl = document.getElementById('bottom-bar');
   const innerBarG   = bottomBarEl?.querySelector('.bottom-bar');
-  if (!bottomBarEl || !innerBarG) return;
+  const bbXAxisEl   = innerBarG?.querySelector('.xAxis');
+  if (!bottomBarEl || !innerBarG || !bbXAxisEl) return;
 
   const includedRects = includedIds
     .map(id => document.getElementById(id)).filter(Boolean)
@@ -65,10 +66,17 @@ const injectBottomBarXAxis = (mergedSvg, includedIds) => {
   const minLeft = Math.min(...includedRects.map(r => r.left));
   const minTop  = Math.min(...includedRects.map(r => r.top));
 
-  const bbRect  = bottomBarEl.getBoundingClientRect();
-  const outerG  = document.createElementNS(ns, "g");
+  // Compute y-shift: move bottom bar axis up to align with the scatterplot's
+  // own axis line (which sits at the bottom of the chart area).
+  const scatterXAxisEl  = document.querySelector('#scatterChart .scatter-plot .xAxis');
+  const bbAxisRect      = bbXAxisEl.getBoundingClientRect();
+  const scatterAxisRect = scatterXAxisEl?.getBoundingClientRect();
+  const yShift = scatterAxisRect ? scatterAxisRect.top - bbAxisRect.top : 0;
+
+  const bbRect = bottomBarEl.getBoundingClientRect();
+  const outerG = document.createElementNS(ns, "g");
   outerG.setAttribute("transform",
-    `translate(${bbRect.left - minLeft}, ${bbRect.top - minTop})`);
+    `translate(${bbRect.left - minLeft}, ${bbRect.top - minTop + yShift})`);
 
   // Shallow-clone the inner group (preserves its translate transform) then
   // only copy .xAxis and .xLabel into it, leaving out bars and yAxis.
@@ -81,8 +89,11 @@ const injectBottomBarXAxis = (mergedSvg, includedIds) => {
   outerG.appendChild(innerG);
   mergedSvg.appendChild(outerG);
 
-  // Extend the merged SVG height so the axis labels are not clipped.
-  const neededHeight = bbRect.bottom - minTop;
+  // Remove the scatterplot's blank xAxis so only the labelled one remains.
+  mergedSvg.querySelectorAll('.scatter-plot .xAxis').forEach(el => el.remove());
+
+  // Extend the merged SVG height to include the xLabel below the axis.
+  const neededHeight = bbRect.bottom - minTop + yShift;
   const currentHeight = parseFloat(mergedSvg.getAttribute("height")) || 0;
   if (neededHeight > currentHeight) {
     mergedSvg.setAttribute("height", neededHeight);
