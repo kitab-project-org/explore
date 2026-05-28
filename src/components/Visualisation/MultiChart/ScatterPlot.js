@@ -441,8 +441,8 @@ const ScatterPlot = (props) => {
                 if (d.id2 !== versionCode) {
                   tooltipMsg += `<b>${props.bookUriDict[d.id2]}</b>`
                   tooltipMsg += (d.alignments.length < 2)
-                    ? `<br/>(Milestone ${d.alignments[0].ms2})`
-                    : `<br/>(Milestones ${d.alignments.map(el => el.ms2)})`;
+                    ? ` (Milestone ${d.alignments[0].ms2})`
+                    : ` (Milestones ${d.alignments.map(el => el.ms2)})`;
                   tooltipMsg += `<br/>aligns with Milestone ${d.ms1} in ${props.mainBookURI}`;
                   tooltipMsg += `<br/><br/>Characters matched: ${d.ch_match}`;
                   const hasStrings = d.alignments[0]?.s1 !== undefined;
@@ -552,8 +552,8 @@ const ScatterPlot = (props) => {
       if (!dot || dot.id2 === versionCode) { tooltipDiv.style("opacity", 0); return; }
       let tooltipMsg = `<b>${props.bookUriDict[dot.id2]}</b>`;
       tooltipMsg += (dot.alignments.length < 2)
-        ? `(Milestone ${dot.alignments[0].ms2})`
-        : `(Milestones ${dot.alignments.map(el => el.ms2)})`;
+        ? ` (Milestone ${dot.alignments[0].ms2})`
+        : ` (Milestones ${dot.alignments.map(el => el.ms2)})`;
       tooltipMsg += `<br/>aligns with Milestone ${dot.ms1} in ${props.mainBookURI}`;
       tooltipMsg += `<br/><br/>Characters matched: ${dot.ch_match}`;
       tooltipMsg += "<br/><br/><b>(Press Enter or double-click to view the text - Arrow keys to navigate - Escape to deselect)</b>";
