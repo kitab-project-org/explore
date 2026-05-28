@@ -85,7 +85,7 @@ const TocFilter = ({ toc, selectedSectionIds, setSelectedSectionIds }) => {
               userSelect: "none",
             }}
           >
-            {hasChildren ? (isExpanded ? "▼" : "▶") : ""}
+            {hasChildren ? (isExpanded ? "▼" : "◀") : ""}
           </Box>
           <Checkbox
             size="small"
@@ -105,17 +105,17 @@ const TocFilter = ({ toc, selectedSectionIds, setSelectedSectionIds }) => {
   };
 
   return (
-    <Box sx={{ width: 280, margin: "20px" }}>
+    <Box sx={{ flex: 1, display: "flex", flexDirection: "column", p: "20px", minHeight: 0 }}>
       <Typography gutterBottom sx={{ textAlign: "center" }}>Filter by section:</Typography>
       <TextField
         size="small"
-        placeholder="Search sections..."
+        placeholder="Search sections"
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
         inputProps={{ dir: "rtl" }}
         sx={{ width: "100%", mb: 1 }}
       />
-      <Box sx={{ maxHeight: 300, overflowY: "auto", border: "1px solid #ccc", borderRadius: 1, p: 1 }}>
+      <Box sx={{ flex: 1, overflowY: "auto", border: "1px solid #ccc", borderRadius: 1, p: 1, minHeight: 0 }}>
         {topLevel.map(id => renderSection(id))}
       </Box>
       <Button

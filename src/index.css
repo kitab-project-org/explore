@@ -31,13 +31,13 @@ div.vizTooltip {
   position: absolute;
   padding: 5px;
   font: 12px sans-serif;
-  background: black;
-  color: grey;
+  background: white;
+  color: black;
   border: 0px;
   border-radius: 8px;
   pointer-events: none;
   opacity: 1;
-  max-width: 250px;
+  max-width: 300px;
   white-space: normal;
   word-wrap: break-word;
   word-break: break-word;

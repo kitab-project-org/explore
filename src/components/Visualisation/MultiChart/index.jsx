@@ -1,6 +1,7 @@
 ﻿import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import {
   Box,
+  Chip,
   Dialog,
   DialogContent,
   DialogTitle,
@@ -11,6 +12,7 @@ import ScatterPlot from "./ScatterPlot";
 import BottomBar from "./BottomBar";
 import SideBar from "./SideBar";
 import MultiFilter from "./MultiFilter";
+import TocFilter from "./filters/TocFilter";
 import SectionHeaderLayout from "../SectionHeader/SectionHeaderLayout";
 import VisualizationHeader from "../SectionHeader/VisualizationHeader";
 import { getHighestValueInArrayOfObjects } from "../../../utility/Helper";
@@ -240,7 +242,23 @@ const MultiVisual = (props) => {
   );
 
   const [filterResetKey, setFilterResetKey] = useState(0);
+  const [showFilterPanel, setShowFilterPanel] = useState(false);
   const [toggle, setToggle] = useState(false);
+
+  const activeFilters = [
+    hasDates && (dateRange[0] !== fullDateRange[0] || dateRange[1] !== fullDateRange[1]) &&
+      `Date: ${dateRange[0]}–${dateRange[1]}`,
+    (msRange[0] !== fullMilestoneRange[0] || msRange[1] !== fullMilestoneRange[1]) &&
+      `Milestones: ${msRange[0]}–${msRange[1]}`,
+    (bookCharRange[0] !== fullBookCharRange[0] || bookCharRange[1] !== fullBookCharRange[1]) &&
+      `Book chars: ${bookCharRange[0].toLocaleString()}–${bookCharRange[1].toLocaleString()}`,
+    (bookAlignRange[0] !== fullAlignRange[0] || bookAlignRange[1] !== fullAlignRange[1]) &&
+      `Alignments: ${bookAlignRange[0]}–${bookAlignRange[1]}`,
+    (msCharsRange[0] !== fullMsCharsRange[0] || msCharsRange[1] !== fullMsCharsRange[1]) &&
+      `MS chars: ${msCharsRange[0].toLocaleString()}–${msCharsRange[1].toLocaleString()}`,
+    (selectedSectionIds?.size > 0) &&
+      `${selectedSectionIds.size} section${selectedSectionIds.size > 1 ? 's' : ''} selected`,
+  ].filter(Boolean);
 
   return (
     <Box sx={{ mt: "40px" }}>
@@ -251,6 +269,7 @@ const MultiVisual = (props) => {
         }}
         toggle={toggle}
         setToggle={setToggle}
+        mb={(showFilterPanel || activeFilters.length > 0) ? 0 : "20px"}
       >
         <VisualizationHeader
           restoreCanvas={restoreCanvas}
@@ -258,14 +277,68 @@ const MultiVisual = (props) => {
           downloadFileName={downloadFileName}
           colorScale={colorScale}
           width={width}
+          showFilterPanel={showFilterPanel}
+          setShowFilterPanel={setShowFilterPanel}
         />
       </SectionHeaderLayout>
+
+      {!showFilterPanel && activeFilters.length > 0 && (
+        <Box
+          sx={{
+            bgcolor: "#F0F0F5",
+            borderTop: "1px solid white",
+            px: "25px",
+            py: "6px",
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            gap: "8px",
+            mb: "20px",
+          }}
+        >
+          <Typography variant="body2" sx={{ color: "#333" }}>Filters:</Typography>
+          {activeFilters.map((label, i) => (
+            <Chip
+              key={i}
+              label={label}
+              size="small"
+              onClick={() => setShowFilterPanel(true)}
+              sx={{ bgcolor: "#e5e7eb", cursor: "pointer", fontSize: "0.75rem" }}
+            />
+          ))}
+        </Box>
+      )}
+
+      <Box
+        sx={{
+          display: showFilterPanel ? "block" : "none",
+          bgcolor: "#F0F0F5",
+          borderRadius: "5px",
+          borderTop: "1px solid white",
+        }}
+      >
+        <MultiFilter
+          key={filterResetKey}
+          hasDates={hasDates}
+          fullDateRange={fullDateRange}
+          setDateRange={setDateRange}
+          fullMilestoneRange={fullMilestoneRange}
+          setMsRange={setMsRange}
+          fullBookCharRange={fullBookCharRange}
+          setBookCharRange={setBookCharRange}
+          fullAlignRange={fullAlignRange}
+          setBookAlignRange={setBookAlignRange}
+          msCharsRange={msCharsRange}
+          setMsCharsRange={setMsCharsRange}
+        />
+      </Box>
 
       <Box
         id="multiVis"
         sx={{
+          position: "relative",
+          overflowX: "clip",
           px: {
-            position: "relative",
             xs: "0px",
             sm: "30px",
           },
@@ -379,24 +452,30 @@ const MultiVisual = (props) => {
           </Dialog>
         </>
         <div className={"vizTooltip"} sx={{ style: "opacity: 0" }} />
+        <Box
+          sx={{
+            position: "absolute",
+            top: 0,
+            right: 0,
+            bottom: 0,
+            width: "300px",
+            bgcolor: "background.paper",
+            boxShadow: "-3px 0 12px rgba(0,0,0,0.18)",
+            zIndex: 10,
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+            transform: (showFilterPanel && toc) ? "translateX(0)" : "translateX(100%)",
+            transition: "transform 0.25s ease",
+          }}
+        >
+          <TocFilter
+            toc={toc}
+            selectedSectionIds={selectedSectionIds}
+            setSelectedSectionIds={setSelectedSectionIds}
+          />
+        </Box>
       </Box>
-      <MultiFilter
-        key={filterResetKey}
-        hasDates={hasDates}
-        fullDateRange={fullDateRange}
-        setDateRange={setDateRange}
-        fullMilestoneRange={fullMilestoneRange}
-        setMsRange={setMsRange}
-        fullBookCharRange={fullBookCharRange}
-        setBookCharRange={setBookCharRange}
-        fullAlignRange={fullAlignRange}
-        setBookAlignRange={setBookAlignRange}
-        msCharsRange={msCharsRange}
-        setMsCharsRange={setMsCharsRange}
-        toc={toc}
-        selectedSectionIds={selectedSectionIds}
-        setSelectedSectionIds={setSelectedSectionIds}
-      />
     </Box>
   );
 };

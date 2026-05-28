@@ -5,7 +5,7 @@ import ScatterLegend from "../../MultiChart/ScatterLegend";
 import { Context } from "../../../../App";
 
 
-const VisualizationHeader = ({ restoreCanvas, isPairwiseViz, colorScale, width }) => {
+const VisualizationHeader = ({ restoreCanvas, isPairwiseViz, colorScale, width, showFilterPanel, setShowFilterPanel }) => {
     const { showDownloadOptions, setShowDownloadOptions } = useContext(Context);
   
   return (
@@ -64,6 +64,34 @@ const VisualizationHeader = ({ restoreCanvas, isPairwiseViz, colorScale, width }
             </Button>
           </Tooltip>
           {isPairwiseViz ? <FlipButton /> : ""}
+          {!isPairwiseViz && setShowFilterPanel && (
+            <Tooltip title="Filter options" placement="top">
+              <Button
+                onClick={() => setShowFilterPanel(v => !v)}
+                color="primary"
+                variant="outlined"
+                sx={{
+                  width: "35px",
+                  height: "35px",
+                  borderRadius: "50%",
+                  minWidth: "0px",
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  fontSize: "14px",
+                  color: showFilterPanel ? "#fff" : "#2862a5",
+                  bgcolor: showFilterPanel ? "#2862a5" : "transparent",
+                  border: "1px solid #2862a5",
+                  mr: "10px",
+                  "&:hover": {
+                    bgcolor: showFilterPanel ? "#1e4d8c" : undefined,
+                  },
+                }}
+              >
+                <i className="fa-solid fa-filter"></i>
+              </Button>
+            </Tooltip>
+          )}
           <Tooltip title="Download Chart and select download options" placement="top">
             <Button
               onClick={() => setShowDownloadOptions(!showDownloadOptions)}
@@ -80,12 +108,16 @@ const VisualizationHeader = ({ restoreCanvas, isPairwiseViz, colorScale, width }
                 justifyContent: "center",
                 alignItems: "center",
                 fontSize: "14px",
-                color: "#2862a5",
+                color: showDownloadOptions ? "#fff" : "#2862a5",
+                bgcolor: showDownloadOptions ? "#2862a5" : "transparent",
                 border: "1px solid #2862a5",
                 mr: "10px",
+                "&:hover": {
+                  bgcolor: showDownloadOptions ? "#1e4d8c" : undefined,
+                },
               }}
             >
-              <i className={showDownloadOptions ? "fa-solid fa-chevron-up" : "fa-solid fa-cloud-arrow-down"}></i>
+              <i className="fa-solid fa-cloud-arrow-down"></i>
             </Button>
           </Tooltip>
         </Box>

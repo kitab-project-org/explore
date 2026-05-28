@@ -5,7 +5,7 @@ import BAExtra from "./BookAlignmentHeader/BAExtra";
 import DownloadPanel from "./VisualizationHeader/DownloadPanel";
 import { Context } from "../../../App";
 
-const SectionHeaderLayout = ({ item, children, toggle, setToggle }) => {
+const SectionHeaderLayout = ({ item, children, toggle, setToggle, mb = "20px" }) => {
   const { 
     showOptions, 
     showDownloadOptions,
@@ -14,7 +14,7 @@ const SectionHeaderLayout = ({ item, children, toggle, setToggle }) => {
     metaData,
   } = useContext(Context);
   return (
-    <Box mb="20px">
+    <Box mb={mb}>
       <Box
         display={"flex"}
         justifyContent={"space-between"}
@@ -54,20 +54,26 @@ const SectionHeaderLayout = ({ item, children, toggle, setToggle }) => {
         </Box>*/}
       </Box>
       {item.title === "Books" && showOptions && <BAExtra />}
-      {item.title === "Pairwise Visualization" && showDownloadOptions && <DownloadPanel 
-        isPairwiseViz={true}
-        downloadFileName={
-          isFlipped
-            ? `KITAB_explore_${releaseCode}_${metaData?.book2?.versionCode}_${metaData?.book1?.versionCode}.png`
-            : `KITAB_explore_${releaseCode}_${metaData?.book1?.versionCode}_${metaData?.book2?.versionCode}.png`
-        }
-      />}
-      {item.title === "One-to-Many Visualization" && showDownloadOptions && <DownloadPanel 
-        isPairwiseViz={false}
-        downloadFileName={
-          `KITAB_explore_${releaseCode}_${metaData?.book1?.versionCode}_all.png`
-        }
-      />}
+      {item.title === "Pairwise Visualization" && (
+        <Box sx={{ display: showDownloadOptions ? "block" : "none" }}>
+          <DownloadPanel
+            isPairwiseViz={true}
+            downloadFileName={
+              isFlipped
+                ? `KITAB_explore_${releaseCode}_${metaData?.book2?.versionCode}_${metaData?.book1?.versionCode}.png`
+                : `KITAB_explore_${releaseCode}_${metaData?.book1?.versionCode}_${metaData?.book2?.versionCode}.png`
+            }
+          />
+        </Box>
+      )}
+      {item.title === "One-to-Many Visualization" && (
+        <Box sx={{ display: showDownloadOptions ? "block" : "none" }}>
+          <DownloadPanel
+            isPairwiseViz={false}
+            downloadFileName={`KITAB_explore_${releaseCode}_${metaData?.book1?.versionCode}_all.png`}
+          />
+        </Box>
+      )}
     </Box>
   );
 };
