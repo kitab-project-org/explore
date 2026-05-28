@@ -22,19 +22,23 @@ const MultiFilter = (props) => {
         <DateFilter
           fullDateRange={props.fullDateRange}
           setDateRange={props.setDateRange}
+          initialValue={props.initialDateRange}
         />
       )}
       <MilestoneFilter
         fullMilestoneRange={props.fullMilestoneRange}
         setMsRange={props.setMsRange}
+        initialValue={props.initialMsRange}
       />
       <AlignmentsFilter
         fullAlignRange={props.fullAlignRange}
         setBookAlignRange={props.setBookAlignRange}
+        initialValue={props.initialAlignRange}
       />
       <BookCharsFilter
         fullBookCharRange={props.fullBookCharRange}
         setBookCharRange={props.setBookCharRange}
+        initialValue={props.initialBookCharRange}
       />
     </Box>
   );

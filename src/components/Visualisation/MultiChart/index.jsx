@@ -35,7 +35,14 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
     setSelectedMarker,
   } = useContext(Context);
 
-  const [, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Helper: read a [min, max] pair from URL params, falling back to a default range.
+  const getInitialRange = (minKey, maxKey, fallback) => {
+    const min = parseInt(searchParams.get(minKey));
+    const max = parseInt(searchParams.get(maxKey));
+    return (!isNaN(min) && !isNaN(max)) ? [min, max] : fallback;
+  };
 
   // TODO: let user set width/height (with resizable component or input field?)
   var width = 1000 - visMargins.left - visMargins.right;
@@ -73,8 +80,10 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
   }
   const fullDateRange = isFinite(_minDate) ? [_minDate, _maxDate] : [0, 1500];
 
-  const [dateRange, setDateRange] = useState(fullDateRange);
-  const [msRange, setMsRange] = useState([1, storedMainBookMilestones ?? Math.ceil(tokens?.first / 300)]);
+  const initDateRange = getInitialRange("minDate", "maxDate", fullDateRange);
+  const [dateRange, setDateRange] = useState(initDateRange);
+  const initMsRange = getInitialRange("minMs", "maxMs", [1, storedMainBookMilestones ?? Math.ceil(tokens?.first / 300)]);
+  const [msRange, setMsRange] = useState(initMsRange);
   const [uploadDialogBook, setUploadDialogBook] = useState(null);
   const pairwiseUploadRef = useRef(null);
   const handlePairwiseUpload = (files) => {
@@ -83,18 +92,34 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
   };
   let maxbc = getHighestValueInArrayOfObjects(bookStats.filter(d => d.id !== versionCode), "ch_match");
   const fullBookCharRange = [1, maxbc];
-  const [bookCharRange, setBookCharRange] = useState(fullBookCharRange);
+  const initBookCharRange = getInitialRange("minBookChars", "maxBookChars", fullBookCharRange);
+  const [bookCharRange, setBookCharRange] = useState(initBookCharRange);
   let maxalign = getHighestValueInArrayOfObjects(bookStats.filter(d => d.id !== versionCode), "alignments");
   const fullAlignRange = [1, maxalign];
-  const [bookAlignRange, setBookAlignRange] = useState(fullAlignRange);
+  const initAlignRange = getInitialRange("minAlignments", "maxAlignments", fullAlignRange);
+  const [bookAlignRange, setBookAlignRange] = useState(initAlignRange);
   let maxmschars = getHighestValueInArrayOfObjects(msData, "ch_match");
   const fullMsCharsRange = [1, maxmschars];
-  const [msCharsRange, setMsCharsRange] = useState(fullMsCharsRange);
+  const initMsCharsRange = getInitialRange("minMsChars", "maxMsChars", fullMsCharsRange);
+  const [msCharsRange, setMsCharsRange] = useState(initMsCharsRange);
+
+  const initSelectedSectionIds = (() => {
+    const sections = searchParams.get("sections");
+    if (!sections) return null;
+    const ids = sections.split(",").map(Number).filter(n => !isNaN(n));
+    return ids.length > 0 ? new Set(ids) : null;
+  })();
+  // Guard: skip the setSelectedSectionIds(null) reset on first mount when sections came from URL.
+  const sectionsFromURLRef = useRef(initSelectedSectionIds !== null);
 
   const [toc, setToc] = useState(null);
-  const [selectedSectionIds, setSelectedSectionIds] = useState(null);
+  const [selectedSectionIds, setSelectedSectionIds] = useState(initSelectedSectionIds);
   useEffect(() => {
-    setSelectedSectionIds(null);
+    if (sectionsFromURLRef.current) {
+      sectionsFromURLRef.current = false;
+    } else {
+      setSelectedSectionIds(null);
+    }
     const vc = metaData?.book1?.versionCode?.split("-")[0];
     if (!vc || !releaseCode) return;
     const url = `https://raw.githubusercontent.com/OpenITI/openiti_toc/refs/heads/v${releaseCode}/tocs/${vc}_TOC.json`;
@@ -355,12 +380,16 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
           hasDates={hasDates}
           fullDateRange={fullDateRange}
           setDateRange={setDateRange}
+          initialDateRange={initDateRange}
           fullMilestoneRange={fullMilestoneRange}
           setMsRange={setMsRange}
+          initialMsRange={initMsRange}
           fullBookCharRange={fullBookCharRange}
           setBookCharRange={setBookCharRange}
+          initialBookCharRange={initBookCharRange}
           fullAlignRange={fullAlignRange}
           setBookAlignRange={setBookAlignRange}
+          initialAlignRange={initAlignRange}
           msCharsRange={msCharsRange}
           setMsCharsRange={setMsCharsRange}
         />

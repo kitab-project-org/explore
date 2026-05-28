@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Box, Button, Slider, TextField, Typography } from "@mui/material";
 
 const noSpinnerSx = {
@@ -7,12 +7,16 @@ const noSpinnerSx = {
   "& input[type=number]": { MozAppearance: "textfield" },
 };
 
-const RangeSlider = ({ title, fullRange, setRange }) => {
-  const [sliderVal, setSliderVal] = useState(fullRange);
-  const [textVal, setTextVal] = useState(fullRange.map(String));
+const RangeSlider = ({ title, fullRange, setRange, initialValue }) => {
+  const init = initialValue ?? fullRange;
+  const [sliderVal, setSliderVal] = useState(init);
+  const [textVal, setTextVal] = useState(init.map(String));
 
-  // Reset when a new book's data is loaded:
+  // Reset when a new book's data is loaded (skip on initial mount — the slider
+  // is already initialised to the correct value via useState above):
+  const mountedRef = useRef(false);
   useEffect(() => {
+    if (!mountedRef.current) { mountedRef.current = true; return; }
     setSliderVal(fullRange);
     setTextVal(fullRange.map(String));
     setRange(fullRange);
