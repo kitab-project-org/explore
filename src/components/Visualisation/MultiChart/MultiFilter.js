@@ -29,6 +29,8 @@ const MultiFilter = (props) => {
         fullMilestoneRange={props.fullMilestoneRange}
         setMsRange={props.setMsRange}
         initialValue={props.initialMsRange}
+        filterBooksToMsRange={props.filterBooksToMsRange}
+        setFilterBooksToMsRange={props.setFilterBooksToMsRange}
       />
       <AlignmentsFilter
         fullAlignRange={props.fullAlignRange}

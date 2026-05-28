@@ -102,6 +102,9 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
   const fullMsCharsRange = [1, maxmschars];
   const initMsCharsRange = getInitialRange("minMsChars", "maxMsChars", fullMsCharsRange);
   const [msCharsRange, setMsCharsRange] = useState(initMsCharsRange);
+  const [filterBooksToMsRange, setFilterBooksToMsRange] = useState(
+    () => searchParams.get("filterBooksToMs") === "1"
+  );
 
   const initSelectedSectionIds = (() => {
     const sections = searchParams.get("sections");
@@ -176,6 +179,12 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
       (d.id === versionCode || (d.alignments >= minAlignments && d.alignments <= maxAlignments))
     );
 
+    // Remove X-axis books that have no alignments in the current milestone range:
+    if (filterBooksToMsRange) {
+      const idsWithData = new Set(msData.map(d => d.id2));
+      bStats = bStats.filter(d => d.id === versionCode || idsWithData.has(d.id));
+    }
+
     // TOC section filter + Y axis zoom:
     let displayMsRange = msRange;
     if (selectedSectionIds && selectedSectionIds.size > 0 && toc) {
@@ -227,7 +236,7 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
     };
   }, [chartData, selfReuseOnly, mainAuthor, mainAuthorDate, mainBookURI, versionCode,
       dateRange, bookCharRange, bookAlignRange, msCharsRange, msRange,
-      selectedSectionIds, toc]); // eslint-disable-line react-hooks/exhaustive-deps
+      filterBooksToMsRange, selectedSectionIds, toc]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const restoreCanvas = () => {
     setDateRange(fullDateRange);
@@ -236,6 +245,7 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
     setBookAlignRange(fullAlignRange);
     setMsCharsRange(fullMsCharsRange);
     setSelectedSectionIds(null);
+    setFilterBooksToMsRange(false);
     setSelectedMarker(null);
     setFilterResetKey(k => k + 1);
     setSearchParams(prev => {
@@ -293,10 +303,11 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
       } else {
         next.delete("sections");
       }
+      setOrDelete("filterBooksToMs", filterBooksToMsRange, 1);
 
       return next;
     }, { replace: true });
-  }, [dateRange, msRange, bookCharRange, bookAlignRange, msCharsRange, selectedSectionIds]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [dateRange, msRange, bookCharRange, bookAlignRange, msCharsRange, selectedSectionIds, filterBooksToMsRange]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const activeFilters = [
     hasDates && (dateRange[0] !== fullDateRange[0] || dateRange[1] !== fullDateRange[1]) &&
@@ -311,6 +322,7 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
       `MS chars: ${msCharsRange[0].toLocaleString()}–${msCharsRange[1].toLocaleString()}`,
     (selectedSectionIds?.size > 0) &&
       `${selectedSectionIds.size} section${selectedSectionIds.size > 1 ? 's' : ''} selected`,
+    filterBooksToMsRange && "Books outside milestone range hidden",
   ].filter(Boolean);
 
   return (
@@ -392,6 +404,8 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
           initialAlignRange={initAlignRange}
           msCharsRange={msCharsRange}
           setMsCharsRange={setMsCharsRange}
+          filterBooksToMsRange={filterBooksToMsRange}
+          setFilterBooksToMsRange={setFilterBooksToMsRange}
         />
       </Box>
 

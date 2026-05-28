@@ -1,9 +1,9 @@
-import { useContext, useEffect } from "react";
-import { Alert, Box, Button, Typography, Tooltip } from "@mui/material";
+import { useContext, useEffect, useState } from "react";
+import { Alert, Box, Button, Checkbox, FormControlLabel, Typography, Tooltip } from "@mui/material";
 import * as d3 from "d3";
 import IncludeMetaDropdown from "./IncludeMetaDropdown";
 import OutputDimensions from "./OutputDimensions";
-import { downloadPNG, downloadSVG, isChrome } from "../../../../utility/Helper";
+import { downloadPNG, downloadSVG, isChrome, mergeChartSVGs } from "../../../../utility/Helper";
 import { Context } from "../../../../App";
 
 
@@ -13,7 +13,10 @@ const DownloadPanel = ( {isPairwiseViz, downloadFileName, includeURL, setInclude
     outputImageWidth,
     dpi
   } = useContext(Context);
-  
+
+  const [includeSidebar,   setIncludeSidebar]   = useState(false);
+  const [includeBottomBar, setIncludeBottomBar] = useState(false);
+
   const svgSelector = isPairwiseViz ? 'svgChart' : 'scatterChart';
 
   // Estimate output pixel area to detect potential Chrome data-URI size limit issues.
@@ -34,7 +37,18 @@ const DownloadPanel = ( {isPairwiseViz, downloadFileName, includeURL, setInclude
 
   const handleIncludeUrlChange = (e) => {
     setIncludeURL((prev) => !prev);
-  }
+  };
+
+  // Resolve the SVG element(s) to download: merge when extra components are selected.
+  const getSvgTarget = () => {
+    if (!isPairwiseViz && (includeSidebar || includeBottomBar)) {
+      const ids = ['scatterChart'];
+      if (includeSidebar)   ids.push('side-bar');
+      if (includeBottomBar) ids.push('bottom-bar');
+      return mergeChartSVGs(ids) ?? svgSelector;
+    }
+    return svgSelector;
+  };
 
   // Apply font size when it changes
   // NB: For the pairwise viz, this is overridden by the redrawing of the chart;
@@ -56,9 +70,9 @@ const DownloadPanel = ( {isPairwiseViz, downloadFileName, includeURL, setInclude
       <Box
         display={"flex"}
         justifyContent={"right"}
+        flexWrap={"wrap"}
         sx={{
           alignItems: "center",
-          
           px: {
             xs: "25px",
             sm: "25px",
@@ -70,7 +84,7 @@ const DownloadPanel = ( {isPairwiseViz, downloadFileName, includeURL, setInclude
           borderTop: "1px solid white",
           padding: "5px"
         }}
-      > 
+      >
         <Typography sx={{ fontWeight: 'bold' }}>Download options:</Typography>
         <OutputDimensions/>
         {isPairwiseViz && <IncludeMetaDropdown/>}
@@ -93,8 +107,32 @@ const DownloadPanel = ( {isPairwiseViz, downloadFileName, includeURL, setInclude
             </Box>
           </Button>
         </Tooltip>
+        {!isPairwiseViz && (
+          <>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  size="small"
+                  checked={includeSidebar}
+                  onChange={(e) => setIncludeSidebar(e.target.checked)}
+                />
+              }
+              label={<Typography variant="body2" sx={{ color: "#333" }}>Include sidebar</Typography>}
+            />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  size="small"
+                  checked={includeBottomBar}
+                  onChange={(e) => setIncludeBottomBar(e.target.checked)}
+                />
+              }
+              label={<Typography variant="body2" sx={{ color: "#333" }}>Include bottom bar</Typography>}
+            />
+          </>
+        )}
         <Button
-          onClick={() => downloadPNG(svgSelector, downloadFileName, outputImageWidth, dpi)}
+          onClick={() => downloadPNG(getSvgTarget(), downloadFileName, outputImageWidth, dpi)}
           color="primary"
           variant="outlined"
           rel="noreferrer"
@@ -104,7 +142,7 @@ const DownloadPanel = ( {isPairwiseViz, downloadFileName, includeURL, setInclude
           Download PNG
         </Button>
         <Button
-          onClick={() => downloadSVG(svgSelector, downloadFileName)}
+          onClick={() => downloadSVG(getSvgTarget(), downloadFileName)}
           color="primary"
           variant="outlined"
           rel="noreferrer"

@@ -13,9 +13,48 @@ const isChrome = () =>
   /Chrome/.test(navigator.userAgent) &&
   /Google Inc/.test(navigator.vendor);
 
-const downloadSVG = (svgId, downloadFileName) => {
-  //const downloadFileName = `${metaData?.book1?.versionCode}_${metaData?.book2?.versionCode}.png`;
-  const svg = document.getElementById(svgId);
+// Merge several SVG elements into one, using their current DOM positions to
+// determine the layout. The first id in the array is treated as the origin.
+const mergeChartSVGs = (svgIds) => {
+  const ns = "http://www.w3.org/2000/svg";
+  const elements = svgIds.map(id => document.getElementById(id)).filter(Boolean);
+  if (!elements.length) return null;
+
+  const rects = elements.map(el => el.getBoundingClientRect());
+  const left   = Math.min(...rects.map(r => r.left));
+  const top    = Math.min(...rects.map(r => r.top));
+  const right  = Math.max(...rects.map(r => r.right));
+  const bottom = Math.max(...rects.map(r => r.bottom));
+  const totalWidth  = right  - left;
+  const totalHeight = bottom - top;
+
+  const combined = document.createElementNS(ns, "svg");
+  combined.setAttribute("xmlns", ns);
+  combined.setAttribute("width",  totalWidth);
+  combined.setAttribute("height", totalHeight);
+
+  const bg = document.createElementNS(ns, "rect");
+  bg.setAttribute("width",  totalWidth);
+  bg.setAttribute("height", totalHeight);
+  bg.setAttribute("fill",   "white");
+  combined.appendChild(bg);
+
+  elements.forEach((el, i) => {
+    const g = document.createElementNS(ns, "g");
+    g.setAttribute("transform",
+      `translate(${rects[i].left - left}, ${rects[i].top - top})`);
+    Array.from(el.childNodes).forEach(child => g.appendChild(child.cloneNode(true)));
+    combined.appendChild(g);
+  });
+
+  return combined;
+};
+
+const getSvgEl = (svgIdOrEl) =>
+  typeof svgIdOrEl === "string" ? document.getElementById(svgIdOrEl) : svgIdOrEl;
+
+const downloadSVG = (svgIdOrEl, downloadFileName) => {
+  const svg = getSvgEl(svgIdOrEl);
 
   svgAsDataUri(svg)
     .then(uri => {
@@ -31,16 +70,16 @@ const downloadSVG = (svgId, downloadFileName) => {
     });
 }
 
-const downloadPNG = (svgId, downloadFileName, outputImageWidth, dpi) => {
-  //const downloadFileName = `${metaData?.book1?.versionCode}_${metaData?.book2?.versionCode}.png`;
-  const svg = document.getElementById(svgId);
+const downloadPNG = (svgIdOrEl, downloadFileName, outputImageWidth, dpi) => {
+  const svg = getSvgEl(svgIdOrEl);
   const newSvg = svg.cloneNode(true);
 
-  let scale = 3; // default scale: 300 % 
+  let scale = 3; // default scale: 300 %
 
   if (outputImageWidth) {  // context variable!
     const inchPerMM = 1 / 25.4;
-    const svgPixelWidth = svg.clientWidth;
+    // Use the width attribute as fallback for off-DOM elements (e.g. merged SVGs):
+    const svgPixelWidth = svg.clientWidth || parseFloat(svg.getAttribute("width")) || 1;
     const outputWidthInInches = outputImageWidth * inchPerMM;
     const targetPixelWidth = outputWidthInInches * (dpi || 300); // dpi is also a context variable; use 300 if dpi is undefined
     scale = targetPixelWidth / svgPixelWidth / window.devicePixelRatio;
@@ -641,6 +680,7 @@ function getMetaLabel(d, metaType) {
 
 export {
   isChrome,
+  mergeChartSVGs,
   downloadSVG,
   downloadPNG,
   getHighestValueInArrayOfObjects,
