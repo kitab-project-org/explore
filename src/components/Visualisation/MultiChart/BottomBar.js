@@ -15,7 +15,7 @@ const BottomBar = (props) => {
   let height = props.height - props.margin.top - props.margin.bottom;
   let width = props.width;
 
-  const [selectedBar, setSelectedBar] = useState(null); // { id }
+  const { selectedBar, setSelectedBar } = props;
   const selectedBarRef = useRef(selectedBar);
   useEffect(() => { selectedBarRef.current = selectedBar; });
   const bookStatsRef = useRef(props.bookStats);

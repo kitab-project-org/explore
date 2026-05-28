@@ -280,6 +280,10 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
   const [showDownloadOptions, setShowDownloadOptions] = useState(false);
   const [includeSidebar,      setIncludeSidebar]      = useState(false);
   const [includeBottomBar,    setIncludeBottomBar]    = useState(false);
+  const [selectedMs,  setSelectedMs]  = useState(null); // { ms_id } — lifted from SideBar
+  const [selectedBar, setSelectedBar] = useState(null); // { id }    — lifted from BottomBar
+  const handleSetSelectedMs  = (ms)  => { setSelectedMs(ms);   if (ms)  setSelectedBar(null); };
+  const handleSetSelectedBar = (bar) => { setSelectedBar(bar); if (bar) setSelectedMs(null);  };
   const [filterResetKey, setFilterResetKey] = useState(0);
   const [showFilterPanel, setShowFilterPanel] = useState(false);
   const [toggle, setToggle] = useState(false);
@@ -489,6 +493,8 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
                 bookUriDict={filteredBookUriDict}
                 setXScale={setXScale}
                 setYScale={setYScale}
+                selectedMs={selectedMs}
+                selectedBar={selectedBar}
               />
             </div>
             <div
@@ -506,6 +512,8 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
                 width={100}
                 height={height}
                 margin={visMargins}
+                selectedMs={selectedMs}
+                setSelectedMs={handleSetSelectedMs}
               />
             </div>
           </div>
@@ -519,6 +527,8 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
             isUpload={isUpload}
             hasDates={hasDates}
             onUploadRequest={(d) => setUploadDialogBook(d)}
+            selectedBar={selectedBar}
+            setSelectedBar={handleSetSelectedBar}
           />
           <Dialog
             open={uploadDialogBook !== null}

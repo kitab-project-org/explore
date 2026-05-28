@@ -12,7 +12,7 @@ const SideBar = (props) => {
   const tocRef = useRef(props.toc);
   useEffect(() => { tocRef.current = props.toc; });
 
-  const [selectedMs, setSelectedMs] = useState(null); // { ms_id }
+  const { selectedMs, setSelectedMs } = props;
   const selectedMsRef = useRef(selectedMs);
   useEffect(() => { selectedMsRef.current = selectedMs; });
   const msStatsRef = useRef(props.msStats);

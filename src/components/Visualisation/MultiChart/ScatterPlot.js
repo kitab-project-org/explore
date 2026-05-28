@@ -562,6 +562,33 @@ const ScatterPlot = (props) => {
 
   }, [selectedMarker, props.msdata, props.bookUriDict, props.mainBookURI, versionCode]);
 
+  // Cross-chart highlighting: stroke all dots in the selected sidebar milestone row
+  // or bottom bar book column. Runs separately so it never triggers the main D3 effect.
+  useEffect(() => {
+    const ms  = props.selectedMs;
+    const bar = props.selectedBar;
+    const r     = props.dotSize;
+    const rBig  = Math.max(r * 2, r + 2);
+    if (!ms && !bar) {
+      // Clear cross-chart strokes and sizes, but don't touch the selectedMarker:
+      d3.selectAll("circle.dot")
+        .filter(d => !(selectedMarker && d.ms1 === selectedMarker.ms1 && d.id2 === selectedMarker.id2))
+        .style("stroke", "none")
+        .style("stroke-width", 0)
+        .attr("r", r);
+      return;
+    }
+    d3.selectAll("circle.dot").each(function(d) {
+      const isSelected = selectedMarker && d.ms1 === selectedMarker.ms1 && d.id2 === selectedMarker.id2;
+      const isCross    = (ms && d.ms1 === ms.ms_id) || (bar && d.id2 === bar.id);
+      d3.select(this)
+        .style("stroke",       isSelected ? "#000" : isCross ? "#000" : "none")
+        .style("stroke-width", isSelected ? 2      : isCross ? 1      : 0)
+        .attr("r",             (isCross || isSelected) ? rBig : r);
+      if (isCross || isSelected) d3.select(this).raise();
+    });
+  }, [props.selectedMs, props.selectedBar, selectedMarker]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Sync selectedMarker → URL params (ms1, id2) on user interaction.
   useEffect(() => {
     if (!selectedMarker) return;
