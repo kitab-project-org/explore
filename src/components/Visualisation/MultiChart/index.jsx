@@ -590,7 +590,7 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
             display: "flex",
             flexDirection: "column",
             overflow: "hidden",
-            transform: (showFilterPanel && toc) ? "translateX(0)" : "translateX(100%)",
+            transform: (showFilterPanel && toc && Object.keys(toc.sections ?? {}).length > 0) ? "translateX(0)" : "translateX(100%)",
             transition: "transform 0.25s ease",
           }}
         >
