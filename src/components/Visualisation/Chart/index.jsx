@@ -1,6 +1,6 @@
 import { Box, Typography } from "@mui/material";
 import { useContext, useEffect, useState, useRef } from "react";
-import { useSearchParams } from "react-router-dom";
+//import { useSearchParams } from "react-router-dom";
 import Section, { MetadataSvg } from "../Metadata/Section";
 import MSToggler from "../SectionHeader/MSToggler";
 import SectionHeaderLayout from "../SectionHeader/SectionHeaderLayout";
@@ -48,7 +48,7 @@ const Visual = (props) => {
   const [showDownloadOptions, setShowDownloadOptions] = useState(false);
   const [includeMetadata, setIncludeMetadata] = useState(true);
   const [toggle, setToggle] = useState(false);
-  const [searchParams] = useSearchParams();
+  //const [searchParams] = useSearchParams();
 
   // Selected alignment for keyboard navigation (separate from focusedDataIndex which triggers text loading):
   const [selectedD, setSelectedD] = useState(null);
