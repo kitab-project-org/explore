@@ -250,7 +250,7 @@ const BottomBar = (props) => {
       if (!d) { tooltipDiv.style("opacity", 0); return; }
       let tooltipMsg = d.book ?? d.manuscript;
       tooltipMsg += "<br/>Total characters matched: " + d3.format(",")(d.ch_match);
-      tooltipMsg += "<br/><b>(Enter for pairwise visualisation - Arrow keys to navigate - Escape to deselect)</b>";
+      tooltipMsg += "<br/><b>(Press Enter for pairwise visualisation - Arrow keys to navigate - Escape to deselect)</b>";
       const bar = d3.select('#bottom-bar').selectAll('.bar').filter(b => b.id === cur.id);
       if (bar.empty()) return;
       const barRect = bar.node().getBoundingClientRect();
