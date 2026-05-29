@@ -306,9 +306,9 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
   const bottomBarMargin = useMemo(() => ({ ...visMargins, top: 0 }), [visMargins]);
 
   const [showDownloadOptions, setShowDownloadOptions] = useState(false);
-  const [includeLegend,       setIncludeLegend]       = useState(false);
-  const [includeSidebar,      setIncludeSidebar]      = useState(false);
-  const [includeBottomBar,    setIncludeBottomBar]    = useState(false);
+  const [includeLegend,       setIncludeLegend]       = useState(true);
+  const [includeSidebar,      setIncludeSidebar]      = useState(true);
+  const [includeBottomBar,    setIncludeBottomBar]    = useState(true);
   const [selectedMs,  setSelectedMs]  = useState(null); // { ms_id } — lifted from SideBar
   const [selectedBar, setSelectedBar] = useState(null); // { id }    — lifted from BottomBar
   const handleSetSelectedMs  = useCallback((ms)  => { setSelectedMs(ms);   if (ms)  setSelectedBar(null); }, []);

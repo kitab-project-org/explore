@@ -150,7 +150,7 @@ const VisualisationPage = () => {
   } = useContext(Context);
 
   const [isPairwiseViz, setIsPairwiseViz] = useState(false);
-  const [includeURL, setIncludeURL] = useState(false);
+  const [includeURL, setIncludeURL] = useState(true);
 
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
