@@ -432,7 +432,7 @@ const ScatterPlot = (props) => {
                   tooltipMsg += `<br/><br/>Characters matched: ${d.ch_match}`;
                   const hasStrings = d.alignments[0]?.s1 !== undefined;
                   if (!props.isUpload || hasStrings) {
-                    tooltipMsg += "<br/><br/><b>(Double-click to compare - click to select for keyboard navigation)</b>";
+                    tooltipMsg += "<br/><br/><b>(Double-click to compare aligned texts - click to select for keyboard navigation)</b>";
                   } else {
                     tooltipMsg += "<br/><br/>(Text comparison not available for uploaded files)";
                   }
@@ -541,7 +541,7 @@ const ScatterPlot = (props) => {
         : ` (Milestones ${dot.alignments.map(el => el.ms2)})`;
       tooltipMsg += `<br/>aligns with Milestone ${dot.ms1} in ${props.mainBookURI}`;
       tooltipMsg += `<br/><br/>Characters matched: ${dot.ch_match}`;
-      tooltipMsg += "<br/><br/><b>(Press Enter or double-click to view the text - Arrow keys to navigate - Escape to deselect)</b>";
+      tooltipMsg += "<br/><br/><b>(Press Enter to compare aligned text - Arrow keys to navigate - Escape to deselect)</b>";
       const circle = d3.select("#scatterChart").selectAll("circle.dot")
         .filter(d => d.ms1 === curMarker.ms1 && d.id2 === curMarker.id2);
       if (circle.empty()) return;
