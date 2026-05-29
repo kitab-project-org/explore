@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useContext } from "react";
+import { useEffect, useMemo, useRef, useContext, memo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Box } from "@mui/material";
 import * as d3 from "d3";
@@ -655,4 +655,4 @@ const ScatterPlot = (props) => {
 
 };
 
-export default ScatterPlot;
+export default memo(ScatterPlot);

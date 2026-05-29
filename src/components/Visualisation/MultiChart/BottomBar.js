@@ -1,4 +1,4 @@
-import { useEffect, useRef, useContext } from "react";
+import { useEffect, useRef, useContext, memo } from "react";
 import * as d3 from "d3";
 import "../../../index.css";
 import { bisectLeft, calculateTooltipPos, wrapTextToSvgWidth } from "../../../utility/Helper";
@@ -315,4 +315,4 @@ const BottomBar = (props) => {
   );
 }
 
-export default BottomBar
+export default memo(BottomBar)

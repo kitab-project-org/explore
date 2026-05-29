@@ -1,4 +1,4 @@
-import { useEffect, useRef, useContext } from "react";
+import { useEffect, useRef, useContext, memo } from "react";
 import * as d3 from "d3";
 import "../../../index.css";
 import { calculateTooltipPos, wrapTextToSvgWidth } from "../../../utility/Helper";
@@ -262,4 +262,4 @@ const SideBar = (props) => {
   );
 }
 
-export default SideBar
+export default memo(SideBar)
