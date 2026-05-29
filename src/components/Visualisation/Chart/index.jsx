@@ -1035,9 +1035,10 @@ const Visual = (props) => {
   /////////////////////////////////////////////////////////////////////
 
   useEffect(() => {
+    // Swap domains before redraw: each panel now shows the other book's content.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [currentXDomain1, currentXDomain2] = [currentXDomain2, currentXDomain1]; // eslint-disable-line react-hooks/exhaustive-deps
     normalChart();
-    // Swap domains on flip: each panel now shows the other book's content.
-    [currentXDomain1, currentXDomain2] = [currentXDomain2, currentXDomain1];
     if (focusedDataIndex) {
       mouseOver(null, chartData?.dataSets[focusedDataIndex]);
       selectLineOnClicked(null, chartData?.dataSets[focusedDataIndex]);
