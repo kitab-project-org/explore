@@ -1,7 +1,6 @@
-import { useContext, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import {
   Box,
-  Chip,
   Dialog,
   DialogContent,
   DialogTitle,
@@ -13,6 +12,7 @@ import BottomBar from "./BottomBar";
 import SideBar from "./SideBar";
 import MultiFilter from "./MultiFilter";
 import TocFilter from "./filters/TocFilter";
+import ScatterLegend from "./ScatterLegend";
 import SectionHeaderLayout from "../SectionHeader/SectionHeaderLayout";
 import VisualizationHeader from "../SectionHeader/VisualizationHeader";
 import { getHighestValueInArrayOfObjects, wrapTextToSvgWidth } from "../../../utility/Helper";
@@ -85,10 +85,12 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
   const [msRange, setMsRange] = useState(initMsRange);
   const [uploadDialogBook, setUploadDialogBook] = useState(null);
   const pairwiseUploadRef = useRef(null);
-  const handlePairwiseUpload = (files) => {
+  const handleUploadPropRef = useRef(props.handleUpload);
+  useEffect(() => { handleUploadPropRef.current = props.handleUpload; });
+  const handlePairwiseUpload = useCallback((files) => {
     setUploadDialogBook(null);
-    props.handleUpload(files);
-  };
+    handleUploadPropRef.current(files);
+  }, []);
   let maxbc = getHighestValueInArrayOfObjects(bookStats.filter(d => d.id !== versionCode), "ch_match");
   const fullBookCharRange = [1, maxbc];
   const initBookCharRange = getInitialRange("minBookChars", "maxBookChars", fullBookCharRange);
@@ -237,12 +239,23 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
       dateRange, bookCharRange, bookAlignRange, msCharsRange, msRange,
       filterBooksToMsRange, selectedSectionIds, toc]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const restoreCanvas = () => {
-    setDateRange(fullDateRange);
-    setMsRange([1, storedMainBookMilestones ?? Math.ceil(tokens?.first / 300)]);
-    setBookCharRange(fullBookCharRange);
-    setBookAlignRange(fullAlignRange);
-    setMsCharsRange(fullMsCharsRange);
+  // Keep full ranges in a ref so restoreCanvas can be a stable useCallback:
+  const fullRangesRef = useRef(null);
+  fullRangesRef.current = {
+    fullDateRange,
+    fullBookCharRange,
+    fullAlignRange,
+    fullMsCharsRange,
+    defaultMsRange: [1, storedMainBookMilestones ?? Math.ceil(tokens?.first / 300)],
+  };
+
+  const restoreCanvas = useCallback(() => {
+    const r = fullRangesRef.current;
+    setDateRange(r.fullDateRange);
+    setMsRange(r.defaultMsRange);
+    setBookCharRange(r.fullBookCharRange);
+    setBookAlignRange(r.fullAlignRange);
+    setMsCharsRange(r.fullMsCharsRange);
     setSelectedSectionIds(null);
     setFilterBooksToMsRange(false);
     setSelectedMarker(null);
@@ -255,7 +268,7 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
       next.delete("ms2");
       return next;
     }, { replace: true });
-  };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const mainBookMilestones = storedMainBookMilestones ?? Math.ceil(tokens.first / 300);
   const fullMilestoneRange = [1, mainBookMilestones];
@@ -275,13 +288,17 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
     5
   );
 
+  const bottomBarMargin = useMemo(() => ({ ...visMargins, top: 0 }), [visMargins]);
+
   const [showDownloadOptions, setShowDownloadOptions] = useState(false);
+  const [includeLegend,       setIncludeLegend]       = useState(false);
   const [includeSidebar,      setIncludeSidebar]      = useState(false);
   const [includeBottomBar,    setIncludeBottomBar]    = useState(false);
   const [selectedMs,  setSelectedMs]  = useState(null); // { ms_id } — lifted from SideBar
   const [selectedBar, setSelectedBar] = useState(null); // { id }    — lifted from BottomBar
-  const handleSetSelectedMs  = (ms)  => { setSelectedMs(ms);   if (ms)  setSelectedBar(null); };
-  const handleSetSelectedBar = (bar) => { setSelectedBar(bar); if (bar) setSelectedMs(null);  };
+  const handleSetSelectedMs  = useCallback((ms)  => { setSelectedMs(ms);   if (ms)  setSelectedBar(null); }, []);
+  const handleSetSelectedBar = useCallback((bar) => { setSelectedBar(bar); if (bar) setSelectedMs(null);  }, []);
+  const onUploadRequest = useCallback((d) => setUploadDialogBook(d), []);
   const [filterResetKey, setFilterResetKey] = useState(0);
   const [showFilterPanel, setShowFilterPanel] = useState(false);
   const [toggle, setToggle] = useState(false);
@@ -339,10 +356,12 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
         }}
         toggle={toggle}
         setToggle={setToggle}
-        mb={(showFilterPanel || activeFilters.length > 0) ? 0 : "20px"}
+        mb={showFilterPanel ? 0 : "20px"}
         showDownloadOptions={showDownloadOptions}
         includeURL={includeURL}
         setIncludeURL={setIncludeURL}
+        includeLegend={includeLegend}
+        setIncludeLegend={setIncludeLegend}
         includeSidebar={includeSidebar}
         setIncludeSidebar={setIncludeSidebar}
         includeBottomBar={includeBottomBar}
@@ -351,42 +370,14 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
         <VisualizationHeader
           restoreCanvas={restoreCanvas}
           isPairwiseViz={props.isPairwiseViz}
-          downloadFileName={downloadFileName}
-          colorScale={colorScale}
-          width={width}
           showFilterPanel={showFilterPanel}
           setShowFilterPanel={setShowFilterPanel}
           showDownloadOptions={showDownloadOptions}
           setShowDownloadOptions={setShowDownloadOptions}
+          activeFilters={activeFilters}
         />
       </SectionHeaderLayout>
 
-      {!showFilterPanel && activeFilters.length > 0 && (
-        <Box
-          sx={{
-            bgcolor: "#F0F0F5",
-            borderTop: "1px solid white",
-            px: "25px",
-            py: "6px",
-            display: "flex",
-            flexWrap: "wrap",
-            alignItems: "center",
-            gap: "8px",
-            mb: "20px",
-          }}
-        >
-          <Typography variant="body2" sx={{ color: "#333" }}>Filters:</Typography>
-          {activeFilters.map((label, i) => (
-            <Chip
-              key={i}
-              label={label}
-              size="small"
-              onClick={() => setShowFilterPanel(true)}
-              sx={{ bgcolor: "#e5e7eb", cursor: "pointer", fontSize: "0.75rem" }}
-            />
-          ))}
-        </Box>
-      )}
 
       <Box
         sx={{
@@ -440,9 +431,9 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
             {urlLines.map((line, i) => (
               <text
                 key={i}
-                x={visMargins.left}
+                x={visMargins.left + width / 2}
                 y={urlFontSize * 1.3 * (i + 1)}
-                textAnchor="start"
+                textAnchor="middle"
                 style={{ fontSize: `${urlFontSize}px`, textDecoration: "underline" }}
               >
                 {line}
@@ -451,6 +442,14 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
           </svg>
         );
       })()}
+
+      <Box sx={{ ml: `${visMargins.left}px`, width: `${width}px`, display: "flex", justifyContent: "center" }}>
+        <ScatterLegend
+          colorScale={colorScale}
+          width={Math.round((width + visMargins.left + visMargins.right) * 2 / 3)}
+          margin={0}
+        />
+      </Box>
 
       <Box
         id="multiVis"
@@ -516,7 +515,7 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
             </div>
           </div>
           <BottomBar
-            margin={{ ...visMargins, top: 0 }}
+            margin={bottomBarMargin}
             width={width}
             height={120}
             bookStats={filteredBookStats}
@@ -524,7 +523,7 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
             dateRange={dataDateRange}
             isUpload={isUpload}
             hasDates={hasDates}
-            onUploadRequest={(d) => setUploadDialogBook(d)}
+            onUploadRequest={onUploadRequest}
             selectedBar={selectedBar}
             setSelectedBar={handleSetSelectedBar}
           />

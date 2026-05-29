@@ -6,8 +6,31 @@ import OutputDimensions from "./OutputDimensions";
 import { downloadPNG, downloadSVG, isChrome, mergeChartSVGs, injectBottomBarXAxis } from "../../../../utility/Helper";
 import { Context } from "../../../../App";
 
+const rowSx = {
+  display: "flex",
+  flexWrap: "wrap",
+  alignItems: "center",
+  gap: "6px",
+  px: "10px",
+  py: "4px",
+};
 
-const DownloadPanel = ( {isPairwiseViz, downloadFileName, includeURL, setIncludeURL, includeSidebar = false, setIncludeSidebar, includeBottomBar = false, setIncludeBottomBar} ) => {
+const CheckButton = ({ label, checked, onClick }) => (
+  <Button onClick={onClick} size="small">
+    <Box display="flex" alignItems="center">
+      <Typography sx={{ textTransform: "none", color: "#333", fontSize: "0.875rem" }}>
+        {label}&nbsp;
+      </Typography>
+      <Typography sx={{ mt: "2px", fontSize: "0.875rem" }}>
+        {checked
+          ? <i className="fa-solid fa-square-check"></i>
+          : <i className="fa-regular fa-square"></i>}
+      </Typography>
+    </Box>
+  </Button>
+);
+
+const DownloadPanel = ( {isPairwiseViz, downloadFileName, includeURL, setIncludeURL, includeLegend = false, setIncludeLegend, includeSidebar = false, setIncludeSidebar, includeBottomBar = false, setIncludeBottomBar} ) => {
   const {
     tickFontSize,
     outputImageWidth,
@@ -16,9 +39,6 @@ const DownloadPanel = ( {isPairwiseViz, downloadFileName, includeURL, setInclude
 
   const svgSelector = isPairwiseViz ? 'svgChart' : 'scatterChart';
 
-  // Estimate output pixel area to detect potential Chrome data-URI size limit issues.
-  // Chrome (and other Chromium-based browsers) truncates data URIs beyond ~5MB,
-  // producing a corrupt PNG. Threshold: 130 million pixels (set experimentally).
   const CHROME_PIXEL_THRESHOLD = 130_000_000;
   const showChromeWarning = (() => {
     if (!outputImageWidth || !isChrome()) return false;
@@ -32,15 +52,11 @@ const DownloadPanel = ( {isPairwiseViz, downloadFileName, includeURL, setInclude
     return targetPixelWidth * targetPixelHeight > CHROME_PIXEL_THRESHOLD;
   })();
 
-  const handleIncludeUrlChange = (e) => {
-    setIncludeURL((prev) => !prev);
-  };
-
-  // Resolve the SVG element(s) to download: merge when extra components are selected.
   const getSvgTarget = () => {
-    if (!isPairwiseViz && (includeURL || includeSidebar || includeBottomBar)) {
+    if (!isPairwiseViz && (includeURL || includeLegend || includeSidebar || includeBottomBar)) {
       const ids = ['scatterChart'];
       if (includeURL)       ids.push('url-label-svg');
+      if (includeLegend)    ids.push('legend-svg');
       if (includeSidebar)   ids.push('side-bar');
       if (includeBottomBar) ids.push('bottom-bar');
       const merged = mergeChartSVGs(ids);
@@ -51,14 +67,11 @@ const DownloadPanel = ( {isPairwiseViz, downloadFileName, includeURL, setInclude
     return svgSelector;
   };
 
-  // Apply font size when it changes
-  // NB: For the pairwise viz, this is overridden by the redrawing of the chart;
-  //     so it has to be changed there as well.
+  // Apply tick font size when it changes.
+  // NB: For the pairwise viz this is overridden by the chart redraw.
   useEffect(() => {
-    const tickTexts = d3.selectAll("#chartBox .tick text");
-    tickTexts.style("font-size", `${tickFontSize}px`);
+    d3.selectAll("#chartBox .tick text").style("font-size", `${tickFontSize}px`);
   }, [tickFontSize]);
-
 
   return (
     <>
@@ -70,93 +83,59 @@ const DownloadPanel = ( {isPairwiseViz, downloadFileName, includeURL, setInclude
       )}
       <Box
         id="download-panel"
-        display={"flex"}
-        justifyContent={"right"}
-        flexWrap={"wrap"}
         sx={{
-          alignItems: "center",
-          px: {
-            xs: "25px",
-            sm: "25px",
-          },
-          gap: "10px",
           bgcolor: "#F0F0F5",
           borderRadius: "5px",
-          position: "relative",
           borderTop: "1px solid white",
-          padding: "5px"
         }}
       >
-        <Typography sx={{ fontWeight: 'bold' }}>Download options:</Typography>
-        <OutputDimensions/>
-        {isPairwiseViz && <IncludeMetaDropdown/>}
-        <Tooltip placement="top" title={"Include URL of this visualization in the downloaded image?"}>
-          <Button onClick={handleIncludeUrlChange}>
-            <Box display="flex" alignItems="center">
-              <Typography
-                ariant="body2"
-                sx={{ textTransform: "none", color: "#333" }}
-              >
-                Include URL:&nbsp;
-              </Typography>
-              <Typography sx={{ mr: "8px", mt: "2px" }}>
-                {includeURL ? (
-                    <i className="fa-solid fa-square-check"></i>
-                ) : (
-                    <i className="fa-regular fa-square"></i>
-                )}
-              </Typography>
-            </Box>
-          </Button>
-        </Tooltip>
-        {!isPairwiseViz && (
-          <>
-            <Button onClick={() => setIncludeSidebar(v => !v)}>
-              <Box display="flex" alignItems="center">
-                <Typography sx={{ textTransform: "none", color: "#333" }}>
-                  Include sidebar:&nbsp;
-                </Typography>
-                <Typography sx={{ mr: "8px", mt: "2px" }}>
-                  {includeSidebar
-                    ? <i className="fa-solid fa-square-check"></i>
-                    : <i className="fa-regular fa-square"></i>}
-                </Typography>
-              </Box>
+        {/* Row 1: dimension / font size controls */}
+        <Box sx={rowSx}>
+          <Typography sx={{ fontWeight: "bold", whiteSpace: "nowrap" }}>
+            Download options:
+          </Typography>
+          <OutputDimensions />
+          {isPairwiseViz && <IncludeMetaDropdown />}
+        </Box>
+
+        {/* Row 2: include checkboxes + download buttons */}
+        <Box sx={{ ...rowSx }}>
+          <Typography sx={{ fontWeight: "bold", whiteSpace: "nowrap" }}>
+            Include:
+          </Typography>
+          <Tooltip placement="top" title="Include the URL of this visualization in the downloaded image">
+            <span>
+              <CheckButton label="URL" checked={includeURL} onClick={() => setIncludeURL(v => !v)} />
+            </span>
+          </Tooltip>
+          {!isPairwiseViz && (
+            <>
+              <Tooltip placement="top" title="Include the color legend in the downloaded image">
+                <span><CheckButton label="Legend" checked={includeLegend} onClick={() => setIncludeLegend(v => !v)} /></span>
+              </Tooltip>
+              <Tooltip placement="top" title="Include the sidebar (characters reused per milestone) in the downloaded image">
+                <span><CheckButton label="Sidebar" checked={includeSidebar} onClick={() => setIncludeSidebar(v => !v)} /></span>
+              </Tooltip>
+              <Tooltip placement="top" title="Include the bottom bar (characters reused per book) in the downloaded image">
+                <span><CheckButton label="Bottom bar" checked={includeBottomBar} onClick={() => setIncludeBottomBar(v => !v)} /></span>
+              </Tooltip>
+            </>
+          )}
+          <Box sx={{ ml: "auto", display: "flex", gap: "6px" }}>
+            <Button
+              onClick={() => downloadPNG(getSvgTarget(), downloadFileName, outputImageWidth, dpi)}
+              color="primary" variant="outlined" style={{ textTransform: "none" }}
+            >
+              Download PNG
             </Button>
-            <Button onClick={() => setIncludeBottomBar(v => !v)}>
-              <Box display="flex" alignItems="center">
-                <Typography sx={{ textTransform: "none", color: "#333" }}>
-                  Include bottom bar:&nbsp;
-                </Typography>
-                <Typography sx={{ mr: "8px", mt: "2px" }}>
-                  {includeBottomBar
-                    ? <i className="fa-solid fa-square-check"></i>
-                    : <i className="fa-regular fa-square"></i>}
-                </Typography>
-              </Box>
+            <Button
+              onClick={() => downloadSVG(getSvgTarget(), downloadFileName)}
+              color="primary" variant="outlined" style={{ textTransform: "none" }}
+            >
+              Download SVG
             </Button>
-          </>
-        )}
-        <Button
-          onClick={() => downloadPNG(getSvgTarget(), downloadFileName, outputImageWidth, dpi)}
-          color="primary"
-          variant="outlined"
-          rel="noreferrer"
-          target="_blank"
-          style={{textTransform: 'none'}}
-        >
-          Download PNG
-        </Button>
-        <Button
-          onClick={() => downloadSVG(getSvgTarget(), downloadFileName)}
-          color="primary"
-          variant="outlined"
-          rel="noreferrer"
-          target="_blank"
-          style={{textTransform: 'none'}}
-        >
-          Download SVG
-        </Button>
+          </Box>
+        </Box>
       </Box>
     </>
   );
