@@ -157,7 +157,7 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
 
     if (selfReuseOnly) {
       msData = msData.filter(
-        (d) => origBookUriDict[d.id2]?.[0]?.split(".")[0] === mainAuthor
+        (d) => d.id2 === versionCode || origBookUriDict[d.id2]?.[0]?.split(".")[0] === mainAuthor
       );
       bStats = bStats.filter((d) => (d.book ?? "").split(".")[0] === mainAuthor);
       dataDateRange = isNaN(mainAuthorDate) ? [0, 1500] : [mainAuthorDate, mainAuthorDate + 1];
@@ -203,11 +203,14 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
       if (minDisplay <= maxDisplay) displayMsRange = [minDisplay, maxDisplay];
     }
 
-    // Recalculate index numbers — create new objects to avoid mutating chartData:
+    // Recalculate index numbers — create new objects to avoid mutating chartData.
+    // The main book always gets bookIndex=0 so its dots sit on the Y axis (xScale(0)=0)
+    // regardless of how many books are in the filtered set.
     const bookIndexDict = {};
     const newBookUriDict = {};
-    const filteredBookStats = bStats.map((d, i) => {
-      const bookIndex = i + 1;
+    let nextIndex = 1;
+    const filteredBookStats = bStats.map((d) => {
+      const bookIndex = d.id === versionCode ? 0 : nextIndex++;
       bookIndexDict[d.id] = bookIndex;
       newBookUriDict[d.id] = [d.book ?? d.manuscript];
       return { ...d, bookIndex };
@@ -273,6 +276,15 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
       return next;
     }, { replace: true });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Reset the date filter when self-reuse mode is enabled
+  // (self-reuse ignores dates, so a date filter would be misleading).
+  useEffect(() => {
+    if (selfReuseOnly) {
+      setDateRange(fullRangesRef.current.fullDateRange);
+      setFilterResetKey(k => k + 1);
+    }
+  }, [selfReuseOnly]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const mainBookMilestones = storedMainBookMilestones ?? Math.ceil(tokens.first / 300);
   const fullMilestoneRange = [1, mainBookMilestones];
@@ -346,6 +358,7 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
     (selectedSectionIds?.size > 0) &&
       `${selectedSectionIds.size} section${selectedSectionIds.size > 1 ? 's' : ''} selected`,
     filterBooksToMsRange && "Books outside milestone range hidden",
+    selfReuseOnly && "Self reuse only",
   ].filter(Boolean);
 
   return (
@@ -393,7 +406,7 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
           hasDates={hasDates}
           fullDateRange={fullDateRange}
           setDateRange={setDateRange}
-          initialDateRange={initDateRange}
+          initialDateRange={selfReuseOnly ? fullDateRange : initDateRange}
           fullMilestoneRange={fullMilestoneRange}
           setMsRange={setMsRange}
           initialMsRange={initMsRange}
