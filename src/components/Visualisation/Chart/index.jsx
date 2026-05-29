@@ -71,6 +71,7 @@ const Visual = (props) => {
   const clickToSelectRef = useRef(null);
   const selectLineOnClickedRef = useRef(null);
   const clearSelectedLineRef = useRef(null);
+  const panToAlignmentRef = useRef(null);
 
   const [toolTip, setToolTip] = useState({
     isActive: false,
@@ -124,13 +125,14 @@ const Visual = (props) => {
   //var margin =  { top: 40, right: 20, bottom: 20, left: 60 };
   var padding = { top: 40, right: 0,  bottom: 40, left: 40 };
 
-  var book1Bars, connections, book2Bars, brushG;
-  var xScale, xScaleIdentity, x0Axis, x1Axis;
+  var book1Bars, connections, book2Bars, brushG, brushG2;
+  var xScale1, xScale2, xScaleIdentity, x0Axis, x1Axis;
   var y0Scale, y0Axis, y1Scale, y1Axis;
-  var brushHandle = d3.brushX().on("end", brushEnded);
+  var brushHandle1 = d3.brushX().on("end", brushEnded1);
+  var brushHandle2 = d3.brushX().on("end", brushEnded2);
 
   var xIdentityDomain,
-    currentXDomain,
+    currentXDomain1, currentXDomain2,
     duration1 = 700;
 
   let lastMs1 = Math.ceil(chartData?.tokens?.first / chunkSize);
@@ -165,7 +167,8 @@ const Visual = (props) => {
     svgD3.selectAll("*").remove();
     svgD3.attr("class", "chartGroup");
 
-    brushG = svgD3.append("g").attr("class", "brush");
+    brushG  = svgD3.append("g").attr("class", "brush brush1");
+    brushG2 = svgD3.append("g").attr("class", "brush brush2");
     drawingG = svgD3
       .append("g")
       .attr("class", "drawing")
@@ -176,7 +179,8 @@ const Visual = (props) => {
     connections = drawingG.append("g").attr("class", "connections");
     book2Bars = drawingG.append("g").attr("id", "secondchart");
 
-    xScale = d3.scaleLinear();
+    xScale1 = d3.scaleLinear();
+    xScale2 = d3.scaleLinear();
     xScaleIdentity = d3.scaleLinear();
     y0Scale = d3.scaleLinear().domain([0, chunkSize]).range([0, barMaxHeight]);
     y1Scale = d3.scaleLinear().domain([0, chunkSize]).range([0, barMaxHeight]);
@@ -241,6 +245,10 @@ const Visual = (props) => {
       "transform",
       "translate(" + visMargins.left + "," + visMargins.top + ")"
     );
+    brushG2.attr(
+      "transform",
+      "translate(" + visMargins.left + "," + visMargins.top + ")"
+    );
     marksG.attr(
       "transform",
       "translate(" + visMargins.left + "," + visMargins.top + ")"
@@ -252,25 +260,26 @@ const Visual = (props) => {
 
     max = maxValues;
     xIdentityDomain = [0, max.peak];
-    currentXDomain || (currentXDomain = xIdentityDomain);
-    xScale.domain(currentXDomain).range([1, width - 1]);
+    currentXDomain1 = currentXDomain1 || xIdentityDomain;
+    currentXDomain2 = currentXDomain2 || xIdentityDomain;
+    xScale1.domain(currentXDomain1).range([1, width - 1]);
+    xScale2.domain(currentXDomain2).range([1, width - 1]);
     xScaleIdentity.domain(xIdentityDomain).range([1, width - 1]);
-    x0Axis = d3.axisBottom(xScale);
-    x1Axis = d3.axisTop(xScale).tickValues([1, max.book2]);
-    brushHandle.extent([
-      [0, 0],
-      [width, height],
-    ]);
+    x0Axis = d3.axisBottom(xScale1);
+    x1Axis = d3.axisTop(xScale2).tickValues([1, max.book2]);
+    // Brush 1 covers the top bar panel; brush 2 covers the bottom bar panel:
+    brushHandle1.extent([[0, 0],              [width, barMaxHeight]]);
+    brushHandle2.extent([[0, barMaxHeight * 2],[width, barMaxHeight * 3]]);
     refLinesData = [
-      { x: 0, y: 0, yScale: y0Scale, solid: true },
-      { x: max.book1, y: 0, yScale: y0Scale, solid: showBookEnd1 },
-      { x: 0, y: barMaxHeight * 2, yScale: y1Scale, solid: true },
-      { x: max.book2, y: barMaxHeight * 2, yScale: y1Scale, solid: showBookEnd2  },
+      { x: 0,          y: 0,             yScale: y0Scale, solid: true,         xS: xScale1 },
+      { x: max.book1,  y: 0,             yScale: y0Scale, solid: showBookEnd1,  xS: xScale1 },
+      { x: 0,          y: barMaxHeight*2, yScale: y1Scale, solid: true,         xS: xScale2 },
+      { x: max.book2,  y: barMaxHeight*2, yScale: y1Scale, solid: showBookEnd2, xS: xScale2 },
     ];
 
     hoverLines = [
-      { x: barMaxHeight, y: 0, yScale: y0Scale, visible: false },
-      { x: barMaxHeight, y: barMaxHeight * 2, yScale: y0Scale, visible: false },
+      { x: barMaxHeight, y: 0,             yScale: y0Scale, visible: false, xS: xScale1 },
+      { x: barMaxHeight, y: barMaxHeight*2, yScale: y0Scale, visible: false, xS: xScale2 },
     ];
 
     // update the tick font size: 
@@ -337,8 +346,9 @@ const Visual = (props) => {
     book2BarNodes.exit().remove();
     // --- Draw Book2 Bar Chart [END] :::
 
-    // - Append Brush
-    brushG.call(brushHandle).select(".overlay");
+    // - Append Brushes (one per panel)
+    brushG.call(brushHandle1).select(".overlay");
+    brushG2.call(brushHandle2).select(".overlay");
 
     // - Max Marking ::
     marksG
@@ -362,10 +372,10 @@ const Visual = (props) => {
       .on("dblclick", selectLineOnClicked)
       .transition(t)
       .attr("x1", function (d) {
-        return xScale(Number(d.seq1));
+        return xScale1(Number(d.seq1));
       })
       .attr("x2", function (d) {
-        return xScale(Number(d.seq1));
+        return xScale1(Number(d.seq1));
       })
       .attr("y1", function (d) {
         return y0Scale(Number(d.bw1));
@@ -384,16 +394,10 @@ const Visual = (props) => {
       .transition(t)
       .attr("d", function (d) {
         return (
-          "M " +
-          xScale(Number(d.seq1)) +
-          " 150 C " +
-          xScale(Number(d.seq1)) +
-          " 250," +
-          xScale(Number(d.seq2)) +
-          " 220 , " +
-          xScale(Number(d.seq2)) +
-          " " +
-          300
+          "M " + xScale1(Number(d.seq1)) + " 150 C " +
+          xScale1(Number(d.seq1)) + " 250," +
+          xScale2(Number(d.seq2)) + " 220 , " +
+          xScale2(Number(d.seq2)) + " 300"
         );
       });
 
@@ -406,10 +410,10 @@ const Visual = (props) => {
       .on("dblclick", selectLineOnClicked)
       .transition(t)
       .attr("x1", function (d) {
-        return xScale(Number(d.seq2));
+        return xScale2(Number(d.seq2));
       })
       .attr("x2", function (d) {
-        return xScale(Number(d.seq2));
+        return xScale2(Number(d.seq2));
       })
       .attr("y1", function (d) {
         return y1Scale(Number(d.bw2));
@@ -419,9 +423,11 @@ const Visual = (props) => {
       });
 
     // - render X Axis of Book1 ::
-    x0Axis.tickValues(
-      selectedLine ? [1, Number(selectedLine.seq1), max.book1] : [1, max.book1]
-    );
+    x0Axis.tickValues(getTickValues(
+      currentXDomain1, max.book1,
+      selectedLine ? Number(selectedLine.seq1) : undefined,
+      showBookEnd1 ? max.book1 : undefined
+    ));
     x0ScaleNode
       .transition(t)
       .call(x0Axis)
@@ -433,9 +439,11 @@ const Visual = (props) => {
       .style("font-size", `${tickFontSize}px`);
 
     // - render X Axis of Book2 ::
-    x1Axis.tickValues(
-      selectedLine ? [1, Number(selectedLine.seq2), max.book2] : [1, max.book2]
-    );
+    x1Axis.tickValues(getTickValues(
+      currentXDomain2, max.book2,
+      selectedLine ? Number(selectedLine.seq2) : undefined,
+      showBookEnd2 ? max.book2 : undefined
+    ));
     x1ScaleNode
       .transition(t)
       .call(x1Axis)
@@ -451,10 +459,10 @@ const Visual = (props) => {
       .selectAll(".max-reference-lines")
       .transition(t)
       .attr("x1", function (d) {
-        return xScale(d.x);
+        return d.xS(d.x);
       })
       .attr("x2", function (d) {
-        return xScale(d.x);
+        return d.xS(d.x);
       })
       .attr("y1", function (d) {
         return d.yScale(0) + d.y;
@@ -462,6 +470,12 @@ const Visual = (props) => {
       .attr("y2", function (d) {
         return d.yScale(chunkSize) + d.y;
       });
+
+    // Re-assert selection dimming in case zoom was called while a line is selected:
+    if (selectedLine) {
+      getConnections().filter(d => d !== selectedLine).attr("opacity", 0.1);
+      getBars().filter(d => d !== selectedLine).attr("opacity", 0.1);
+    }
 
     return t;
   }
@@ -478,10 +492,10 @@ const Visual = (props) => {
       .on("dblclick", selectLineOnClicked)
       .transition(t)
       .attr("x1", function (d) {
-        return xScale(Number(d.seq2));
+        return xScale1(Number(d.seq2));
       })
       .attr("x2", function (d) {
-        return xScale(Number(d.seq2));
+        return xScale1(Number(d.seq2));
       })
       .attr("y1", function (d) {
         return y0Scale(Number(d.bw2));
@@ -500,16 +514,10 @@ const Visual = (props) => {
       .transition(t)
       .attr("d", function (d) {
         return (
-          "M " +
-          xScale(Number(d.seq2)) +
-          " 150 C " +
-          xScale(Number(d.seq2)) +
-          " 250," +
-          xScale(Number(d.seq1)) +
-          " 220 , " +
-          xScale(Number(d.seq1)) +
-          " " +
-          chunkSize
+          "M " + xScale1(Number(d.seq2)) + " 150 C " +
+          xScale1(Number(d.seq2)) + " 250," +
+          xScale2(Number(d.seq1)) + " 220 , " +
+          xScale2(Number(d.seq1)) + " " + chunkSize
         );
       });
 
@@ -522,10 +530,10 @@ const Visual = (props) => {
       .on("dblclick", selectLineOnClicked)
       .transition(t)
       .attr("x1", function (d) {
-        return xScale(Number(d.seq1));
+        return xScale2(Number(d.seq1));
       })
       .attr("x2", function (d) {
-        return xScale(Number(d.seq1));
+        return xScale2(Number(d.seq1));
       })
       .attr("y1", function (d) {
         return y1Scale(Number(d.bw1));
@@ -535,15 +543,11 @@ const Visual = (props) => {
       });
 
     // - render X Axis of Book1 ::
-    x0Axis.tickValues(
-      selectedLine
-        ? [
-            1,
-            Number(isFlipped ? selectedLine.seq2 : selectedLine.seq1),
-            max.book1,
-          ]
-        : [1, max.book1]
-    );
+    x0Axis.tickValues(getTickValues(
+      currentXDomain1, max.book1,
+      selectedLine ? Number(isFlipped ? selectedLine.seq2 : selectedLine.seq1) : undefined,
+      showBookEnd2 ? max.book1 : undefined   // flipped: top panel shows book2
+    ));
     x0ScaleNode
       .transition(t)
       .call(x0Axis)
@@ -554,15 +558,11 @@ const Visual = (props) => {
       .style("text-anchor", "end");
 
     // - render X Axis of Book2 ::
-    x1Axis.tickValues(
-      selectedLine
-        ? [
-            1,
-            Number(isFlipped ? selectedLine.seq1 : selectedLine.seq2),
-            max.book2,
-          ]
-        : [1, max.book2]
-    );
+    x1Axis.tickValues(getTickValues(
+      currentXDomain2, max.book2,
+      selectedLine ? Number(isFlipped ? selectedLine.seq1 : selectedLine.seq2) : undefined,
+      showBookEnd1 ? max.book2 : undefined   // flipped: bottom panel shows book1
+    ));
     x1ScaleNode
       .transition(t)
       .call(x1Axis)
@@ -577,10 +577,10 @@ const Visual = (props) => {
       .selectAll(".max-reference-lines")
       .transition(t)
       .attr("x1", function (d) {
-        return xScale(d.x);
+        return d.xS(d.x);
       })
       .attr("x2", function (d) {
-        return xScale(d.x);
+        return d.xS(d.x);
       })
       .attr("y1", function (d) {
         return d.yScale(0) + d.y;
@@ -589,48 +589,94 @@ const Visual = (props) => {
         return d.yScale(chunkSize) + d.y;
       });
 
+    // Re-assert selection dimming after zoom/flip:
+    if (selectedLine) {
+      getConnections().filter(d => d !== selectedLine).attr("opacity", 0.1);
+      getBars().filter(d => d !== selectedLine).attr("opacity", 0.1);
+    }
+
     return t;
   }
 
   /////////////// CHART HELPER FUNCTIONS: INTERACTIONS ////////////////////
 
-  function brushEnded(e) {
-    if (!e.sourceEvent) return; // Only transition after input.
+  function brushEnded1(e) {
+    if (!e.sourceEvent) return;
     var sel = e.selection;
-    if (!sel) {
-      return;
-    }
+    if (!sel) return;
+    currentXDomain1 = sel.map(d => Math.round(xScale1.invert(d)));
+    xScale1.domain(currentXDomain1);
+    zoom();
+  }
 
-    currentXDomain = sel.map(function (d) {
-      return Math.round(xScale.invert(d));
-    });
-    xScale.domain(currentXDomain);
+  function brushEnded2(e) {
+    if (!e.sourceEvent) return;
+    var sel = e.selection;
+    if (!sel) return;
+    currentXDomain2 = sel.map(d => Math.round(xScale2.invert(d)));
+    xScale2.domain(currentXDomain2);
     zoom();
   }
 
   function restoreCanvas() {
-    if (selectedLine) {
-      selectedLine = null;
-    }
+    if (selectedLine) selectedLine = null;
     setFocusedDataIndex(null);
+    currentXDomain1 = null;
+    currentXDomain2 = null;
     normalChart();
     setTimeout(zoom, 0);
   }
 
   function zoom() {
-    brushG.call(brushHandle.move, null);
+    brushG.call(brushHandle1.move, null);
+    brushG2.call(brushHandle2.move, null);
     isFlipped ? flipChart(duration1) : updateChart(duration1);
   }
 
+  // Returns tick values for an axis: when zoomed, show first+last visible milestone;
+  // when full view, show 1 and max; always include selectedVal if it's in range.
+  function getTickValues(domain, fullMax, selectedVal, bookEnd) {
+    const first = domain ? Math.ceil(domain[0])  : 1;
+    const last  = domain ? Math.floor(domain[1]) : fullMax;
+    const extras = [];
+    // Show the book-end line position as a tick when it is within the visible range:
+    if (bookEnd !== undefined && bookEnd > first && bookEnd < last) extras.push(bookEnd);
+    // Show the selected alignment's position as a tick:
+    if (selectedVal !== undefined && selectedVal > first && selectedVal < last) extras.push(selectedVal);
+    return [...new Set([first, ...extras, last])].sort((a, b) => a - b);
+  }
+
+  // Pan a single panel if its alignment position is off-screen.
+  // Returns true if a pan was needed.
+  function _panPanel(d1, panBook) {
+    const val = panBook === 1
+      ? Number(isFlipped ? d1.seq2 : d1.seq1)
+      : Number(isFlipped ? d1.seq1 : d1.seq2);
+    const domain = panBook === 1 ? currentXDomain1 : currentXDomain2;
+    if (!domain) return false;
+    if (val >= domain[0] && val <= domain[1]) return false;
+    const span = domain[1] - domain[0];
+    const newDomain = [val - span / 2, val + span / 2];
+    if (panBook === 1) { currentXDomain1 = newDomain; xScale1.domain(newDomain); }
+    else               { currentXDomain2 = newDomain; xScale2.domain(newDomain); }
+    return true;
+  }
+
+  // Pan both panels as needed and redraw once if anything changed.
+  function panToAlignment(d1) {
+    const moved1 = _panPanel(d1, 1);
+    const moved2 = _panPanel(d1, 2);
+    if (moved1 || moved2) zoom();
+  }
+
   function focusOnLine(d1) {
-    var a = Number(d1.seq1);
-    var b = Number(d1.seq2);
-    var min = Math.min(a, b) - xScaleIdentity.invert(5);
-    var max = Math.max(a, b) + xScaleIdentity.invert(5);
-
-    currentXDomain = [min, max];
-
-    xScale.domain(currentXDomain);
+    var pad = xScaleIdentity.invert(5);
+    var s1 = Number(isFlipped ? d1.seq2 : d1.seq1);
+    var s2 = Number(isFlipped ? d1.seq1 : d1.seq2);
+    currentXDomain1 = [s1 - pad, s1 + pad];
+    currentXDomain2 = [s2 - pad, s2 + pad];
+    xScale1.domain(currentXDomain1);
+    xScale2.domain(currentXDomain2);
     zoom();
   }
 
@@ -676,10 +722,10 @@ const Visual = (props) => {
     drawingG
       .selectAll(".dotted-bar-lines")
       .attr("x1", function (d) {
-        return xScale(d.x);
+        return d.xS(d.x);
       })
       .attr("x2", function (d) {
-        return xScale(d.x);
+        return d.xS(d.x);
       })
       .attr("y1", function (d) {
         return d.yScale(0) + d.y;
@@ -877,6 +923,7 @@ const Visual = (props) => {
     }
 
     
+    document.getElementById("belowBooks").scrollIntoView({ behavior: "smooth", block: "end" });
     if (d1 === selectedLine) { setFlipTimeLoading(false); return; }
 
     selectedLine && clearSelectedLine();
@@ -902,17 +949,28 @@ const Visual = (props) => {
     }
 
     setFlipTimeLoading(false);
-
-    // scroll to the diff viewer:
-    document.getElementById("belowBooks").scrollIntoView();
   }
 
   function clearSelectedLine() {
-    var d2 = selectedLine;
+    if (!selectedLine) return;
     selectedLine = null;
     setSelectedD(null);
-    d2.hidden = true;
-    mouseOut(null, d2);
+    selectedDRef.current = null;
+    // Restore all connections and bars to full opacity:
+    getConnections()
+      .each(function(d) { d.hidden = false; })
+      .transition()
+      .attr("stroke", connColor)
+      .attr("stroke-width", null)
+      .attr("opacity", null);
+    getBars()
+      .each(function(d) { d.hidden = false; })
+      .transition()
+      .attr("stroke-width", barWidth)
+      .attr("opacity", null);
+    drawingG.selectAll(".dotted-bar-lines").attr("opacity", 0);
+    setToolTip({ isActive: false, layerX: 0, layerY: 0,
+      data: { book1: { ms: "", pos1: "", pos2: "" }, book2: { ms: "", pos1: "", pos2: "" } } });
   }
 
   // Single-click: select the alignment and enable keyboard navigation (no text loading).
@@ -971,12 +1029,15 @@ const Visual = (props) => {
     clickToSelectRef.current = clickToSelect;
     selectLineOnClickedRef.current = selectLineOnClicked;
     clearSelectedLineRef.current = clearSelectedLine;
+    panToAlignmentRef.current = panToAlignment;
   };
 
   /////////////////////////////////////////////////////////////////////
 
   useEffect(() => {
     normalChart();
+    // Swap domains on flip: each panel now shows the other book's content.
+    [currentXDomain1, currentXDomain2] = [currentXDomain2, currentXDomain1];
     if (focusedDataIndex) {
       mouseOver(null, chartData?.dataSets[focusedDataIndex]);
       selectLineOnClicked(null, chartData?.dataSets[focusedDataIndex]);
@@ -1073,13 +1134,17 @@ const Visual = (props) => {
         const next = e.key === 'ArrowRight'
           ? list[(idx + 1) % list.length]
           : list[(idx - 1 + list.length) % list.length];
-        if (next) clickToSelectRef.current?.(null, next, book);
+        if (next) {
+          clickToSelectRef.current?.(null, next, book);
+          panToAlignmentRef.current?.(next);
+        }
       } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
         e.preventDefault();
         // Switch focused book: Down → book2, Up → book1
         const newBook = e.key === 'ArrowDown' ? 2 : 1;
         if (newBook !== focusedBookRef.current) {
           clickToSelectRef.current?.(null, cur, newBook);
+          panToAlignmentRef.current?.(cur);
         }
       } else if (e.key === 'Enter') {
         selectLineOnClickedRef.current?.(null, cur);
@@ -1207,7 +1272,7 @@ const Visual = (props) => {
               </Typography>
               {toolTip.isSelected ? (
                 <Typography sx={{ fontSize: "11px", mt: "6px", fontStyle: "italic", opacity: 0.85 }}>
-                  Press Enter to view aligned text - Right/Left arrow to navigate · Up/Down arrow to switch book · Esc deselect
+                  Press Enter to view aligned text - Right/Left arrow to navigate · Up/Down arrow to switch book · Escape to deselect
                 </Typography>
               ) : (
                 <Typography sx={{ fontSize: "11px", mt: "6px", fontStyle: "italic", opacity: 0.85 }}>
