@@ -1,5 +1,5 @@
 import { Box, Typography } from "@mui/material";
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState, useRef } from "react";
 import Section from "../Metadata/Section";
 import MSToggler from "../SectionHeader/MSToggler";
 import SectionHeaderLayout from "../SectionHeader/SectionHeaderLayout";
@@ -46,6 +46,31 @@ const Visual = (props) => {
 
   const [showDownloadOptions, setShowDownloadOptions] = useState(false);
   const [toggle, setToggle] = useState(false);
+
+  // Selected alignment for keyboard navigation (separate from focusedDataIndex which triggers text loading):
+  const [selectedD, setSelectedD] = useState(null);
+  const selectedDRef = useRef(null);
+  useEffect(() => { selectedDRef.current = selectedD; }, [selectedD]);
+  // Which book (1 or 2) is currently focused for left/right navigation:
+  const focusedBookRef = useRef(1);
+  // Last tooltip mouse position — reused when navigating with arrow keys:
+  const tooltipPosRef = useRef({ layerX: 200, layerY: 50 });
+  // Pre-computed sorted datasets for O(1) navigation:
+  const navDataRef = useRef(null);
+  useEffect(() => {
+    const datasets = chartData?.dataSets ?? [];
+    const sorted = [...datasets].sort((a, b) =>
+      Number(a.seq1) - Number(b.seq1) || Number(a.seq2) - Number(b.seq2)
+    );
+    const sortedBySeq2 = [...datasets].sort((a, b) =>
+      Number(a.seq2) - Number(b.seq2) || Number(a.seq1) - Number(b.seq1)
+    );
+    navDataRef.current = { sorted, sortedBySeq2 };
+  }, [chartData?.dataSets]);
+  // Stable refs to functions that must be called from the keyboard handler:
+  const clickToSelectRef = useRef(null);
+  const selectLineOnClickedRef = useRef(null);
+  const clearSelectedLineRef = useRef(null);
 
   const [toolTip, setToolTip] = useState({
     isActive: false,
@@ -333,7 +358,8 @@ const Visual = (props) => {
       .selectAll(".bar")
       .on("mouseover", mouseOver)
       .on("mouseout", mouseOut)
-      .on("click", selectLineOnClicked)
+      .on("click", (e, d) => clickToSelect(e, d, 1))
+      .on("dblclick", selectLineOnClicked)
       .transition(t)
       .attr("x1", function (d) {
         return xScale(Number(d.seq1));
@@ -353,7 +379,8 @@ const Visual = (props) => {
       .selectAll("path")
       .on("mouseover", mouseOver)
       .on("mouseout", mouseOut)
-      .on("click", selectLineOnClicked)
+      .on("click", (e, d) => clickToSelect(e, d, 1))
+      .on("dblclick", selectLineOnClicked)
       .transition(t)
       .attr("d", function (d) {
         return (
@@ -375,7 +402,8 @@ const Visual = (props) => {
       .selectAll(".bar")
       .on("mouseover", mouseOver)
       .on("mouseout", mouseOut)
-      .on("click", selectLineOnClicked)
+      .on("click", (e, d) => clickToSelect(e, d, 2))
+      .on("dblclick", selectLineOnClicked)
       .transition(t)
       .attr("x1", function (d) {
         return xScale(Number(d.seq2));
@@ -446,7 +474,8 @@ const Visual = (props) => {
       .selectAll(".bar")
       .on("mouseover", mouseOver)
       .on("mouseout", mouseOut)
-      .on("click", selectLineOnClicked)
+      .on("click", (e, d) => clickToSelect(e, d, 2))
+      .on("dblclick", selectLineOnClicked)
       .transition(t)
       .attr("x1", function (d) {
         return xScale(Number(d.seq2));
@@ -466,7 +495,8 @@ const Visual = (props) => {
       .selectAll("path")
       .on("mouseover", mouseOver)
       .on("mouseout", mouseOut)
-      .on("click", selectLineOnClicked)
+      .on("click", (e, d) => clickToSelect(e, d, 1))
+      .on("dblclick", selectLineOnClicked)
       .transition(t)
       .attr("d", function (d) {
         return (
@@ -488,7 +518,8 @@ const Visual = (props) => {
       .selectAll(".bar")
       .on("mouseover", mouseOver)
       .on("mouseout", mouseOut)
-      .on("click", selectLineOnClicked)
+      .on("click", (e, d) => clickToSelect(e, d, 1))
+      .on("dblclick", selectLineOnClicked)
       .transition(t)
       .attr("x1", function (d) {
         return xScale(Number(d.seq1));
@@ -616,28 +647,21 @@ const Visual = (props) => {
   }
 
   async function mouseOver(e, d1) {
+    // Suppress hover tooltip for non-selected bars when a selection is active:
+    if (e && selectedDRef.current && d1 !== selectedDRef.current) return;
     // set data to tooltip
-    if (e) {
-      setToolTip({
-        isActive: true,
-        layerX: e.layerX,
-        layerY: e.layerY,
-        data: {
-          book1: {
-            ms: d1?.seq1,
-            pos1: d1?.bw1,
-            pos2: d1?.ew1,
-          },
-          book2: {
-            ms: d1?.seq2,
-            pos1: d1?.bw2,
-            pos2: d1?.ew2,
-          },
-        },
-      });
-    } else {
-      normalChart();
-    }
+    const pos = e ? { layerX: e.layerX, layerY: e.layerY } : tooltipPosRef.current;
+    if (e) tooltipPosRef.current = pos;
+    setToolTip({
+      isActive: true,
+      layerX: pos.layerX,
+      layerY: pos.layerY,
+      isSelected: !!(selectedDRef.current && d1 === selectedDRef.current),
+      data: {
+        book1: { ms: d1?.seq1, pos1: d1?.bw1, pos2: d1?.ew1 },
+        book2: { ms: d1?.seq2, pos1: d1?.bw2, pos2: d1?.ew2 },
+      },
+    });
 
     filterSelected(d1, getConnections())
       .attr("stroke", connHColor)
@@ -667,22 +691,19 @@ const Visual = (props) => {
   }
 
   function mouseOut(e, d1) {
+    // If a different alignment is selected, restore its tooltip instead of clearing:
+    if (selectedDRef.current && d1 !== selectedDRef.current) {
+      mouseOver(null, selectedDRef.current);
+      return;
+    }
     // clear data from tooltip
     setToolTip({
       isActive: false,
       layerX: 0,
       layerY: 0,
       data: {
-        book1: {
-          ms: "",
-          pos1: "",
-          pos2: "",
-        },
-        book2: {
-          ms: "",
-          pos1: "",
-          pos2: "",
-        },
+        book1: { ms: "", pos1: "", pos2: "" },
+        book2: { ms: "", pos1: "", pos2: "" },
       },
     });
     if (selectedLine === d1) return;
@@ -707,7 +728,8 @@ const Visual = (props) => {
 
   // t3
   async function selectLineOnClicked(e, d1) {
-    //console.log(d1);
+    // Ensure the selection state is consistent when called via double-click or keyboard Enter:
+    if (d1 !== selectedLine) clickToSelect(e, d1);
     setFlipTimeLoading(true);
     setFocusedDataIndex(null);
     const versionCode1 = metaData?.book1?.versionCode;
@@ -855,7 +877,7 @@ const Visual = (props) => {
     }
 
     
-    if (d1 === selectedLine) return;
+    if (d1 === selectedLine) { setFlipTimeLoading(false); return; }
 
     selectedLine && clearSelectedLine();
     selectedLine = d1;
@@ -888,8 +910,51 @@ const Visual = (props) => {
   function clearSelectedLine() {
     var d2 = selectedLine;
     selectedLine = null;
+    setSelectedD(null);
     d2.hidden = true;
-    mouseOut(d2);
+    mouseOut(null, d2);
+  }
+
+  // Single-click: select the alignment and enable keyboard navigation (no text loading).
+  // bookNum (1 or 2) indicates which book's bar is focused for tooltip placement.
+  function clickToSelect(e, d1, bookNum = 1) {
+    // Clicking the already-selected alignment deselects it:
+    if (e && d1 === selectedLine) { clearSelectedLine(); return; }
+
+    focusedBookRef.current = bookNum;
+
+    // Apply visual selection only when changing to a different alignment:
+    if (d1 !== selectedLine) {
+      selectedLine && clearSelectedLine();
+      selectedLine = d1;
+      setSelectedD(d1);
+      selectedDRef.current = d1; // sync update so mouseOver sees it immediately
+      getConnections()
+        .each(function(d) { d.hidden = d !== d1; })
+        .filter(d => d.hidden).attr("opacity", 0.1);
+      getBars().filter(d => d.hidden).attr("opacity", 0.1);
+      drawingG.selectAll(".dotted-bar-lines").attr("opacity", 0);
+    }
+
+    // Update tooltip position: from mouse event, or computed from the focused bar:
+    if (e) {
+      tooltipPosRef.current = { layerX: e.layerX, layerY: e.layerY };
+    } else {
+      const selector = bookNum === 1 ? "#firstchart .bar" : "#secondchart .bar";
+      const barNode = drawingG?.selectAll(selector).filter(d => d === d1).node();
+      if (barNode) {
+        const barRect = barNode.getBoundingClientRect();
+        const boxRect = document.getElementById("chartBox")?.getBoundingClientRect();
+        if (boxRect) {
+          tooltipPosRef.current = {
+            layerX: barRect.left - boxRect.left + barRect.width / 2,
+            layerY: barRect.top  - boxRect.top  + barRect.height / 2,
+          };
+        }
+      }
+    }
+
+    mouseOver(e, d1);
   }
 
   /////////////////// CHART MAIN FUNCTIONS ///////////////////
@@ -902,6 +967,10 @@ const Visual = (props) => {
     getConnections();
     getBars();
     isFlipped ? flipChart(0) : updateChart(0);
+    // Keep function refs current for the keyboard handler:
+    clickToSelectRef.current = clickToSelect;
+    selectLineOnClickedRef.current = selectLineOnClicked;
+    clearSelectedLineRef.current = clearSelectedLine;
   };
 
   /////////////////////////////////////////////////////////////////////
@@ -984,6 +1053,43 @@ const Visual = (props) => {
     }
   }, [showDownloadOptions, includeURL, includeMetaInDownload, metaPositionInDownload, // eslint-disable-line react-hooks/exhaustive-deps
       isFlipped, axisLabelFontSize, visMargins, url, yTickWidth, metaData]);
+
+  // Keyboard navigation for selected alignment.
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      const cur = selectedDRef.current;
+      if (!cur) return;
+      const tag = document.activeElement?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || document.activeElement?.isContentEditable) return;
+
+      const { sorted, sortedBySeq2 } = navDataRef.current ?? {};
+      if (!sorted) return;
+
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+        e.preventDefault();
+        const book = focusedBookRef.current;
+        const list = book === 2 ? sortedBySeq2 : sorted;
+        const idx = list.indexOf(cur);
+        const next = e.key === 'ArrowRight'
+          ? list[(idx + 1) % list.length]
+          : list[(idx - 1 + list.length) % list.length];
+        if (next) clickToSelectRef.current?.(null, next, book);
+      } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        // Switch focused book: Down → book2, Up → book1
+        const newBook = e.key === 'ArrowDown' ? 2 : 1;
+        if (newBook !== focusedBookRef.current) {
+          clickToSelectRef.current?.(null, cur, newBook);
+        }
+      } else if (e.key === 'Enter') {
+        selectLineOnClickedRef.current?.(null, cur);
+      } else if (e.key === 'Escape') {
+        clearSelectedLineRef.current?.();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <>
@@ -1099,6 +1205,15 @@ const Visual = (props) => {
                     : toolTip?.data?.book2?.pos2
                 })`}
               </Typography>
+              {toolTip.isSelected ? (
+                <Typography sx={{ fontSize: "11px", mt: "6px", fontStyle: "italic", opacity: 0.85 }}>
+                  Press Enter to view aligned text - Right/Left arrow to navigate · Up/Down arrow to switch book · Esc deselect
+                </Typography>
+              ) : (
+                <Typography sx={{ fontSize: "11px", mt: "6px", fontStyle: "italic", opacity: 0.85 }}>
+                  Click to activate arrow key navigation · Double-click to view aligned text
+                </Typography>
+              )}
             </Box>
           )}
         </Box>
