@@ -1,6 +1,7 @@
 import { Box, Typography } from "@mui/material";
 import { useContext, useEffect, useState, useRef } from "react";
-import Section from "../Metadata/Section";
+import { useSearchParams } from "react-router-dom";
+import Section, { MetadataSvg } from "../Metadata/Section";
 import MSToggler from "../SectionHeader/MSToggler";
 import SectionHeaderLayout from "../SectionHeader/SectionHeaderLayout";
 import VisualizationHeader from "../SectionHeader/VisualizationHeader";
@@ -45,7 +46,9 @@ const Visual = (props) => {
   const { includeURL, setIncludeURL } = props;
 
   const [showDownloadOptions, setShowDownloadOptions] = useState(false);
+  const [includeMetadata, setIncludeMetadata] = useState(true);
   const [toggle, setToggle] = useState(false);
+  const [searchParams] = useSearchParams();
 
   // Selected alignment for keyboard navigation (separate from focusedDataIndex which triggers text loading):
   const [selectedD, setSelectedD] = useState(null);
@@ -1060,20 +1063,6 @@ const Visual = (props) => {
     if (!showDownloadOptions) return;
     const charHeight = axisLabelFontSize;
     const lineHeight = charHeight * 1.3;
-    if (includeURL) {
-      const urlFontSize = Math.min(axisLabelFontSize, 12);
-      const urlLines = wrapTextToSvgWidth(window.location.href, innerWidth, urlFontSize);
-      urlLines.forEach((line, i) => {
-        svg.append("text")
-          .attr("class", "download-annotation")
-          .attr("x", visMargins.left)
-          .attr("y", urlFontSize * 1.3 * (i + 1))
-          .attr("text-anchor", "left")
-          .style("font-size", `${urlFontSize}px`)
-          .style("text-decoration", "underline")
-          .text(line);
-      });
-    }
     if (includeMetaInDownload !== "no") {
       const b1 = isFlipped ? metaData?.book2 : metaData?.book1;
       const b2 = isFlipped ? metaData?.book1 : metaData?.book2;
@@ -1169,6 +1158,8 @@ const Visual = (props) => {
         showDownloadOptions={showDownloadOptions}
         includeURL={includeURL}
         setIncludeURL={setIncludeURL}
+        includeMetadata={includeMetadata}
+        setIncludeMetadata={setIncludeMetadata}
       >
         <VisualizationHeader
           restoreCanvas={restoreCanvas}
@@ -1185,16 +1176,12 @@ const Visual = (props) => {
           },
         }}
       >
-        <Box
-          display="flex"
-          alignItems="center"
-          justifyContent="space-between"
-          mt="20px"
-        >
-          <Section
-            isVertical
-            data={isFlipped ? metaData?.book2 : metaData?.book1}
-          />
+        {/* 1. Top Section (book1 metadata panel) — hidden when metadata SVG replaces it */}
+        <Box sx={{
+          display: (showDownloadOptions && includeMetadata) ? "none" : "flex",
+          alignItems: "center", justifyContent: "space-between", mt: "20px",
+        }}>
+          <Section isVertical data={isFlipped ? metaData?.book2 : metaData?.book1} />
           <MSToggler
             isTop={isFlipped ? false : true}
             isBook1={isFlipped ? false : true}
@@ -1202,6 +1189,45 @@ const Visual = (props) => {
             mouseOver={mouseOver}
           />
         </Box>
+
+        {/* 2. URL SVG — between top Section and metadata SVG */}
+        {showDownloadOptions && includeURL && (() => {
+          const urlFontSize = Math.min(axisLabelFontSize, 12);
+          const chartSvg = document.getElementById('svgChart');
+          const svgWidth = chartSvg
+            ? (chartSvg.clientWidth || parseFloat(chartSvg.getAttribute('width')) || 600)
+            : 600;
+          const urlLines = wrapTextToSvgWidth(
+            window.location.href, svgWidth - (visMargins.left || 0) - 10, urlFontSize
+          );
+          const urlSvgHeight = urlFontSize * 1.3 * urlLines.length + 4;
+          return (
+            <svg id="url-label-svg" width={svgWidth} height={urlSvgHeight}
+              style={{ display: "block", fontFamily: "Arial" }}>
+              {urlLines.map((line, i) => (
+                <text key={i} x={svgWidth / 2} y={urlFontSize * 1.3 * (i + 1)}
+                  textAnchor="middle"
+                  style={{ fontSize: `${urlFontSize}px`, textDecoration: "underline" }}>
+                  {line}
+                </text>
+              ))}
+            </svg>
+          );
+        })()}
+
+        {/* 3. Metadata SVG (top) — between URL and chart */}
+        {showDownloadOptions && includeMetadata && (() => {
+          const chartSvg = document.getElementById('svgChart');
+          const svgWidth = chartSvg
+            ? (chartSvg.clientWidth || parseFloat(chartSvg.getAttribute('width')) || 600)
+            : 600;
+          return (
+            <MetadataSvg id="metadata-top-svg"
+              data={isFlipped ? metaData?.book2 : metaData?.book1}
+              svgWidth={svgWidth} marginLeft={visMargins.left || 0} />
+          );
+        })()}
+
         <Box id={"chartBox"} sx={{ width: "100%", position: "relative" }}>
           <svg
             id={"svgChart"}
@@ -1283,11 +1309,28 @@ const Visual = (props) => {
             </Box>
           )}
         </Box>
-        <Box display="flex" alignItems="center" justifyContent="space-between">
-          <Section
-            isVertical
-            data={isFlipped ? metaData?.book1 : metaData?.book2}
-          />
+        {/* 4. Metadata SVG (bottom) — pull up by the extra bottom padding of the chart SVG */}
+        {showDownloadOptions && includeMetadata && (() => {
+          const chartSvg = document.getElementById('svgChart');
+          const svgWidth = chartSvg
+            ? (chartSvg.clientWidth || parseFloat(chartSvg.getAttribute('width')) || 600)
+            : 600;
+          const correction = 20 + (visMargins.bottom || 0) - (visMargins.top || 0);
+          return (
+            <Box sx={{ mt: `${-correction}px`, position: "relative", zIndex: 1 }}>
+              <MetadataSvg id="metadata-bottom-svg"
+                data={isFlipped ? metaData?.book1 : metaData?.book2}
+                svgWidth={svgWidth} marginLeft={visMargins.left || 0} />
+            </Box>
+          );
+        })()}
+
+        {/* 5. Bottom Section (book2 metadata panel) — hidden when metadata SVG replaces it */}
+        <Box sx={{
+          display: (showDownloadOptions && includeMetadata) ? "none" : "flex",
+          alignItems: "center", justifyContent: "space-between",
+        }}>
+          <Section isVertical data={isFlipped ? metaData?.book1 : metaData?.book2} />
           <MSToggler
             isTop={isFlipped ? true : false}
             isBook1={isFlipped ? true : false}

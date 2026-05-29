@@ -30,7 +30,7 @@ const CheckButton = ({ label, checked, onClick }) => (
   </Button>
 );
 
-const DownloadPanel = ( {isPairwiseViz, downloadFileName, includeURL, setIncludeURL, includeLegend = false, setIncludeLegend, includeSidebar = false, setIncludeSidebar, includeBottomBar = false, setIncludeBottomBar} ) => {
+const DownloadPanel = ( {isPairwiseViz, downloadFileName, includeURL, setIncludeURL, includeMetadata = true, setIncludeMetadata, includeLegend = false, setIncludeLegend, includeSidebar = false, setIncludeSidebar, includeBottomBar = false, setIncludeBottomBar} ) => {
   const {
     tickFontSize,
     outputImageWidth,
@@ -53,6 +53,15 @@ const DownloadPanel = ( {isPairwiseViz, downloadFileName, includeURL, setInclude
   })();
 
   const getSvgTarget = () => {
+    if (isPairwiseViz && (includeURL || includeMetadata)) {
+      const ids = [];
+      if (includeURL)      ids.push('url-label-svg');       // above metadata
+      if (includeMetadata) ids.push('metadata-top-svg');    // between url and chart
+      ids.push('svgChart');
+      if (includeMetadata) ids.push('metadata-bottom-svg'); // below chart
+      const merged = mergeChartSVGs(ids);
+      if (merged) return merged;
+    }
     if (!isPairwiseViz && (includeURL || includeLegend || includeSidebar || includeBottomBar)) {
       const ids = ['scatterChart'];
       if (includeURL)       ids.push('url-label-svg');
@@ -108,6 +117,13 @@ const DownloadPanel = ( {isPairwiseViz, downloadFileName, includeURL, setInclude
               <CheckButton label="URL" checked={includeURL} onClick={() => setIncludeURL(v => !v)} />
             </span>
           </Tooltip>
+          {isPairwiseViz && setIncludeMetadata && (
+            <Tooltip placement="top" title="Include the book metadata (title, author, word count) in the downloaded image">
+              <span>
+                <CheckButton label="Metadata" checked={includeMetadata} onClick={() => setIncludeMetadata(v => !v)} />
+              </span>
+            </Tooltip>
+          )}
           {!isPairwiseViz && (
             <>
               <Tooltip placement="top" title="Include the color legend in the downloaded image">

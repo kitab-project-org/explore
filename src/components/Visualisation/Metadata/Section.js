@@ -124,3 +124,56 @@ const Section = ({ data }) => {
 };
 
 export default Section;
+
+/**
+ * Renders book metadata as a plain SVG element for inclusion in downloaded images.
+ */
+export const MetadataSvg = ({ id, data, svgWidth, marginLeft = 0 }) => {
+  if (!data || !svgWidth) return null;
+
+  const isManuscript = !data?.bookTitle;
+  const fontSize = 11;
+  const lineHeight = fontSize * 1.6;
+  const svgHeight = lineHeight * 2 + 8;
+
+  const fields = [
+    { label: 'Version Code', value: data?.versionCode ?? 'N/A' },
+    {
+      label: isManuscript ? 'Shelfmark' : 'Book Title',
+      value: isManuscript ? (data?.shelfmark ?? 'N/A') : (data?.bookTitle?.label ?? 'N/A'),
+    },
+    {
+      label: isManuscript ? 'Manuscript Holding' : 'Book Author',
+      value: isManuscript ? (data?.manuscriptHolding ?? 'N/A') : (data?.bookAuthor ?? 'N/A'),
+    },
+    ...(!isManuscript && data?.bookTitle?.path
+      ? [{ label: 'Death Date', value: `${parseInt(data.bookTitle.path.slice(0, 4))} AH` }]
+      : []),
+    {
+      label: 'Word Count',
+      value: data?.wordCount
+        ? `${data.wordCount.toLocaleString()} (${Math.ceil(data.wordCount / 300)} ms)`
+        : 'N/A',
+    },
+  ];
+
+  const colWidth = (svgWidth - marginLeft) / fields.length;
+
+  return (
+    <svg id={id} width={svgWidth} height={svgHeight}
+      style={{ display: 'block', fontFamily: 'Arial' }}>
+      {fields.map((f, i) => (
+        <g key={i} transform={`translate(${marginLeft + i * colWidth}, 4)`}>
+          <text y={fontSize}
+            style={{ fontSize: `${fontSize}px`, fontWeight: 'bold', fill: '#333' }}>
+            {f.label}
+          </text>
+          <text y={fontSize + lineHeight}
+            style={{ fontSize: `${fontSize}px`, fill: '#555' }}>
+            {f.value}
+          </text>
+        </g>
+      ))}
+    </svg>
+  );
+};
