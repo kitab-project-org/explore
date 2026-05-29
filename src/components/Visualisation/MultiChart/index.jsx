@@ -34,15 +34,17 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
     releaseCode,
     setSelectedMarker,
     axisLabelFontSize,
+    setSelfReuseOnly,
   } = useContext(Context);
 
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Helper: read a [min, max] pair from URL params, falling back to a default range.
-  const getInitialRange = (minKey, maxKey, fallback) => {
-    const min = parseInt(searchParams.get(minKey));
-    const max = parseInt(searchParams.get(maxKey));
-    return (!isNaN(min) && !isNaN(max)) ? [min, max] : fallback;
+  // Helper: read a [min, max] pair from a single "key=min,max" URL param.
+  const getRangeParam = (key, fallback) => {
+    const val = searchParams.get(key);
+    if (!val) return fallback;
+    const [a, b] = val.split('-').map(Number);
+    return (!isNaN(a) && !isNaN(b)) ? [a, b] : fallback;
   };
 
   // TODO: let user set width/height (with resizable component or input field?)
@@ -79,9 +81,9 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
   }
   const fullDateRange = isFinite(_minDate) ? [_minDate, _maxDate] : [0, 1500];
 
-  const initDateRange = getInitialRange("minDate", "maxDate", fullDateRange);
+  const initDateRange = getRangeParam("date", fullDateRange);
   const [dateRange, setDateRange] = useState(initDateRange);
-  const initMsRange = getInitialRange("minMs", "maxMs", [1, storedMainBookMilestones ?? Math.ceil(tokens?.first / 300)]);
+  const initMsRange = getRangeParam("mss", [1, storedMainBookMilestones ?? Math.ceil(tokens?.first / 300)]);
   const [msRange, setMsRange] = useState(initMsRange);
   const [uploadDialogBook, setUploadDialogBook] = useState(null);
   const pairwiseUploadRef = useRef(null);
@@ -93,15 +95,15 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
   }, []);
   let maxbc = getHighestValueInArrayOfObjects(bookStats.filter(d => d.id !== versionCode), "ch_match");
   const fullBookCharRange = [1, maxbc];
-  const initBookCharRange = getInitialRange("minBookChars", "maxBookChars", fullBookCharRange);
+  const initBookCharRange = getRangeParam("BookAlignedChars", fullBookCharRange);
   const [bookCharRange, setBookCharRange] = useState(initBookCharRange);
   let maxalign = getHighestValueInArrayOfObjects(bookStats.filter(d => d.id !== versionCode), "alignments");
   const fullAlignRange = [1, maxalign];
-  const initAlignRange = getInitialRange("minAlignments", "maxAlignments", fullAlignRange);
+  const initAlignRange = getRangeParam("MsAlignedChars", fullAlignRange);
   const [bookAlignRange, setBookAlignRange] = useState(initAlignRange);
   let maxmschars = getHighestValueInArrayOfObjects(msData, "ch_match");
   const fullMsCharsRange = [1, maxmschars];
-  const initMsCharsRange = getInitialRange("minMsChars", "maxMsChars", fullMsCharsRange);
+  const initMsCharsRange = getRangeParam("MsChars", fullMsCharsRange);
   const [msCharsRange, setMsCharsRange] = useState(initMsCharsRange);
   const [filterBooksToMsRange, setFilterBooksToMsRange] = useState(
     () => searchParams.get("filterBooksToMs") === "1"
@@ -247,6 +249,7 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
     fullAlignRange,
     fullMsCharsRange,
     defaultMsRange: [1, storedMainBookMilestones ?? Math.ceil(tokens?.first / 300)],
+    setSelfReuseOnly,
   };
 
   const restoreCanvas = useCallback(() => {
@@ -258,6 +261,7 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
     setMsCharsRange(r.fullMsCharsRange);
     setSelectedSectionIds(null);
     setFilterBooksToMsRange(false);
+    r.setSelfReuseOnly(false);
     setSelectedMarker(null);
     setFilterResetKey(k => k + 1);
     setSearchParams(prev => {
@@ -307,19 +311,16 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
     setSearchParams(prev => {
       const next = new URLSearchParams(prev);
 
+      const setOrDeleteRange = (key, condition, min, max) =>
+        condition ? next.set(key, `${min}-${max}`) : next.delete(key);
       const setOrDelete = (key, condition, value) =>
         condition ? next.set(key, String(value)) : next.delete(key);
 
-      setOrDelete("minDate", hasDates && dateRange[0] !== fullDateRange[0], dateRange[0]);
-      setOrDelete("maxDate", hasDates && dateRange[1] !== fullDateRange[1], dateRange[1]);
-      setOrDelete("minMs",   msRange[0] !== fullMilestoneRange[0], msRange[0]);
-      setOrDelete("maxMs",   msRange[1] !== fullMilestoneRange[1], msRange[1]);
-      setOrDelete("minBookChars", bookCharRange[0] !== fullBookCharRange[0], bookCharRange[0]);
-      setOrDelete("maxBookChars", bookCharRange[1] !== fullBookCharRange[1], bookCharRange[1]);
-      setOrDelete("minAlignments", bookAlignRange[0] !== fullAlignRange[0], bookAlignRange[0]);
-      setOrDelete("maxAlignments", bookAlignRange[1] !== fullAlignRange[1], bookAlignRange[1]);
-      setOrDelete("minMsChars", msCharsRange[0] !== fullMsCharsRange[0], msCharsRange[0]);
-      setOrDelete("maxMsChars", msCharsRange[1] !== fullMsCharsRange[1], msCharsRange[1]);
+      setOrDeleteRange("date", hasDates && (dateRange[0] !== fullDateRange[0] || dateRange[1] !== fullDateRange[1]), dateRange[0], dateRange[1]);
+      setOrDeleteRange("mss", msRange[0] !== fullMilestoneRange[0] || msRange[1] !== fullMilestoneRange[1], msRange[0], msRange[1]);
+      setOrDeleteRange("BookAlignedChars", bookCharRange[0] !== fullBookCharRange[0] || bookCharRange[1] !== fullBookCharRange[1], bookCharRange[0], bookCharRange[1]);
+      setOrDeleteRange("MsAlignedChars", bookAlignRange[0] !== fullAlignRange[0] || bookAlignRange[1] !== fullAlignRange[1], bookAlignRange[0], bookAlignRange[1]);
+      setOrDeleteRange("MsChars", msCharsRange[0] !== fullMsCharsRange[0] || msCharsRange[1] !== fullMsCharsRange[1], msCharsRange[0], msCharsRange[1]);
       if (selectedSectionIds?.size > 0) {
         next.set("sections", Array.from(selectedSectionIds).join(","));
       } else {

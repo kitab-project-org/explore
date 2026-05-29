@@ -1,36 +1,23 @@
-import {useContext} from "react";
-import { Box, Checkbox, FormControlLabel } from "@mui/material";
+import { useContext } from "react";
+import { Checkbox, FormControlLabel, Typography } from "@mui/material";
 import { Context } from "../../../../App";
 
 
 const SelfReuseFilter = () => {
-  const {selfReuseOnly, setSelfReuseOnly} = useContext(Context);
-  console.log("selfReuseOnly: "+selfReuseOnly);
-  const handleChange = () => {
-    console.log(selfReuseOnly);
-    setSelfReuseOnly((prev) => !prev)
-  }
-
+  const { selfReuseOnly, setSelfReuseOnly } = useContext(Context);
   return (
-    <Box 
-      id="self-reuse-filter"
-      sx={{ 
-        width: 200,
-        margin: "20px"
-        }}
-    >
-      <FormControlLabel 
-        control={
-          <Checkbox 
-            checked={selfReuseOnly}
-            onClick={handleChange}
-          />
-        }
-        label="Self reuse only"
-      />
-    </Box>
-
-  )
+    <FormControlLabel
+      control={
+        <Checkbox
+          size="small"
+          checked={selfReuseOnly ?? false}
+          onChange={() => setSelfReuseOnly(prev => !prev)}
+        />
+      }
+      label={<Typography variant="body2">Self reuse only</Typography>}
+      sx={{ px: "60px", display: "flex", mt: "-30px" }}
+    />
+  );
 };
 
 export default SelfReuseFilter;

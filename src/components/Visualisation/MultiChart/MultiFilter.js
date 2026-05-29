@@ -3,7 +3,6 @@ import AlignmentsFilter from "./filters/AlignmentsFilter";
 import BookCharsFilter from "./filters/BookCharsFilter";
 import DateFilter from "./filters/DateFilter";
 import MilestoneFilter from "./filters/MilestoneFilter";
-import SelfReuseFilter from "./filters/SelfReuseFilter";
 
 
 
@@ -42,7 +41,6 @@ const MultiFilter = (props) => {
         setBookCharRange={props.setBookCharRange}
         initialValue={props.initialBookCharRange}
       />
-      <SelfReuseFilter/>
     </Box>
   );
 };
