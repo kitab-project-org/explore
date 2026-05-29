@@ -475,10 +475,10 @@ const ScatterPlot = (props) => {
           exit.remove();
         }
       )
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.msdata, props.bookStats.length, props.msRange, props.height, width,
       tickFontSize, axisLabelFontSize, props.mainBookURI, props.mainBookMilestones,
-      visMargins, yTickWidth,
-      props.dotSize, colorScale, props.bookUriDict, props.isUpload, versionCode]); // eslint-disable-line react-hooks/exhaustive-deps
+      visMargins, yTickWidth, props.dotSize, colorScale, props.bookUriDict, props.isUpload, versionCode]);
 
   // Keyboard navigation — document-level so it works regardless of scroll position.
   // Uses refs so the listener registered once always sees current data.
@@ -512,7 +512,7 @@ const ScatterPlot = (props) => {
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []); // empty deps — reads all current values through refs
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Highlight the selected dot and show the persistent tooltip near it.
   // The function is stored in showSelectedTooltipRef so mouseout can re-show it.

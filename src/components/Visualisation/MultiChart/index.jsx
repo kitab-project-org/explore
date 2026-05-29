@@ -1,4 +1,4 @@
-﻿import { useContext, useEffect, useMemo, useRef, useState } from "react";
+import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import {
   Box,
   Chip,
@@ -63,9 +63,7 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
     tokens,
     mainBookMilestones: storedMainBookMilestones,
     msData,
-    msStats,
     bookStats,
-    bookUriDict,
     maxTotalChMatch
   } = chartData;
 

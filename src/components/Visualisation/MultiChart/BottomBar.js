@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useContext } from "react";
+import { useEffect, useRef, useContext } from "react";
 import * as d3 from "d3";
 import "../../../index.css";
 import { bisectLeft, calculateTooltipPos, wrapTextToSvgWidth } from "../../../utility/Helper";
@@ -301,7 +301,8 @@ const BottomBar = (props) => {
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []); // empty deps — reads current values through refs
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // empty deps — reads current values through refs
 
   return (
     <svg

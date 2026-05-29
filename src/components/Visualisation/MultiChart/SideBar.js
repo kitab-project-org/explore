@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState, useContext } from "react";
+import { useEffect, useRef, useContext } from "react";
 import * as d3 from "d3";
 import "../../../index.css";
 import { calculateTooltipPos, wrapTextToSvgWidth } from "../../../utility/Helper";
@@ -146,8 +146,9 @@ const SideBar = (props) => {
     xScaleRef.current = xScale;
     yScaleRef.current = yScale;
     barHeightRef.current = barHeight;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.msStats, props.height, props.mainBookMilestones, props.msRange,
-      props.width, tickFontSize, axisLabelFontSize, props.margin.top]); // eslint-disable-line react-hooks/exhaustive-deps
+      props.width, tickFontSize, axisLabelFontSize, props.margin.top, setSelectedMs]);
 
   // Highlight selected bar and show persistent tooltip.
   useEffect(() => {
@@ -248,7 +249,7 @@ const SideBar = (props) => {
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []); // empty deps — reads current values through refs
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <svg

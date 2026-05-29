@@ -42,7 +42,7 @@ const Visual = (props) => {
     yTickWidth,
   } = useContext(Context);
 
-  const { isPairwiseViz, includeURL, setIncludeURL } = props;
+  const { includeURL, setIncludeURL } = props;
 
   const [showDownloadOptions, setShowDownloadOptions] = useState(false);
   const [toggle, setToggle] = useState(false);
