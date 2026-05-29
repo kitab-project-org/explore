@@ -56,7 +56,6 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
   const mainAuthor = mainBookURI.split(".")[0];
   const mainAuthorDate = parseInt(mainAuthor.slice(0, 4));
 
-  const downloadFileName = `${book1?.versionCode}_all.png`;
 
   // extract relevant objects from chartData:
   let {
