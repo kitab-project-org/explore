@@ -386,8 +386,8 @@ const Visual = (props) => {
       .selectAll(".bar")
       .on("mouseover", mouseOver)
       .on("mouseout", mouseOut)
-      .on("click", (e, d) => clickToSelect(e, d, 1))
-      .on("dblclick", selectLineOnClicked)
+      .on("click", (e, d) => { e.stopPropagation(); clickToSelect(e, d, 1); })
+      .on("dblclick", (e, d) => { e.stopPropagation(); selectLineOnClicked(e, d); })
       .transition(t)
       .attr("x1", function (d) {
         return xScale1(Number(d.seq1));
@@ -407,8 +407,8 @@ const Visual = (props) => {
       .selectAll("path")
       .on("mouseover", mouseOver)
       .on("mouseout", mouseOut)
-      .on("click", (e, d) => clickToSelect(e, d, 1))
-      .on("dblclick", selectLineOnClicked)
+      .on("click", (e, d) => { e.stopPropagation(); clickToSelect(e, d, 1); })
+      .on("dblclick", (e, d) => { e.stopPropagation(); selectLineOnClicked(e, d); })
       .transition(t)
       .attr("d", function (d) {
         return (
@@ -424,8 +424,8 @@ const Visual = (props) => {
       .selectAll(".bar")
       .on("mouseover", mouseOver)
       .on("mouseout", mouseOut)
-      .on("click", (e, d) => clickToSelect(e, d, 2))
-      .on("dblclick", selectLineOnClicked)
+      .on("click", (e, d) => { e.stopPropagation(); clickToSelect(e, d, 2); })
+      .on("dblclick", (e, d) => { e.stopPropagation(); selectLineOnClicked(e, d); })
       .transition(t)
       .attr("x1", function (d) {
         return xScale2(Number(d.seq2));
@@ -510,8 +510,8 @@ const Visual = (props) => {
       .selectAll(".bar")
       .on("mouseover", mouseOver)
       .on("mouseout", mouseOut)
-      .on("click", (e, d) => clickToSelect(e, d, 2))
-      .on("dblclick", selectLineOnClicked)
+      .on("click", (e, d) => { e.stopPropagation(); clickToSelect(e, d, 2); })
+      .on("dblclick", (e, d) => { e.stopPropagation(); selectLineOnClicked(e, d); })
       .transition(t)
       .attr("x1", function (d) {
         return xScale1(Number(d.seq2));
@@ -531,8 +531,8 @@ const Visual = (props) => {
       .selectAll("path")
       .on("mouseover", mouseOver)
       .on("mouseout", mouseOut)
-      .on("click", (e, d) => clickToSelect(e, d, 1))
-      .on("dblclick", selectLineOnClicked)
+      .on("click", (e, d) => { e.stopPropagation(); clickToSelect(e, d, 1); })
+      .on("dblclick", (e, d) => { e.stopPropagation(); selectLineOnClicked(e, d); })
       .transition(t)
       .attr("d", function (d) {
         return (
@@ -548,8 +548,8 @@ const Visual = (props) => {
       .selectAll(".bar")
       .on("mouseover", mouseOver)
       .on("mouseout", mouseOut)
-      .on("click", (e, d) => clickToSelect(e, d, 1))
-      .on("dblclick", selectLineOnClicked)
+      .on("click", (e, d) => { e.stopPropagation(); clickToSelect(e, d, 1); })
+      .on("dblclick", (e, d) => { e.stopPropagation(); selectLineOnClicked(e, d); })
       .transition(t)
       .attr("x1", function (d) {
         return xScale2(Number(d.seq1));
@@ -1056,6 +1056,8 @@ const Visual = (props) => {
   // t2
   const normalChart = () => {
     createChart();
+    // Clicking empty SVG space clears the current selection:
+    svgD3.on("click", () => clearSelectedLineRef.current?.());
     setLayout();
     drawChart();
     getConnections();
