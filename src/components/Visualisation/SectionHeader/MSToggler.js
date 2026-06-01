@@ -1,13 +1,11 @@
 import { Box, IconButton, MenuItem, Tooltip } from "@mui/material";
-import { useContext, useRef, useState } from "react";
-import { Context } from "../../../App";
+import { useRef, useState } from "react";
 
 const MSToggler = ({
   isTop, isBook1,
   navDataRef, clickToSelectRef, selectLineOnClickedRef, clearSelectedLineRef,
   selectedDRef, panToAlignmentRef,
 }) => {
-  const { focusedDataIndex } = useContext(Context);
   const selectRef = useRef(null);
   const [toggle, setToggle] = useState(false);
   const [displayCount, setDisplayCount] = useState(50);

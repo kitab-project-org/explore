@@ -2,9 +2,6 @@ import axios from "axios";
 import { parseImech } from "../utility/Helper";
 import { getVersionMetadataById } from "../services/CorpusMetaData";
 
-// Module-level metadata cache — persists for the session lifetime.
-// Key: `${releaseCode}/${versionCode}`, value: metadata object.
-const metaCache = new Map();
 
 /**
  * Get the text of a milestone (300-word chunk of text).
