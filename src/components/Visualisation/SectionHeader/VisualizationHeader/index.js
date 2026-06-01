@@ -55,8 +55,8 @@ const VisualizationHeader = ({ restoreCanvas, isPairwiseViz, showFilterPanel, se
             </Button>
           </Tooltip>
           {isPairwiseViz ? <FlipButton /> : ""}
-          {!isPairwiseViz && setShowFilterPanel && (
-            <Tooltip title="Filter options" placement="top">
+          {setShowFilterPanel && (
+            <Tooltip title={isPairwiseViz ? "Filter by table of contents" : "Filter options"} placement="top">
               <Button
                 onClick={() => setShowFilterPanel(v => !v)}
                 color="primary"

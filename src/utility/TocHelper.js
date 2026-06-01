@@ -45,6 +45,17 @@ function renderTree(subtree) {
 }
 
 /**
+ * Return the full ancestor hierarchy for a known section ID as an RTL HTML string.
+ */
+export function getSectionHierarchy(toc, sectionId) {
+  if (!toc?.sections?.[sectionId]) return "";
+  const path = walkTree(toc.sections, sectionId, []).reverse();
+  const tree = buildTree([path]);
+  if (Object.keys(tree).length === 0) return "";
+  return `<div dir="rtl">${renderTree(tree)}</div>`;
+}
+
+/**
  * Return section headings for a milestone as an RTL HTML string with nested <ul>/<li>,
  * or an empty string when TOC is unavailable or the milestone is out of range.
  */

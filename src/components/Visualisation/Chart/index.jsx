@@ -2,6 +2,8 @@ import { Box, Typography } from "@mui/material";
 import { useContext, useEffect, useState, useRef } from "react";
 //import { useSearchParams } from "react-router-dom";
 import Section, { MetadataSvg } from "../Metadata/Section";
+import TocFilter from "../MultiChart/filters/TocFilter";
+import { getSectionHierarchy } from "../../../utility/TocHelper";
 import MSToggler from "../SectionHeader/MSToggler";
 import SectionHeaderLayout from "../SectionHeader/SectionHeaderLayout";
 import VisualizationHeader from "../SectionHeader/VisualizationHeader";
@@ -47,6 +49,26 @@ const Visual = (props) => {
 
   const [showDownloadOptions, setShowDownloadOptions] = useState(false);
   const [includeMetadata, setIncludeMetadata] = useState(true);
+  const [showTocPanel, setShowTocPanel] = useState(false);
+  const pairwiseChartRef = useRef(null);
+  const [tocPanelBounds, setTocPanelBounds] = useState({ top: 0, height: "100%" });
+  useEffect(() => {
+    const update = () => {
+      const el = pairwiseChartRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      setTocPanelBounds({ top: rect.top, height: rect.height });
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    if (pairwiseChartRef.current) observer.observe(pairwiseChartRef.current);
+    window.addEventListener("scroll", update);
+    return () => { observer.disconnect(); window.removeEventListener("scroll", update); };
+  }, []);
+  const [toc1, setToc1] = useState(null);
+  const [toc2, setToc2] = useState(null);
+  const [selectedSections1, setSelectedSections1] = useState(null);
+  const [selectedSections2, setSelectedSections2] = useState(null);
   // Always-current ref so closures (selectLineOnClicked) see the latest cache:
   const downloadedTextsRef = useRef(downloadedTexts);
   useEffect(() => { downloadedTextsRef.current = downloadedTexts; });
@@ -61,30 +83,58 @@ const Visual = (props) => {
   const focusedBookRef = useRef(1);
   // Last tooltip mouse position — reused when navigating with arrow keys:
   const tooltipPosRef = useRef({ layerX: 200, layerY: 50 });
-  // Pre-computed sorted datasets for O(1) navigation:
-  const navDataRef = useRef(null);
+  // Fetch TOC for each book (same URL pattern as MultiChart):
   useEffect(() => {
-    const datasets = chartData?.dataSets ?? [];
-    const sorted = [...datasets].sort((a, b) =>
-      Number(a.seq1) - Number(b.seq1) || Number(a.seq2) - Number(b.seq2)
-    );
-    const sortedBySeq2 = [...datasets].sort((a, b) =>
-      Number(a.seq2) - Number(b.seq2) || Number(a.seq1) - Number(b.seq1)
-    );
-    // Group by seq1 (sorted by seq2 within group) and by seq2 (sorted by seq1):
-    const bySeq1 = {}, bySeq2 = {};
-    for (const d of sorted) {
-      const k1 = String(d.seq1);
-      if (!bySeq1[k1]) bySeq1[k1] = [];
-      bySeq1[k1].push(d);
-    }
-    for (const d of sortedBySeq2) {
-      const k2 = String(d.seq2);
-      if (!bySeq2[k2]) bySeq2[k2] = [];
-      bySeq2[k2].push(d);
-    }
-    navDataRef.current = { sorted, sortedBySeq2, bySeq1, bySeq2 };
-  }, [chartData?.dataSets]);
+    setSelectedSections1(null);
+    const vc = metaData?.book1?.versionCode?.split("-")[0];
+    if (!vc || !releaseCode) return;
+    let cancelled = false;
+    fetch(`https://raw.githubusercontent.com/OpenITI/openiti_toc/refs/heads/v${releaseCode}/tocs/${vc}_TOC.json`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (!cancelled) setToc1(data); })
+      .catch(() => { if (!cancelled) setToc1(null); });
+    return () => { cancelled = true; };
+  }, [metaData?.book1?.versionCode, releaseCode]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    setSelectedSections2(null);
+    const vc = metaData?.book2?.versionCode?.split("-")[0];
+    if (!vc || !releaseCode) return;
+    let cancelled = false;
+    fetch(`https://raw.githubusercontent.com/OpenITI/openiti_toc/refs/heads/v${releaseCode}/tocs/${vc}_TOC.json`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (!cancelled) setToc2(data); })
+      .catch(() => { if (!cancelled) setToc2(null); });
+    return () => { cancelled = true; };
+  }, [metaData?.book2?.versionCode, releaseCode]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Always-current refs for section highlights (used inside D3 closures):
+  const tocHighlightRef = useRef({});
+  tocHighlightRef.current = { toc1, toc2, sel1: selectedSections1, sel2: selectedSections2 };
+
+  // All datasets (unfiltered) for D3 rendering — zoom handles visibility via clip:
+  const filteredDataSetsRef = useRef(chartData?.dataSets ?? []);
+  filteredDataSetsRef.current = chartData?.dataSets ?? [];
+
+  // Compute x-domain [min_ms, max_ms] from selected sections, or null for full view:
+  const computeDomainFromSections = (toc, selectedSections) => {
+    if (!selectedSections?.size || !toc?.sections) return null;
+    const secs = Array.from(selectedSections).map(id => toc.sections[id]).filter(Boolean);
+    if (!secs.length) return null;
+    return [Math.max(0, Math.min(...secs.map(s => s.start_ms)) - 2),
+                         Math.max(...secs.map(s => s.end_ms)) + 2];
+  };
+
+  // Zoom each panel to the selected section range when selections change:
+  useEffect(() => {
+    // Map sections → panel domains (respecting flip):
+    currentXDomain1 = computeDomainFromSections(isFlipped ? toc2 : toc1, isFlipped ? selectedSections2 : selectedSections1);
+    currentXDomain2 = computeDomainFromSections(isFlipped ? toc1 : toc2, isFlipped ? selectedSections1 : selectedSections2);
+    normalChart(); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedSections1, selectedSections2]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // navData is now built inside normalChart() using filteredDataSetsRef.
+  const navDataRef = useRef(null);
   // Stable refs to functions that must be called from the keyboard handler:
   const clickToSelectRef = useRef(null);
   const selectLineOnClickedRef = useRef(null);
@@ -95,17 +145,10 @@ const Visual = (props) => {
     isActive: false,
     layerX: 0,
     layerY: 0,
+    sectionTitle: null,
     data: {
-      book1: {
-        ms: "",
-        pos1: "",
-        pos2: "",
-      },
-      book2: {
-        ms: "",
-        pos1: "",
-        pos2: "",
-      },
+      book1: { ms: "", pos1: "", pos2: "" },
+      book2: { ms: "", pos1: "", pos2: "" },
     },
   });
 
@@ -321,7 +364,7 @@ const Visual = (props) => {
       .attr("opacity", 0);
 
     // --- Draw Book1 Bar Chart [START] :::
-    var book1BarNodes = book1Bars.selectAll(".bar").data(chartData?.dataSets);
+    var book1BarNodes = book1Bars.selectAll(".bar").data(filteredDataSetsRef.current);
 
     book1BarNodes
       .enter()
@@ -335,7 +378,7 @@ const Visual = (props) => {
     // --- Draw Connections Curves [START] :::
     var connectionNodes = connections
       .selectAll("path")
-      .data(chartData?.dataSets);
+      .data(filteredDataSetsRef.current);
 
     connectionNodes
       .enter()
@@ -349,7 +392,7 @@ const Visual = (props) => {
     // --- Draw Book2 Bar Chart [START] :::
     var book2BarNodes = book2Bars
       .selectAll(".bar")
-      .data(chartData?.dataSets)
+      .data(filteredDataSetsRef.current)
       .enter()
       .append("line")
       .attr("class", "bar")
@@ -499,6 +542,29 @@ const Visual = (props) => {
         .attr("stroke-width", hoverStrokeWidth).attr("opacity", null);
     }
 
+    // Per-section highlight rectangles with tooltip on hover:
+    { const { sel1, sel2, toc1: t1, toc2: t2 } = tocHighlightRef.current;
+      drawingG.selectAll(".section-bg").remove();
+      const drawSections = (scale, toc, sels, yOff) => {
+        if (!sels?.size || !toc?.sections) return;
+        Array.from(sels).forEach(id => {
+          const sec = toc.sections[id]; if (!sec) return;
+          const x1 = scale(sec.start_ms), x2 = scale(sec.end_ms), w = x2 - x1;
+          if (w <= 0) return;
+          drawingG.insert("rect", ":first-child").attr("class", "section-bg")
+            .attr("x", x1).attr("y", yOff).attr("width", w).attr("height", barMaxHeight)
+            .attr("fill", "rgba(100,160,230,0.18)").attr("pointer-events", "all")
+            .on("mouseover", (ev) => setToolTip(p => ({
+              ...p, isActive: true, layerX: ev.layerX, layerY: ev.layerY,
+              sectionTitle: getSectionHierarchy(toc, id),
+            })))
+            .on("mouseout", () => setToolTip(p => ({ ...p, isActive: false, sectionTitle: null })));
+        });
+      };
+      drawSections(xScale1, t1, sel1, 0);
+      drawSections(xScale2, t2, sel2, barMaxHeight * 2);
+    }
+
     return t;
   }
 
@@ -617,6 +683,29 @@ const Visual = (props) => {
       getBars().filter(d => d !== selectedLine).attr("opacity", 0.1);
     }
 
+    // Per-section highlight rectangles (flipped: top=book2/sel2, bottom=book1/sel1):
+    { const { sel1, sel2, toc1: t1, toc2: t2 } = tocHighlightRef.current;
+      drawingG.selectAll(".section-bg").remove();
+      const drawSections = (scale, toc, sels, yOff) => {
+        if (!sels?.size || !toc?.sections) return;
+        Array.from(sels).forEach(id => {
+          const sec = toc.sections[id]; if (!sec) return;
+          const x1 = scale(sec.start_ms), x2 = scale(sec.end_ms), w = x2 - x1;
+          if (w <= 0) return;
+          drawingG.insert("rect", ":first-child").attr("class", "section-bg")
+            .attr("x", x1).attr("y", yOff).attr("width", w).attr("height", barMaxHeight)
+            .attr("fill", "rgba(100,160,230,0.18)").attr("pointer-events", "all")
+            .on("mouseover", (ev) => setToolTip(p => ({
+              ...p, isActive: true, layerX: ev.layerX, layerY: ev.layerY,
+              sectionTitle: getSectionHierarchy(toc, id),
+            })))
+            .on("mouseout", () => setToolTip(p => ({ ...p, isActive: false, sectionTitle: null })));
+        });
+      };
+      drawSections(xScale1, t2, sel2, 0);              // flipped: top = book2
+      drawSections(xScale2, t1, sel1, barMaxHeight * 2); // flipped: bottom = book1
+    }
+
     return t;
   }
 
@@ -647,10 +736,13 @@ const Visual = (props) => {
     selectedDRef.current = null;
     currentXDomain1 = null;
     currentXDomain2 = null;
+    setSelectedSections1(null);
+    setSelectedSections2(null);
     setToolTip({ isActive: false, layerX: 0, layerY: 0,
       data: { book1: { ms: "", pos1: "", pos2: "" }, book2: { ms: "", pos1: "", pos2: "" } } });
+    brushG.call(brushHandle1.move, null);
+    brushG2.call(brushHandle2.move, null);
     normalChart();
-    setTimeout(zoom, 0);
   }
 
   function zoom() {
@@ -1055,6 +1147,15 @@ const Visual = (props) => {
 
   // t2
   const normalChart = () => {
+    // Rebuild navData from filtered datasets:
+    const _ds = filteredDataSetsRef.current;
+    const _sorted = [..._ds].sort((a, b) => Number(a.seq1) - Number(b.seq1) || Number(a.seq2) - Number(b.seq2));
+    const _sortedBySeq2 = [..._ds].sort((a, b) => Number(a.seq2) - Number(b.seq2) || Number(a.seq1) - Number(b.seq1));
+    const _bySeq1 = {}, _bySeq2 = {};
+    for (const d of _sorted)     { const k = String(d.seq1); if (!_bySeq1[k]) _bySeq1[k] = []; _bySeq1[k].push(d); }
+    for (const d of _sortedBySeq2) { const k = String(d.seq2); if (!_bySeq2[k]) _bySeq2[k] = []; _bySeq2[k].push(d); }
+    navDataRef.current = { sorted: _sorted, sortedBySeq2: _sortedBySeq2, bySeq1: _bySeq1, bySeq2: _bySeq2 };
+
     createChart();
     // Clicking empty SVG space clears the current selection:
     svgD3.on("click", () => clearSelectedLineRef.current?.());
@@ -1205,22 +1306,21 @@ const Visual = (props) => {
         setIncludeURL={setIncludeURL}
         includeMetadata={includeMetadata}
         setIncludeMetadata={setIncludeMetadata}
+        mb={showTocPanel ? 0 : "20px"}
       >
         <VisualizationHeader
           restoreCanvas={restoreCanvas}
           isPairwiseViz={props.isPairwiseViz}
           showDownloadOptions={showDownloadOptions}
           setShowDownloadOptions={setShowDownloadOptions}
+          showFilterPanel={showTocPanel}
+          setShowFilterPanel={setShowTocPanel}
         />
       </SectionHeaderLayout>
       <Box
         id="pairwise-chart"
-        sx={{
-          px: {
-            xs: "0px",
-            sm: "30px",
-          },
-        }}
+        ref={pairwiseChartRef}
+        sx={{ px: { xs: "0px", sm: "30px" } }}
       >
         {/* 1. Top Section (book1 metadata panel) — hidden when metadata SVG replaces it */}
         <Box sx={{
@@ -1302,6 +1402,12 @@ const Visual = (props) => {
                 zIndex: 100,
               }}
             >
+              {toolTip.sectionTitle ? (
+                <>
+                  <Typography sx={{ fontSize: "12px", fontWeight: "bold" }}>Section(s):</Typography>
+                  <div style={{ fontSize: "12px" }} dangerouslySetInnerHTML={{ __html: toolTip.sectionTitle }} />
+                </>
+              ) : (<>
               <Typography sx={{ fontSize: "12px" }} fontWeight={"bold"}>
                 Book 1{" "}
                 {isFlipped
@@ -1356,6 +1462,7 @@ const Visual = (props) => {
                   Click to activate arrow key navigation · Double-click to view aligned text
                 </Typography>
               )}
+              </>)}
             </Box>
           )}
         </Box>
@@ -1392,9 +1499,38 @@ const Visual = (props) => {
             panToAlignmentRef={panToAlignmentRef}
           />
         </Box>
+        {/* TOC filter slide-out panel — fixed to viewport right, height matches chart div */}
+        <Box sx={{
+          position: "fixed",
+          top: tocPanelBounds.top,
+          height: tocPanelBounds.height,
+          right: 0, width: "300px",
+          bgcolor: "background.paper",
+          boxShadow: "-3px 0 12px rgba(0,0,0,0.18)",
+          zIndex: 1200,
+          display: "flex", flexDirection: "column", overflow: "hidden",
+          transform: (showTocPanel && (toc1 || toc2)) ? "translateX(0)" : "translateX(100%)",
+          transition: "transform 0.25s ease",
+        }}>
+          <Box sx={{ flex: 1, borderBottom: "2px solid #ccc", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+            <TocFilter
+              toc={isFlipped ? toc2 : toc1}
+              selectedSectionIds={isFlipped ? selectedSections2 : selectedSections1}
+              setSelectedSectionIds={isFlipped ? setSelectedSections2 : setSelectedSections1}
+            />
+          </Box>
+          <Box sx={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+            <TocFilter
+              toc={isFlipped ? toc1 : toc2}
+              selectedSectionIds={isFlipped ? selectedSections1 : selectedSections2}
+              setSelectedSectionIds={isFlipped ? setSelectedSections1 : setSelectedSections2}
+            />
+          </Box>
+        </Box>
       </Box>
     </>
   );
+
 };
 
 export default Visual;
