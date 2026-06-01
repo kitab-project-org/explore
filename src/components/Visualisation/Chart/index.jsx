@@ -47,6 +47,9 @@ const Visual = (props) => {
 
   const [showDownloadOptions, setShowDownloadOptions] = useState(false);
   const [includeMetadata, setIncludeMetadata] = useState(true);
+  // Always-current ref so closures (selectLineOnClicked) see the latest cache:
+  const downloadedTextsRef = useRef(downloadedTexts);
+  useEffect(() => { downloadedTextsRef.current = downloadedTexts; });
   const [toggle, setToggle] = useState(false);
   //const [searchParams] = useSearchParams();
 
@@ -68,7 +71,19 @@ const Visual = (props) => {
     const sortedBySeq2 = [...datasets].sort((a, b) =>
       Number(a.seq2) - Number(b.seq2) || Number(a.seq1) - Number(b.seq1)
     );
-    navDataRef.current = { sorted, sortedBySeq2 };
+    // Group by seq1 (sorted by seq2 within group) and by seq2 (sorted by seq1):
+    const bySeq1 = {}, bySeq2 = {};
+    for (const d of sorted) {
+      const k1 = String(d.seq1);
+      if (!bySeq1[k1]) bySeq1[k1] = [];
+      bySeq1[k1].push(d);
+    }
+    for (const d of sortedBySeq2) {
+      const k2 = String(d.seq2);
+      if (!bySeq2[k2]) bySeq2[k2] = [];
+      bySeq2[k2].push(d);
+    }
+    navDataRef.current = { sorted, sortedBySeq2, bySeq1, bySeq2 };
   }, [chartData?.dataSets]);
   // Stable refs to functions that must be called from the keyboard handler:
   const clickToSelectRef = useRef(null);
@@ -474,10 +489,14 @@ const Visual = (props) => {
         return d.yScale(chunkSize) + d.y;
       });
 
-    // Re-assert selection dimming in case zoom was called while a line is selected:
+    // Re-assert selection dimming and highlight after zoom/flip:
     if (selectedLine) {
       getConnections().filter(d => d !== selectedLine).attr("opacity", 0.1);
       getBars().filter(d => d !== selectedLine).attr("opacity", 0.1);
+      filterSelected(selectedLine, getConnections())
+        .attr("stroke", connHColor).attr("stroke-width", hoverStrokeWidth).attr("opacity", null);
+      filterSelected(selectedLine, getBars())
+        .attr("stroke-width", hoverStrokeWidth).attr("opacity", null);
     }
 
     return t;
@@ -607,7 +626,7 @@ const Visual = (props) => {
     if (!e.sourceEvent) return;
     var sel = e.selection;
     if (!sel) return;
-    currentXDomain1 = sel.map(d => Math.round(xScale1.invert(d)));
+    currentXDomain1 = sel.map(d => Math.max(0, Math.round(xScale1.invert(d))));
     xScale1.domain(currentXDomain1);
     zoom();
   }
@@ -616,16 +635,20 @@ const Visual = (props) => {
     if (!e.sourceEvent) return;
     var sel = e.selection;
     if (!sel) return;
-    currentXDomain2 = sel.map(d => Math.round(xScale2.invert(d)));
+    currentXDomain2 = sel.map(d => Math.max(0, Math.round(xScale2.invert(d))));
     xScale2.domain(currentXDomain2);
     zoom();
   }
 
   function restoreCanvas() {
-    if (selectedLine) selectedLine = null;
+    selectedLine = null;
     setFocusedDataIndex(null);
+    setSelectedD(null);
+    selectedDRef.current = null;
     currentXDomain1 = null;
     currentXDomain2 = null;
+    setToolTip({ isActive: false, layerX: 0, layerY: 0,
+      data: { book1: { ms: "", pos1: "", pos2: "" }, book2: { ms: "", pos1: "", pos2: "" } } });
     normalChart();
     setTimeout(zoom, 0);
   }
@@ -659,25 +682,33 @@ const Visual = (props) => {
     if (!domain) return false;
     if (val >= domain[0] && val <= domain[1]) return false;
     const span = domain[1] - domain[0];
-    const newDomain = [val - span / 2, val + span / 2];
+    const min = Math.max(0, val - span / 2);
+    const newDomain = [min, min + span];
     if (panBook === 1) { currentXDomain1 = newDomain; xScale1.domain(newDomain); }
     else               { currentXDomain2 = newDomain; xScale2.domain(newDomain); }
     return true;
   }
 
-  // Pan both panels as needed and redraw once if anything changed.
+  // Pan both panels as needed, then redraw — with animation if panning, instant if not
+  // (the instant redraw is needed to update tick labels for the newly selected alignment).
   function panToAlignment(d1) {
     const moved1 = _panPanel(d1, 1);
     const moved2 = _panPanel(d1, 2);
-    if (moved1 || moved2) zoom();
+    if (moved1 || moved2) {
+      zoom(); // animated pan
+    } else {
+      brushG.call(brushHandle1.move, null);
+      brushG2.call(brushHandle2.move, null);
+      isFlipped ? flipChart(0) : updateChart(0); // instant tick-label refresh
+    }
   }
 
   function focusOnLine(d1) {
     var pad = xScaleIdentity.invert(5);
     var s1 = Number(isFlipped ? d1.seq2 : d1.seq1);
     var s2 = Number(isFlipped ? d1.seq1 : d1.seq2);
-    currentXDomain1 = [s1 - pad, s1 + pad];
-    currentXDomain2 = [s2 - pad, s2 + pad];
+    currentXDomain1 = [Math.max(0, s1 - pad), s1 + pad];
+    currentXDomain2 = [Math.max(0, s2 - pad), s2 + pad];
     xScale1.domain(currentXDomain1);
     xScale2.domain(currentXDomain2);
     zoom();
@@ -740,8 +771,9 @@ const Visual = (props) => {
   }
 
   function mouseOut(e, d1) {
-    // If a different alignment is selected, restore its tooltip instead of clearing:
-    if (selectedDRef.current && d1 !== selectedDRef.current) {
+    // When any selection is active, always restore the selection state —
+    // never let mouseOut reset the stroke-width of the selected bar:
+    if (selectedDRef.current) {
       mouseOver(null, selectedDRef.current);
       return;
     }
@@ -846,25 +878,23 @@ const Visual = (props) => {
         releaseCode,
         versionCode1,
         d1.seq1,
-        downloadedTexts,
+        downloadedTextsRef.current,
         setDownloadedTexts
       );
-      //console.log(ms1Text)
-      //console.log(`getMilestoneText(${releaseCode}, ${versionCode2}, ${d1.ms2})`);
       let ms2Text = await getMilestoneText(
         releaseCode,
         versionCode2,
         d1.seq2,
-        downloadedTexts,
+        downloadedTextsRef.current,
         setDownloadedTexts
       );
       //console.log(ms2Text)
 
       setDataLoading({ ...dataLoading, books: false });
       let b1Downloaded =
-        downloadedTexts[releaseCode][versionCode1]["downloadedMs"];
+        downloadedTextsRef.current[releaseCode]?.[versionCode1]?.["downloadedMs"];
       let b2Downloaded =
-        downloadedTexts[releaseCode][versionCode2]["downloadedMs"];
+        downloadedTextsRef.current[releaseCode]?.[versionCode2]?.["downloadedMs"];
       /*console.log("SETBOOKS");
       console.log(b1Downloaded);
       console.log(b2Downloaded);*/
@@ -959,16 +989,15 @@ const Visual = (props) => {
     selectedLine = null;
     setSelectedD(null);
     selectedDRef.current = null;
-    // Restore all connections and bars to full opacity:
+    // Restore all connections and bars to full opacity (no transition — avoid
+    // overriding the immediately following selection applied in clickToSelect):
     getConnections()
       .each(function(d) { d.hidden = false; })
-      .transition()
       .attr("stroke", connColor)
       .attr("stroke-width", null)
       .attr("opacity", null);
     getBars()
       .each(function(d) { d.hidden = false; })
-      .transition()
       .attr("stroke-width", barWidth)
       .attr("opacity", null);
     drawingG.selectAll(".dotted-bar-lines").attr("opacity", 0);
@@ -1015,6 +1044,10 @@ const Visual = (props) => {
       }
     }
 
+    // Interrupt any lingering transition (e.g. from clearSelectedLine) on the
+    // newly selected elements before applying the highlight stroke:
+    filterSelected(d1, getBars()).interrupt();
+    filterSelected(d1, getConnections()).interrupt();
     mouseOver(e, d1);
   }
 
@@ -1127,6 +1160,7 @@ const Visual = (props) => {
         if (next) {
           clickToSelectRef.current?.(null, next, book);
           panToAlignmentRef.current?.(next);
+          selectLineOnClickedRef.current?.(null, next);
         }
       } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
         e.preventDefault();
@@ -1182,12 +1216,16 @@ const Visual = (props) => {
           display: (showDownloadOptions && includeMetadata) ? "none" : "flex",
           alignItems: "center", justifyContent: "space-between", mt: "20px",
         }}>
-          <Section className="pairwise-metadata" isVertical data={isFlipped ? metaData?.book2 : metaData?.book1} />
+          <Section isVertical data={isFlipped ? metaData?.book2 : metaData?.book1} />
           <MSToggler
             isTop={isFlipped ? false : true}
             isBook1={isFlipped ? false : true}
-            selectLineOnClicked={selectLineOnClicked}
-            mouseOver={mouseOver}
+            navDataRef={navDataRef}
+            clickToSelectRef={clickToSelectRef}
+            selectLineOnClickedRef={selectLineOnClickedRef}
+            clearSelectedLineRef={clearSelectedLineRef}
+            selectedDRef={selectedDRef}
+            panToAlignmentRef={panToAlignmentRef}
           />
         </Box>
 
@@ -1248,6 +1286,7 @@ const Visual = (props) => {
                 padding: "10px",
                 boxSizing: "border-box",
                 opacity: 0.8,
+                zIndex: 100,
               }}
             >
               <Typography sx={{ fontSize: "12px" }} fontWeight={"bold"}>
@@ -1335,8 +1374,12 @@ const Visual = (props) => {
           <MSToggler
             isTop={isFlipped ? true : false}
             isBook1={isFlipped ? true : false}
-            selectLineOnClicked={selectLineOnClicked}
-            mouseOver={mouseOver}
+            navDataRef={navDataRef}
+            clickToSelectRef={clickToSelectRef}
+            selectLineOnClickedRef={selectLineOnClickedRef}
+            clearSelectedLineRef={clearSelectedLineRef}
+            selectedDRef={selectedDRef}
+            panToAlignmentRef={panToAlignmentRef}
           />
         </Box>
       </Box>

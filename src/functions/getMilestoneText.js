@@ -2,6 +2,10 @@ import axios from "axios";
 import { parseImech } from "../utility/Helper";
 import { getVersionMetadataById } from "../services/CorpusMetaData";
 
+// Module-level metadata cache — persists for the session lifetime.
+// Key: `${releaseCode}/${versionCode}`, value: metadata object.
+const metaCache = new Map();
+
 /**
  * Get the text of a milestone (300-word chunk of text).
  *
@@ -47,7 +51,7 @@ export async function getMilestoneText(
     let msDict = downloadedTexts[releaseCode][versionCode]["downloadedMs"];
     //console.log("milestones from this text were already downloaded")
     // check if the milestone number is among the downloaded milestones:
-    let msText = msDict[msNo.toString()];
+    let msText = msDict?.msTexts?.[msNo.toString()];
     if (msText) {
       return msText;
     } else {
@@ -68,10 +72,24 @@ export async function getMilestoneText(
     }
   }
 
-  // download metadata if not provided:
+  // Use cached metadata if available, otherwise fetch and cache it:
+  if (!meta) {
+    try {
+      meta = downloadedTexts[releaseCode][versionCode]["meta"];
+    } catch (e) { /* not cached yet */ }
+  }
   if (!meta) {
     meta = await getVersionMetadataById(releaseCode, versionCode);
-    //console.log(meta);
+    setDownloadedTexts((prev) => ({
+      ...prev,
+      [releaseCode]: {
+        ...prev?.[releaseCode],
+        [versionCode]: {
+          ...prev?.[releaseCode]?.[versionCode],
+          meta,
+        },
+      },
+    }));
   }
   // Build the URL of the i.mech file containing the milestone:
   // const imechUrl =
