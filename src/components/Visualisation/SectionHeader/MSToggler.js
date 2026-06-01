@@ -107,7 +107,7 @@ const MSToggler = ({ isTop, isBook1, selectLineOnClicked, mouseOver }) => {
   };
 
   return (
-    <Box display="flex" alignItems="center" my="20px">
+    <Box className="ms-toggler" display="flex" alignItems="center" my="20px">
       <IconButton
         sx={{
           width: "30px",

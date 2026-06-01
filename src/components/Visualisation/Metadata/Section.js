@@ -16,7 +16,7 @@ const Section = ({ data }) => {
     `${repoBase}/metadata?search=${term ?? ""}`;
 
   return (
-    <Box display={"flex"} flexDirection={"row"} gap={4} width={"70%"}>
+    <Box className="metadata-section" display={"flex"} flexDirection={"row"} gap={4} width={"70%"}>
 
       {/* Version Code */}
       <Box sx={{ display: "flex", flexDirection: "column", justifyContent: "flex-start", alignItems: "flex-start" }}>

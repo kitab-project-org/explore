@@ -1169,6 +1169,7 @@ const Visual = (props) => {
         />
       </SectionHeaderLayout>
       <Box
+        id="pairwise-chart"
         sx={{
           px: {
             xs: "0px",
@@ -1181,7 +1182,7 @@ const Visual = (props) => {
           display: (showDownloadOptions && includeMetadata) ? "none" : "flex",
           alignItems: "center", justifyContent: "space-between", mt: "20px",
         }}>
-          <Section isVertical data={isFlipped ? metaData?.book2 : metaData?.book1} />
+          <Section className="pairwise-metadata" isVertical data={isFlipped ? metaData?.book2 : metaData?.book1} />
           <MSToggler
             isTop={isFlipped ? false : true}
             isBook1={isFlipped ? false : true}
