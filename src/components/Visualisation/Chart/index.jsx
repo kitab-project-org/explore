@@ -1077,7 +1077,16 @@ const Visual = (props) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [currentXDomain1, currentXDomain2] = [currentXDomain2, currentXDomain1]; // eslint-disable-line react-hooks/exhaustive-deps
     normalChart();
-    if (focusedDataIndex) {
+    // Restore visual selection after flip — deferred so the 0-duration transition
+    // has committed its final bar positions before we read getBoundingClientRect():
+    const sel = selectedDRef.current;
+    const book = focusedBookRef.current;
+    if (sel) {
+      setTimeout(() => {
+        clickToSelectRef.current?.(null, sel, book);
+        panToAlignmentRef.current?.(sel);
+      }, 0);
+    } else if (focusedDataIndex) {
       mouseOver(null, chartData?.dataSets[focusedDataIndex]);
       selectLineOnClicked(null, chartData?.dataSets[focusedDataIndex]);
     }
