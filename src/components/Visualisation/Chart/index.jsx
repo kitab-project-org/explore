@@ -1274,12 +1274,14 @@ const Visual = (props) => {
           ></svg>
           {toolTip.isActive && (
             <Box
+              id="pairwise-tooltip"
               sx={{
                 minWidth: "180px",
-                maxWidth: "200px",
-                borderRadius: "5px",
-                bgcolor: "#2862a5",
-                color: "white",
+                maxWidth: "300px",
+                background: "rgba(255, 255, 255, 0.9)",
+                color: "black",
+                border: "1px solid rgba(0, 0, 0, 0.5)",
+                borderRadius: "8px",
                 position: "absolute",
                 top: `${toolTip.layerY - 20}px`,
                 left: `${toolTip?.layerX + 15}px`,
@@ -1299,11 +1301,10 @@ const Visual = (props) => {
                 MS#{" "}
                 {isFlipped
                   ? toolTip?.data?.book2?.ms
-                  : toolTip?.data?.book1?.ms}
-              </Typography>
-              <Typography sx={{ fontSize: "12px" }}>
-                Token Positions{" "}
-                {`(${
+                  : toolTip?.data?.book1?.ms
+                }
+                ,{" "}token positions{" "}
+                {`${
                   isFlipped
                     ? toolTip?.data?.book2?.pos1
                     : toolTip?.data?.book1?.pos1
@@ -1311,7 +1312,7 @@ const Visual = (props) => {
                   isFlipped
                     ? toolTip?.data?.book2?.pos2
                     : toolTip?.data?.book1?.pos2
-                })`}
+                }`}
               </Typography>
               <Typography sx={{ fontSize: "12px" }} fontWeight={"bold"}>
                 Book 2{" "}
@@ -1324,10 +1325,8 @@ const Visual = (props) => {
                 {isFlipped
                   ? toolTip?.data?.book1?.ms
                   : toolTip?.data?.book2?.ms}
-              </Typography>
-              <Typography sx={{ fontSize: "12px" }}>
-                Token Positions{" "}
-                {`(${
+                , token positions{" "}
+                {`${
                   isFlipped
                     ? toolTip?.data?.book1?.pos1
                     : toolTip?.data?.book2?.pos1
@@ -1335,7 +1334,7 @@ const Visual = (props) => {
                   isFlipped
                     ? toolTip?.data?.book1?.pos2
                     : toolTip?.data?.book2?.pos2
-                })`}
+                }`}
               </Typography>
               {toolTip.isSelected ? (
                 <Typography sx={{ fontSize: "11px", mt: "6px", fontStyle: "italic", opacity: 0.85 }}>
