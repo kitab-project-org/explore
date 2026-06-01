@@ -94,11 +94,11 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
   }, []);
   let maxbc = getHighestValueInArrayOfObjects(bookStats.filter(d => d.id !== versionCode), "ch_match");
   const fullBookCharRange = [1, maxbc];
-  const initBookCharRange = getRangeParam("BookAlignedChars", fullBookCharRange);
+  const initBookCharRange = getRangeParam("bookAlignedChars", fullBookCharRange);
   const [bookCharRange, setBookCharRange] = useState(initBookCharRange);
   let maxalign = getHighestValueInArrayOfObjects(bookStats.filter(d => d.id !== versionCode), "alignments");
   const fullAlignRange = [1, maxalign];
-  const initAlignRange = getRangeParam("MsAlignedChars", fullAlignRange);
+  const initAlignRange = getRangeParam("bookAlignments", fullAlignRange);
   const [bookAlignRange, setBookAlignRange] = useState(initAlignRange);
   let maxmschars = getHighestValueInArrayOfObjects(msData, "ch_match");
   const fullMsCharsRange = [1, maxmschars];
@@ -329,8 +329,8 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
 
       setOrDeleteRange("date", hasDates && (dateRange[0] !== fullDateRange[0] || dateRange[1] !== fullDateRange[1]), dateRange[0], dateRange[1]);
       setOrDeleteRange("mss", msRange[0] !== fullMilestoneRange[0] || msRange[1] !== fullMilestoneRange[1], msRange[0], msRange[1]);
-      setOrDeleteRange("BookAlignedChars", bookCharRange[0] !== fullBookCharRange[0] || bookCharRange[1] !== fullBookCharRange[1], bookCharRange[0], bookCharRange[1]);
-      setOrDeleteRange("MsAlignedChars", bookAlignRange[0] !== fullAlignRange[0] || bookAlignRange[1] !== fullAlignRange[1], bookAlignRange[0], bookAlignRange[1]);
+      setOrDeleteRange("bookAlignedChars", bookCharRange[0] !== fullBookCharRange[0] || bookCharRange[1] !== fullBookCharRange[1], bookCharRange[0], bookCharRange[1]);
+      setOrDeleteRange("bookAlignments", bookAlignRange[0] !== fullAlignRange[0] || bookAlignRange[1] !== fullAlignRange[1], bookAlignRange[0], bookAlignRange[1]);
       setOrDeleteRange("MsChars", msCharsRange[0] !== fullMsCharsRange[0] || msCharsRange[1] !== fullMsCharsRange[1], msCharsRange[0], msCharsRange[1]);
       if (selectedSectionIds?.size > 0) {
         next.set("sections", Array.from(selectedSectionIds).join(","));
