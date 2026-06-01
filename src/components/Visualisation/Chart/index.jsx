@@ -663,7 +663,7 @@ const Visual = (props) => {
   // when full view, show 1 and max; always include selectedVal if it's in range.
   function getTickValues(domain, fullMax, selectedVal, bookEnd) {
     const first = domain ? Math.ceil(domain[0])  : 1;
-    const last  = domain ? Math.floor(domain[1]) : fullMax;
+    const last  = domain ? Math.min(Math.floor(domain[1]), fullMax) : fullMax;
     const extras = [];
     // Show the book-end line position as a tick when it is within the visible range:
     if (bookEnd !== undefined && bookEnd > first && bookEnd < last) extras.push(bookEnd);
