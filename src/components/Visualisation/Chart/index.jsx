@@ -386,7 +386,7 @@ const Visual = (props) => {
       .selectAll(".bar")
       .on("mouseover", mouseOver)
       .on("mouseout", mouseOut)
-      .on("click", (e, d) => { e.stopPropagation(); clickToSelect(e, d, 1); })
+      .on("click", (e, d) => { e.stopPropagation(); clickToSelect(e, d, 1); panToAlignmentRef.current?.(d); })
       .on("dblclick", (e, d) => { e.stopPropagation(); selectLineOnClicked(e, d); })
       .transition(t)
       .attr("x1", function (d) {
@@ -407,7 +407,7 @@ const Visual = (props) => {
       .selectAll("path")
       .on("mouseover", mouseOver)
       .on("mouseout", mouseOut)
-      .on("click", (e, d) => { e.stopPropagation(); clickToSelect(e, d, 1); })
+      .on("click", (e, d) => { e.stopPropagation(); clickToSelect(e, d, 1); panToAlignmentRef.current?.(d); })
       .on("dblclick", (e, d) => { e.stopPropagation(); selectLineOnClicked(e, d); })
       .transition(t)
       .attr("d", function (d) {
@@ -424,7 +424,7 @@ const Visual = (props) => {
       .selectAll(".bar")
       .on("mouseover", mouseOver)
       .on("mouseout", mouseOut)
-      .on("click", (e, d) => { e.stopPropagation(); clickToSelect(e, d, 2); })
+      .on("click", (e, d) => { e.stopPropagation(); clickToSelect(e, d, 2); panToAlignmentRef.current?.(d); })
       .on("dblclick", (e, d) => { e.stopPropagation(); selectLineOnClicked(e, d); })
       .transition(t)
       .attr("x1", function (d) {
@@ -510,7 +510,7 @@ const Visual = (props) => {
       .selectAll(".bar")
       .on("mouseover", mouseOver)
       .on("mouseout", mouseOut)
-      .on("click", (e, d) => { e.stopPropagation(); clickToSelect(e, d, 2); })
+      .on("click", (e, d) => { e.stopPropagation(); clickToSelect(e, d, 2); panToAlignmentRef.current?.(d); })
       .on("dblclick", (e, d) => { e.stopPropagation(); selectLineOnClicked(e, d); })
       .transition(t)
       .attr("x1", function (d) {
@@ -531,7 +531,7 @@ const Visual = (props) => {
       .selectAll("path")
       .on("mouseover", mouseOver)
       .on("mouseout", mouseOut)
-      .on("click", (e, d) => { e.stopPropagation(); clickToSelect(e, d, 1); })
+      .on("click", (e, d) => { e.stopPropagation(); clickToSelect(e, d, 1); panToAlignmentRef.current?.(d); })
       .on("dblclick", (e, d) => { e.stopPropagation(); selectLineOnClicked(e, d); })
       .transition(t)
       .attr("d", function (d) {
@@ -548,7 +548,7 @@ const Visual = (props) => {
       .selectAll(".bar")
       .on("mouseover", mouseOver)
       .on("mouseout", mouseOut)
-      .on("click", (e, d) => { e.stopPropagation(); clickToSelect(e, d, 1); })
+      .on("click", (e, d) => { e.stopPropagation(); clickToSelect(e, d, 1); panToAlignmentRef.current?.(d); })
       .on("dblclick", (e, d) => { e.stopPropagation(); selectLineOnClicked(e, d); })
       .transition(t)
       .attr("x1", function (d) {
