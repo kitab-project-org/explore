@@ -127,9 +127,11 @@ const Visual = (props) => {
 
   // Zoom each panel to the selected section range when selections change:
   useEffect(() => {
-    // Map sections → panel domains (respecting flip):
-    currentXDomain1 = computeDomainFromSections(isFlipped ? toc2 : toc1, isFlipped ? selectedSections2 : selectedSections1);
-    currentXDomain2 = computeDomainFromSections(isFlipped ? toc1 : toc2, isFlipped ? selectedSections1 : selectedSections2);
+    // Map sections → panel domains (respecting flip).
+    // currentXDomain1/2 are render-scope vars; the value is consumed synchronously
+    // by normalChart() below before any re-render can occur.
+    currentXDomain1 = computeDomainFromSections(isFlipped ? toc2 : toc1, isFlipped ? selectedSections2 : selectedSections1); // eslint-disable-line react-hooks/exhaustive-deps
+    currentXDomain2 = computeDomainFromSections(isFlipped ? toc1 : toc2, isFlipped ? selectedSections1 : selectedSections2); // eslint-disable-line react-hooks/exhaustive-deps
     normalChart(); // eslint-disable-line react-hooks/exhaustive-deps
   }, [selectedSections1, selectedSections2]); // eslint-disable-line react-hooks/exhaustive-deps
 
