@@ -87,6 +87,8 @@ const Visual = (props) => {
   const diffLoadGenRef = useRef(0);
   // Debounce timer for diff loads triggered by arrow-key navigation.
   const diffLoadTimerRef = useRef(null);
+  // Debounce timer that batches React state updates during keyboard navigation.
+  const navTimerRef = useRef(null);
   // Fetch TOC for each book (same URL pattern as MultiChart):
   useEffect(() => {
     setSelectedSections1(null);
@@ -790,16 +792,30 @@ const Visual = (props) => {
   }
 
   // Pan both panels as needed, then redraw — with animation if panning, instant if not
-  // (the instant redraw is needed to update tick labels for the newly selected alignment).
+  // Lightweight tick-label update — skips bars, connections, and reference lines.
+  function updateTickLabels() {
+    if (!x0ScaleNode || !x1ScaleNode) return;
+    const sel1 = selectedLine ? Number(isFlipped ? selectedLine.seq2 : selectedLine.seq1) : undefined;
+    const sel2 = selectedLine ? Number(isFlipped ? selectedLine.seq1 : selectedLine.seq2) : undefined;
+    x0Axis.tickValues(getTickValues(currentXDomain1, max.book1, sel1,
+      (isFlipped ? showBookEnd2 : showBookEnd1) ? max.book1 : undefined));
+    x0ScaleNode.call(x0Axis).selectAll("text")
+      .attr("x", -5).attr("y", -5).attr("transform", "rotate(-90)")
+      .style("text-anchor", "end").style("font-size", `${tickFontSize}px`);
+    x1Axis.tickValues(getTickValues(currentXDomain2, max.book2, sel2,
+      (isFlipped ? showBookEnd1 : showBookEnd2) ? max.book2 : undefined));
+    x1ScaleNode.call(x1Axis).selectAll("text")
+      .attr("x", 5).attr("y", 2).attr("transform", "rotate(-90)")
+      .style("text-anchor", "start").style("font-size", `${tickFontSize}px`);
+  }
+
   function panToAlignment(d1) {
     const moved1 = _panPanel(d1, 1);
     const moved2 = _panPanel(d1, 2);
     if (moved1 || moved2) {
       zoom(); // animated pan
     } else {
-      brushG.call(brushHandle1.move, null);
-      brushG2.call(brushHandle2.move, null);
-      isFlipped ? flipChart(0) : updateChart(0); // instant tick-label refresh
+      updateTickLabels(); // just refresh the milestone tick marks
     }
   }
 
@@ -826,13 +842,13 @@ const Visual = (props) => {
     });
   }
 
-  async function mouseOver(e, d1) {
+  function mouseOver(e, d1, skipTooltip = false) {
     // Suppress hover tooltip for non-selected bars when a selection is active:
     if (e && selectedDRef.current && d1 !== selectedDRef.current) return;
     // set data to tooltip
     const pos = e ? { layerX: e.layerX, layerY: e.layerY } : tooltipPosRef.current;
     if (e) tooltipPosRef.current = pos;
-    setToolTip({
+    if (!skipTooltip) setToolTip({
       isActive: true,
       layerX: pos.layerX,
       layerY: pos.layerY,
@@ -1060,6 +1076,8 @@ const Visual = (props) => {
 
     
     document.getElementById("belowBooks").scrollIntoView({ behavior: "smooth", block: "end" });
+    // Bail if the user navigated away while this load was in flight.
+    if (diffLoadGenRef.current !== myGen) { setFlipTimeLoading(false); return; }
     if (d1 === selectedLine) { setFlipTimeLoading(false); return; }
 
     selectedLine && clearSelectedLine();
@@ -1117,41 +1135,85 @@ const Visual = (props) => {
     focusedBookRef.current = bookNum;
 
     // Apply visual selection only when changing to a different alignment:
-    if (d1 !== selectedLine) {
-      selectedLine && clearSelectedLine();
+    const isNewAlignment = d1 !== selectedLine;
+    if (isNewAlignment) {
+      const prev = selectedLine;
       selectedLine = d1;
-      setSelectedD(d1);
-      selectedDRef.current = d1; // sync update so mouseOver sees it immediately
-      getConnections()
-        .each(function(d) { d.hidden = d !== d1; })
-        .filter(d => d.hidden).attr("opacity", 0.1);
-      getBars().filter(d => d.hidden).attr("opacity", 0.1);
+      selectedDRef.current = d1;
+
+      if (!e) {
+        // Keyboard nav: defer React state updates so re-renders don't block every keypress.
+        clearTimeout(navTimerRef.current);
+        const _d1 = d1, _bookNum = bookNum;
+        navTimerRef.current = setTimeout(() => {
+          // Compute tooltip position from bar bounds after navigation settles.
+          const selector = _bookNum === 1 ? "#firstchart .bar" : "#secondchart .bar";
+          const barNode = drawingG?.selectAll(selector).filter(d => d === _d1).node();
+          if (barNode) {
+            const barRect = barNode.getBoundingClientRect();
+            const boxRect = document.getElementById("chartBox")?.getBoundingClientRect();
+            if (boxRect) tooltipPosRef.current = {
+              layerX: barRect.left - boxRect.left + barRect.width / 2,
+              layerY: barRect.top  - boxRect.top  + barRect.height / 2,
+            };
+          }
+          setSelectedD(_d1);
+          setToolTip({
+            isActive: true,
+            layerX: tooltipPosRef.current.layerX,
+            layerY: tooltipPosRef.current.layerY,
+            isSelected: true,
+            data: { book1: { ms: _d1?.seq1, pos1: _d1?.bw1, pos2: _d1?.ew1 },
+                    book2: { ms: _d1?.seq2, pos1: _d1?.bw2, pos2: _d1?.ew2 } },
+          });
+        }, 80);
+      } else {
+        // Mouse click: update React state immediately.
+        setSelectedD(d1);
+      }
+
+      if (!prev) {
+        // First selection: dim all elements except d1 (one O(n) pass each).
+        getConnections()
+          .each(function(d) { d.hidden = d !== d1; })
+          .filter(d => d.hidden).attr("opacity", 0.1);
+        getBars()
+          .each(function(d) { d.hidden = d !== d1; })
+          .filter(d => d.hidden).attr("opacity", 0.1);
+      } else {
+        // Already in selection mode: delta update — only touch the two changed elements.
+        prev.hidden = true;
+        d1.hidden = false;
+        filterSelected(prev, getConnections())
+          .attr("stroke", connColor).attr("stroke-width", null).attr("opacity", 0.1);
+        filterSelected(prev, getBars())
+          .attr("stroke-width", barWidth).attr("opacity", 0.1);
+      }
       drawingG.selectAll(".dotted-bar-lines").attr("opacity", 0);
     }
 
-    // Update tooltip position: from mouse event, or computed from the focused bar:
+    // Update tooltip position: immediately for mouse and up/down; deferred for left/right nav.
     if (e) {
       tooltipPosRef.current = { layerX: e.layerX, layerY: e.layerY };
-    } else {
+    } else if (!isNewAlignment) {
+      // Up/down: compute bar position for the newly focused book panel.
       const selector = bookNum === 1 ? "#firstchart .bar" : "#secondchart .bar";
       const barNode = drawingG?.selectAll(selector).filter(d => d === d1).node();
       if (barNode) {
         const barRect = barNode.getBoundingClientRect();
         const boxRect = document.getElementById("chartBox")?.getBoundingClientRect();
-        if (boxRect) {
-          tooltipPosRef.current = {
-            layerX: barRect.left - boxRect.left + barRect.width / 2,
-            layerY: barRect.top  - boxRect.top  + barRect.height / 2,
-          };
-        }
+        if (boxRect) tooltipPosRef.current = {
+          layerX: barRect.left - boxRect.left + barRect.width / 2,
+          layerY: barRect.top  - boxRect.top  + barRect.height / 2,
+        };
       }
     }
 
-    // Interrupt any lingering transition (e.g. from clearSelectedLine) on the
-    // newly selected elements before applying the highlight stroke:
+    // Interrupt any lingering transition on the newly selected elements:
     filterSelected(d1, getBars()).interrupt();
     filterSelected(d1, getConnections()).interrupt();
-    mouseOver(e, d1);
+    // Skip tooltip during rapid left/right nav (timer handles it); always show for up/down.
+    mouseOver(e, d1, !e && isNewAlignment);
   }
 
   /////////////////// CHART MAIN FUNCTIONS ///////////////////
@@ -1281,6 +1343,7 @@ const Visual = (props) => {
           ? list[(idx + 1) % list.length]
           : list[(idx - 1 + list.length) % list.length];
         if (next) {
+          diffLoadGenRef.current++;   // invalidate any in-flight selectLineOnClicked
           clickToSelectRef.current?.(null, next, book);
           panToAlignmentRef.current?.(next);
           clearTimeout(diffLoadTimerRef.current);
@@ -1351,6 +1414,8 @@ const Visual = (props) => {
             clearSelectedLineRef={clearSelectedLineRef}
             selectedDRef={selectedDRef}
             panToAlignmentRef={panToAlignmentRef}
+            diffLoadGenRef={diffLoadGenRef}
+            diffLoadTimerRef={diffLoadTimerRef}
           />
         </Box>
 
@@ -1511,6 +1576,8 @@ const Visual = (props) => {
             clearSelectedLineRef={clearSelectedLineRef}
             selectedDRef={selectedDRef}
             panToAlignmentRef={panToAlignmentRef}
+            diffLoadGenRef={diffLoadGenRef}
+            diffLoadTimerRef={diffLoadTimerRef}
           />
         </Box>
         {/* TOC filter slide-out panel — fixed to viewport right, height matches chart div */}

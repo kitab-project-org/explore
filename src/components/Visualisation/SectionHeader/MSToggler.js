@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 const MSToggler = ({
   isTop, isBook1,
   navDataRef, clickToSelectRef, selectLineOnClickedRef, clearSelectedLineRef,
-  selectedDRef, panToAlignmentRef,
+  selectedDRef, panToAlignmentRef, diffLoadGenRef, diffLoadTimerRef,
 }) => {
   const selectRef = useRef(null);
   const [toggle, setToggle] = useState(false);
@@ -33,9 +33,17 @@ const MSToggler = ({
   const navigate = (d1) => {
     if (!d1) return;
     const bookNum = isTop ? 1 : 2;
+    if (diffLoadGenRef) diffLoadGenRef.current++;
     clickToSelectRef?.current?.(null, d1, bookNum);
     panToAlignmentRef?.current?.(d1);
-    selectLineOnClickedRef?.current?.(null, d1);
+    clearTimeout(diffLoadTimerRef?.current);
+    if (diffLoadTimerRef) {
+      diffLoadTimerRef.current = setTimeout(() => {
+        selectLineOnClickedRef?.current?.(null, d1);
+      }, 300);
+    } else {
+      selectLineOnClickedRef?.current?.(null, d1);
+    }
     setToggle(false);
   };
 
