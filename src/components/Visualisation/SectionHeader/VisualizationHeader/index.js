@@ -2,7 +2,7 @@ import { Box, Button, Chip, IconButton, Link, Tooltip, Typography } from "@mui/m
 import FlipButton from "./FlipButton";
 
 
-const VisualizationHeader = ({ restoreCanvas, isPairwiseViz, showFilterPanel, setShowFilterPanel, showDownloadOptions, setShowDownloadOptions, activeFilters }) => {
+const VisualizationHeader = ({ restoreCanvas, isPairwiseViz, showFilterPanel, setShowFilterPanel, showDownloadOptions, setShowDownloadOptions, activeFilters, zoomMode, setZoomMode }) => {
 
   return (
     <Box sx={{ postion: "relative" }} id="visualization-header">
@@ -55,6 +55,26 @@ const VisualizationHeader = ({ restoreCanvas, isPairwiseViz, showFilterPanel, se
             </Button>
           </Tooltip>
           {isPairwiseViz ? <FlipButton /> : ""}
+          {isPairwiseViz && setZoomMode && (
+            <Tooltip title={zoomMode ? "Exit zoom mode" : "Zoom mode"} placement="top">
+              <Button
+                onClick={() => setZoomMode(v => !v)}
+                color="primary"
+                variant="outlined"
+                sx={{
+                  width: "35px", height: "35px", borderRadius: "50%", minWidth: "0px",
+                  display: "flex", justifyContent: "center", alignItems: "center",
+                  fontSize: "14px",
+                  color: zoomMode ? "#fff" : "#2862a5",
+                  bgcolor: zoomMode ? "#2862a5" : "transparent",
+                  border: "1px solid #2862a5", mr: "10px",
+                  "&:hover": { bgcolor: zoomMode ? "#1e4d8c" : undefined },
+                }}
+              >
+                <i className="fa-solid fa-magnifying-glass-plus"></i>
+              </Button>
+            </Tooltip>
+          )}
           {setShowFilterPanel && (
             <Tooltip title={isPairwiseViz ? "Filter by table of contents" : "Filter options"} placement="top">
               <Button

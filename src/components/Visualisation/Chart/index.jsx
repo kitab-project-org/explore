@@ -76,6 +76,12 @@ const Visual = (props) => {
   const [includeTocMarkers, setIncludeTocMarkers] = useState(true);
   const includeTocMarkersRef = useRef(true);
   includeTocMarkersRef.current = includeTocMarkers;
+  const [zoomMode, setZoomMode] = useState(false);
+  const zoomModeRef = useRef(false);
+  zoomModeRef.current = zoomMode;
+  // Stable refs to brush groups so the zoomMode effect can toggle pointer-events:
+  const brushGRef  = useRef(null);
+  const brushG2Ref = useRef(null);
   const [showTocPanel, setShowTocPanel] = useState(false);
   const pairwiseChartRef = useRef(null);
   const [tocPanelBounds, setTocPanelBounds] = useState({ top: 0, height: "100%" });
@@ -279,6 +285,8 @@ const Visual = (props) => {
 
     brushG  = svgD3.append("g").attr("class", "brush brush1");
     brushG2 = svgD3.append("g").attr("class", "brush brush2");
+    brushGRef.current  = brushG;
+    brushG2Ref.current = brushG2;
     tocMarkersG = svgD3.append("g").attr("class", "toc-markers");
     drawingG = svgD3
       .append("g")
@@ -993,6 +1001,7 @@ const Visual = (props) => {
   }
 
   function mouseOver(e, d1, skipTooltip = false) {
+    if (zoomModeRef.current) return;
     // Suppress hover tooltip for non-selected bars when a selection is active:
     if (e && selectedDRef.current && d1 !== selectedDRef.current) return;
     // set data to tooltip
@@ -1279,6 +1288,7 @@ const Visual = (props) => {
   // Single-click: select the alignment and enable keyboard navigation (no text loading).
   // bookNum (1 or 2) indicates which book's bar is focused for tooltip placement.
   function clickToSelect(e, d1, bookNum = 1) {
+    if (e && zoomModeRef.current) return; // mouse click disabled in zoom mode
     // Clicking the already-selected alignment deselects it:
     if (e && d1 === selectedLine) { clearSelectedLine(); return; }
 
@@ -1393,7 +1403,35 @@ const Visual = (props) => {
     clearSelectedLineRef.current = clearSelectedLine;
     panToAlignmentRef.current = panToAlignment;
     drawTocMarkersRef.current = drawTocMarkers;
+    // Re-apply zoom mode z-order and pointer-events after SVG rebuild
+    // (createChart always places brushes at the bottom):
+    if (zoomModeRef.current) {
+      brushG.raise();
+      brushG2.raise();
+      brushG.style("pointer-events", null);
+      brushG2.style("pointer-events", null);
+    } else {
+      brushG.style("pointer-events", "none");
+      brushG2.style("pointer-events", "none");
+    }
   };
+
+  // In zoom mode: raise brush groups above drawingG/marksG so the overlay intercepts all events.
+  // In normal mode: lower them back to the bottom so bars receive events naturally.
+  useEffect(() => {
+    if (zoomMode) {
+      brushGRef.current?.raise();
+      brushG2Ref.current?.raise();
+      brushGRef.current?.style("pointer-events", null);
+      brushG2Ref.current?.style("pointer-events", null);
+    } else {
+      // Restore original order: brushG first, brushG2 second (lowest z-order).
+      brushG2Ref.current?.lower();
+      brushGRef.current?.lower();
+      brushGRef.current?.style("pointer-events", "none");
+      brushG2Ref.current?.style("pointer-events", "none");
+    }
+  }, [zoomMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // When TOC data arrives or marker visibility changes, rebuild so pvmTop/pvmBottom take effect.
   useEffect(() => {
@@ -1487,6 +1525,7 @@ const Visual = (props) => {
   // Keyboard navigation for selected alignment.
   useEffect(() => {
     const handleKeyDown = (e) => {
+      if (zoomModeRef.current) return;
       const cur = selectedDRef.current;
       if (!cur) return;
       const tag = document.activeElement?.tagName;
@@ -1555,6 +1594,8 @@ const Visual = (props) => {
           setShowDownloadOptions={setShowDownloadOptions}
           showFilterPanel={showTocPanel}
           setShowFilterPanel={setShowTocPanel}
+          zoomMode={zoomMode}
+          setZoomMode={setZoomMode}
         />
       </SectionHeaderLayout>
       <Box
