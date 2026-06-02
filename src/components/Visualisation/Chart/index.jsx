@@ -428,6 +428,7 @@ const Visual = (props) => {
   }
 
   function updateChart(duration) {
+    drawingG?.selectAll("*").interrupt();
     var t = svgD3.transition().duration(duration || 0);
 
     // - render Bars of Book1 and Book2 ::
@@ -575,6 +576,7 @@ const Visual = (props) => {
   }
 
   function flipChart(duration) {
+    drawingG?.selectAll("*").interrupt();
     var t = svgD3.transition().duration(duration || 0);
 
     // - render Bars of Book1 and Book2 ::
@@ -907,6 +909,7 @@ const Visual = (props) => {
 
   // t3
   async function selectLineOnClicked(e, d1) {
+    const myGen = ++diffLoadGenRef.current;
     // Ensure the selection state is consistent when called via double-click or keyboard Enter:
     if (d1 !== selectedLine) clickToSelect(e, d1);
     setFlipTimeLoading(true);
@@ -979,6 +982,7 @@ const Visual = (props) => {
         downloadedTextsRef.current,
         setDownloadedTexts
       );
+      if (diffLoadGenRef.current !== myGen) { setDataLoading({ ...dataLoading, books: false }); return; }
       let ms2Text = await getMilestoneText(
         releaseCode,
         versionCode2,
@@ -986,6 +990,7 @@ const Visual = (props) => {
         downloadedTextsRef.current,
         setDownloadedTexts
       );
+      if (diffLoadGenRef.current !== myGen) { setDataLoading({ ...dataLoading, books: false }); return; }
       //console.log(ms2Text)
 
       setDataLoading({ ...dataLoading, books: false });
@@ -1278,7 +1283,10 @@ const Visual = (props) => {
         if (next) {
           clickToSelectRef.current?.(null, next, book);
           panToAlignmentRef.current?.(next);
-          selectLineOnClickedRef.current?.(null, next);
+          clearTimeout(diffLoadTimerRef.current);
+          diffLoadTimerRef.current = setTimeout(() => {
+            selectLineOnClickedRef.current?.(null, next);
+          }, 300);
         }
       } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
         e.preventDefault();
