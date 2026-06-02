@@ -83,6 +83,10 @@ const Visual = (props) => {
   const focusedBookRef = useRef(1);
   // Last tooltip mouse position — reused when navigating with arrow keys:
   const tooltipPosRef = useRef({ layerX: 200, layerY: 50 });
+  // Diff-load cancellation: each selectLineOnClicked call gets a generation; stale loads bail early.
+  const diffLoadGenRef = useRef(0);
+  // Debounce timer for diff loads triggered by arrow-key navigation.
+  const diffLoadTimerRef = useRef(null);
   // Fetch TOC for each book (same URL pattern as MultiChart):
   useEffect(() => {
     setSelectedSections1(null);
