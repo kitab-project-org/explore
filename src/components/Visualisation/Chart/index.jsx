@@ -742,9 +742,9 @@ const Visual = (props) => {
     setSelectedSections2(null);
     setToolTip({ isActive: false, layerX: 0, layerY: 0,
       data: { book1: { ms: "", pos1: "", pos2: "" }, book2: { ms: "", pos1: "", pos2: "" } } });
+    normalChart();
     brushG.call(brushHandle1.move, null);
     brushG2.call(brushHandle2.move, null);
-    normalChart();
   }
 
   function zoom() {
