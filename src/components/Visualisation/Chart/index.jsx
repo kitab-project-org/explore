@@ -14,6 +14,30 @@ import { getHighestValueInArrayOfObjects, wrapTextToSvgWidth, getMetaLabel } fro
 import * as d3 from "d3";
 
 
+const TOC_ROW_HEIGHT = 16; // px per TOC marker row; shared by drawTocMarkers and margin calc
+
+// Returns the maximum nesting depth of a TOC (0 if no TOC).
+function getMaxDepth(toc) {
+  if (!toc?.sections) return 0;
+  const children = {};
+  for (const id of Object.keys(toc.sections)) {
+    const p = toc.sections[id]?.parent;
+    if (!p) continue;
+    const key = String(p);
+    if (!children[key]) children[key] = [];
+    children[key].push(id);
+  }
+  let maxDepth = 0;
+  const dfs = (id, depth) => {
+    if (depth > maxDepth) maxDepth = depth;
+    (children[String(id)] || []).forEach(cid => dfs(cid, depth + 1));
+  };
+  Object.keys(toc.sections)
+    .filter(id => !toc.sections[id]?.parent)
+    .forEach(id => dfs(id, 1));
+  return maxDepth;
+}
+
 const Visual = (props) => {
   const {
     chartData,
@@ -49,6 +73,9 @@ const Visual = (props) => {
 
   const [showDownloadOptions, setShowDownloadOptions] = useState(false);
   const [includeMetadata, setIncludeMetadata] = useState(true);
+  const [includeTocMarkers, setIncludeTocMarkers] = useState(true);
+  const includeTocMarkersRef = useRef(true);
+  includeTocMarkersRef.current = includeTocMarkers;
   const [showTocPanel, setShowTocPanel] = useState(false);
   const pairwiseChartRef = useRef(null);
   const [tocPanelBounds, setTocPanelBounds] = useState({ top: 0, height: "100%" });
@@ -69,6 +96,9 @@ const Visual = (props) => {
   const [toc2, setToc2] = useState(null);
   const [selectedSections1, setSelectedSections1] = useState(null);
   const [selectedSections2, setSelectedSections2] = useState(null);
+  // Expanded section IDs for the in-chart TOC triangle markers:
+  const [expandedTocMarkers1, setExpandedTocMarkers1] = useState(new Set());
+  const [expandedTocMarkers2, setExpandedTocMarkers2] = useState(new Set());
   // Always-current ref so closures (selectLineOnClicked) see the latest cache:
   const downloadedTextsRef = useRef(downloadedTexts);
   useEffect(() => { downloadedTextsRef.current = downloadedTexts; });
@@ -89,9 +119,15 @@ const Visual = (props) => {
   const diffLoadTimerRef = useRef(null);
   // Debounce timer that batches React state updates during keyboard navigation.
   const navTimerRef = useRef(null);
+  // Always-current state for the TOC marker D3 closures:
+  const tocMarkersStateRef = useRef({});
+  tocMarkersStateRef.current = { exp1: expandedTocMarkers1, exp2: expandedTocMarkers2 };
+  // Stable ref to drawTocMarkers so the expand-state useEffect can call the current closure:
+  const drawTocMarkersRef = useRef(null);
   // Fetch TOC for each book (same URL pattern as MultiChart):
   useEffect(() => {
     setSelectedSections1(null);
+    setExpandedTocMarkers1(new Set());
     const vc = metaData?.book1?.versionCode?.split("-")[0];
     if (!vc || !releaseCode) return;
     let cancelled = false;
@@ -104,6 +140,7 @@ const Visual = (props) => {
 
   useEffect(() => {
     setSelectedSections2(null);
+    setExpandedTocMarkers2(new Set());
     const vc = metaData?.book2?.versionCode?.split("-")[0];
     if (!vc || !releaseCode) return;
     let cancelled = false;
@@ -194,7 +231,11 @@ const Visual = (props) => {
   //var margin =  { top: 40, right: 20, bottom: 20, left: 60 };
   var padding = { top: 40, right: 0,  bottom: 40, left: 40 };
 
-  var book1Bars, connections, book2Bars, brushG, brushG2;
+  // Extra margin to accommodate in-chart TOC marker rows (zero when markers are hidden).
+  const pvmTop    = visMargins.top    + (includeTocMarkers ? getMaxDepth(isFlipped ? toc2 : toc1) : 0) * TOC_ROW_HEIGHT;
+  const pvmBottom = visMargins.bottom + (includeTocMarkers ? getMaxDepth(isFlipped ? toc1 : toc2) : 0) * TOC_ROW_HEIGHT;
+
+  var book1Bars, connections, book2Bars, brushG, brushG2, tocMarkersG;
   var xScale1, xScale2, xScaleIdentity, x0Axis, x1Axis;
   var y0Scale, y0Axis, y1Scale, y1Axis;
   var brushHandle1 = d3.brushX().on("end", brushEnded1);
@@ -238,6 +279,7 @@ const Visual = (props) => {
 
     brushG  = svgD3.append("g").attr("class", "brush brush1");
     brushG2 = svgD3.append("g").attr("class", "brush brush2");
+    tocMarkersG = svgD3.append("g").attr("class", "toc-markers");
     drawingG = svgD3
       .append("g")
       .attr("class", "drawing")
@@ -290,9 +332,9 @@ const Visual = (props) => {
     outerWidth = chartBox.offsetWidth;
     innerWidth = outerWidth - visMargins.left - visMargins.right;
     //const minMargin = Math.max(axisLabelFontSize, tickFontSize);
-    outerHeight = startOuterHeight + visMargins.top + visMargins.bottom - defaultMargins.top - defaultMargins.bottom;
+    outerHeight = startOuterHeight + pvmTop + pvmBottom - defaultMargins.top - defaultMargins.bottom;
     //outerHeight = startOuterHeight
-    innerHeight = outerHeight - visMargins.top - visMargins.bottom;
+    innerHeight = outerHeight - pvmTop - pvmBottom;
     width = innerWidth - padding.left - padding.right;
     height = innerHeight - 20;
     //height = innerHeight;
@@ -308,19 +350,23 @@ const Visual = (props) => {
 
     drawingG.attr(
       "transform",
-      "translate(" + visMargins.left + "," + visMargins.top + ")"
+      "translate(" + visMargins.left + "," + pvmTop + ")"
     );
     brushG.attr(
       "transform",
-      "translate(" + visMargins.left + "," + visMargins.top + ")"
+      "translate(" + visMargins.left + "," + pvmTop + ")"
     );
     brushG2.attr(
       "transform",
-      "translate(" + visMargins.left + "," + visMargins.top + ")"
+      "translate(" + visMargins.left + "," + pvmTop + ")"
     );
     marksG.attr(
       "transform",
-      "translate(" + visMargins.left + "," + visMargins.top + ")"
+      "translate(" + visMargins.left + "," + pvmTop + ")"
+    );
+    tocMarkersG.attr(
+      "transform",
+      "translate(" + visMargins.left + "," + pvmTop + ")"
     );
     book2Bars.attr("transform", "translate(0,300)");
 
@@ -574,6 +620,7 @@ const Visual = (props) => {
       drawSections(xScale2, t2, sel2, barMaxHeight * 2);
     }
 
+    drawTocMarkers();
     return t;
   }
 
@@ -716,6 +763,7 @@ const Visual = (props) => {
       drawSections(xScale2, t1, sel1, barMaxHeight * 2); // flipped: bottom = book1
     }
 
+    drawTocMarkers();
     return t;
   }
 
@@ -807,6 +855,108 @@ const Visual = (props) => {
     x1ScaleNode.call(x1Axis).selectAll("text")
       .attr("x", 5).attr("y", 2).attr("transform", "rotate(-90)")
       .style("text-anchor", "start").style("font-size", `${tickFontSize}px`);
+  }
+
+  function drawTocMarkers() {
+    if (!tocMarkersG) return;
+    tocMarkersG.selectAll("*").remove();
+    if (!includeTocMarkersRef.current) return;
+
+    const { exp1, exp2 } = tocMarkersStateRef.current;
+    const { toc1: t1, toc2: t2 } = tocHighlightRef.current;
+    const topToc  = isFlipped ? t2 : t1;
+    const botToc  = isFlipped ? t1 : t2;
+    const topExp  = isFlipped ? exp2 : exp1;
+    const botExp  = isFlipped ? exp1 : exp2;
+    const setTopExp = isFlipped ? setExpandedTocMarkers2 : setExpandedTocMarkers1;
+    const setBotExp = isFlipped ? setExpandedTocMarkers1 : setExpandedTocMarkers2;
+
+    const rowHeight = TOC_ROW_HEIGHT;
+    const triSize   = 5;
+
+    // Build array-of-arrays: rows[0]=roots, rows[1]=visible children of expanded roots, etc.
+    function getRows(toc, expanded) {
+      if (!toc?.sections) return [];
+      const allIds = Object.keys(toc.sections).map(Number);
+      const roots = allIds
+        .filter(id => !toc.sections[id]?.parent)
+        .sort((a, b) => (toc.sections[a]?.start_ms ?? 0) - (toc.sections[b]?.start_ms ?? 0));
+      const rows = [roots];
+      let current = roots;
+      while (current.length) {
+        const expandedSet = new Set(current.filter(id => expanded.has(id)).map(String));
+        if (!expandedSet.size) break;
+        const children = allIds
+          .filter(id => { const p = toc.sections[id]?.parent; return p != null && expandedSet.has(String(p)); })
+          .sort((a, b) => (toc.sections[a]?.start_ms ?? 0) - (toc.sections[b]?.start_ms ?? 0));
+        if (!children.length) break;
+        rows.push(children);
+        current = children;
+      }
+      return rows;
+    }
+
+    function hasChildren(toc, id) {
+      return Object.values(toc.sections).some(s => String(s.parent) === String(id));
+    }
+
+    // Draw one row of triangles. inverted=true → up-pointing (bottom panel).
+    function drawRow(toc, ids, scale, yCenter, inverted, expanded, setExpanded) {
+      ids.forEach(id => {
+        const sec = toc.sections[id];
+        if (!sec) return;
+        const x = scale(sec.start_ms);
+        if (x < -triSize || x > width + triSize) return;
+        const isExpanded = expanded.has(id);
+        const canExpand  = hasChildren(toc, id);
+        // ▼ down-pointing: flat top, tip at bottom
+        // ▲ up-pointing:   flat bottom, tip at top
+        const path = inverted
+          ? `M ${-triSize},${triSize} L ${triSize},${triSize} L 0,${-triSize} Z`
+          : `M ${-triSize},${-triSize} L ${triSize},${-triSize} L 0,${triSize} Z`;
+        const g = tocMarkersG.append("g")
+          .attr("transform", `translate(${x},${yCenter})`)
+          .attr("cursor", canExpand ? "pointer" : "default");
+        g.append("path")
+          .attr("d", path)
+          .attr("fill", isExpanded ? "#2862a5" : "#4a90d9")
+          .attr("fill-opacity", canExpand ? 0.85 : 0.4);
+        if (canExpand) {
+          g.on("click", () => setExpanded(prev => {
+            const next = new Set(prev);
+            next.has(id) ? next.delete(id) : next.add(id);
+            return next;
+          }));
+        }
+        g.on("mouseover", (ev) => setToolTip(p => ({
+          ...p, isActive: true, layerX: ev.layerX, layerY: ev.layerY,
+          sectionTitle: getSectionHierarchy(toc, id),
+        })));
+        g.on("mouseout", () => setToolTip(p => ({ ...p, isActive: false, sectionTitle: null })));
+      });
+    }
+
+    // Top panel: deepest visible level anchored just above bars (y = −rowHeight/2).
+    // Each expansion shifts all rows upward — pvmTop is sized to always fit maxDepth rows.
+    if (topToc) {
+      const rows = getRows(topToc, topExp);
+      const numRows = rows.length;
+      rows.forEach((ids, rowIndex) => {
+        const yCenter = -(numRows - rowIndex - 0.5) * rowHeight;
+        drawRow(topToc, ids, xScale1, yCenter, false, topExp, setTopExp);
+      });
+    }
+
+    // Bottom panel: same logic inverted — deepest level just below bars, roots shift down.
+    if (botToc) {
+      const barBottom = barMaxHeight * 3;
+      const rows = getRows(botToc, botExp);
+      const numRows = rows.length;
+      rows.forEach((ids, rowIndex) => {
+        const yCenter = barBottom + (numRows - rowIndex - 0.5) * rowHeight;
+        drawRow(botToc, ids, xScale2, yCenter, true, botExp, setBotExp);
+      });
+    }
   }
 
   function panToAlignment(d1) {
@@ -1242,7 +1392,18 @@ const Visual = (props) => {
     selectLineOnClickedRef.current = selectLineOnClicked;
     clearSelectedLineRef.current = clearSelectedLine;
     panToAlignmentRef.current = panToAlignment;
+    drawTocMarkersRef.current = drawTocMarkers;
   };
+
+  // When TOC data arrives or marker visibility changes, rebuild so pvmTop/pvmBottom take effect.
+  useEffect(() => {
+    normalChart(); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [toc1, toc2, includeTocMarkers]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // When the user expands/collapses a marker row, just redraw the markers (no full rebuild).
+  useEffect(() => {
+    drawTocMarkersRef.current?.();
+  }, [expandedTocMarkers1, expandedTocMarkers2]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /////////////////////////////////////////////////////////////////////
 
@@ -1291,7 +1452,7 @@ const Visual = (props) => {
         const labelLinesb2 = wrapTextToSvgWidth(textContentb2, 200, axisLabelFontSize);
         let space = visMargins.left - yTickWidth - lineHeight;
         labelLinesb1.reverse().forEach((line) => {
-          const x = space, y = visMargins.top;
+          const x = space, y = pvmTop;
           svg.append("text").attr("class", "download-annotation yLabel")
             .attr("text-anchor", "end").attr("x", x).attr("y", y)
             .attr("transform", `rotate(-90, ${x}, ${y})`)
@@ -1300,7 +1461,7 @@ const Visual = (props) => {
         });
         space = visMargins.left - yTickWidth - lineHeight;
         labelLinesb2.reverse().forEach((line) => {
-          const x = space, y = visMargins.top + 450;
+          const x = space, y = pvmTop + 450;
           svg.append("text").attr("class", "download-annotation yLabel")
             .attr("text-anchor", "start").attr("x", x).attr("y", y)
             .attr("transform", `rotate(-90, ${x}, ${y})`)
@@ -1315,7 +1476,7 @@ const Visual = (props) => {
           .text(textContentb1);
         svg.append("text").attr("class", "download-annotation")
           .attr("x", visMargins.left)
-          .attr("y", outerHeight - 0.9 * visMargins.bottom)
+          .attr("y", outerHeight - 0.9 * pvmBottom)
           .attr("text-anchor", "left").style("font-size", `${axisLabelFontSize}px`)
           .text(textContentb2);
       }
@@ -1383,6 +1544,8 @@ const Visual = (props) => {
         setIncludeURL={setIncludeURL}
         includeMetadata={includeMetadata}
         setIncludeMetadata={setIncludeMetadata}
+        includeTocMarkers={includeTocMarkers}
+        setIncludeTocMarkers={setIncludeTocMarkers}
         mb={showTocPanel ? 0 : "20px"}
       >
         <VisualizationHeader

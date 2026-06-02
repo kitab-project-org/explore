@@ -30,7 +30,7 @@ const CheckButton = ({ label, checked, onClick }) => (
   </Button>
 );
 
-const DownloadPanel = ( {isPairwiseViz, downloadFileName, includeURL, setIncludeURL, includeMetadata = true, setIncludeMetadata, includeLegend = false, setIncludeLegend, includeSidebar = false, setIncludeSidebar, includeBottomBar = false, setIncludeBottomBar} ) => {
+const DownloadPanel = ( {isPairwiseViz, downloadFileName, includeURL, setIncludeURL, includeMetadata = true, setIncludeMetadata, includeTocMarkers = true, setIncludeTocMarkers, includeLegend = false, setIncludeLegend, includeSidebar = false, setIncludeSidebar, includeBottomBar = false, setIncludeBottomBar} ) => {
   const {
     tickFontSize,
     outputImageWidth,
@@ -121,6 +121,13 @@ const DownloadPanel = ( {isPairwiseViz, downloadFileName, includeURL, setInclude
             <Tooltip placement="top" title="Include the book metadata (title, author, word count) in the downloaded image">
               <span>
                 <CheckButton label="Metadata" checked={includeMetadata} onClick={() => setIncludeMetadata(v => !v)} />
+              </span>
+            </Tooltip>
+          )}
+          {isPairwiseViz && setIncludeTocMarkers && (
+            <Tooltip placement="top" title="Include the table of contents markers in the downloaded image">
+              <span>
+                <CheckButton label="TOC markers" checked={includeTocMarkers} onClick={() => setIncludeTocMarkers(v => !v)} />
               </span>
             </Tooltip>
           )}

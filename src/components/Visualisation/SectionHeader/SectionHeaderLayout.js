@@ -5,7 +5,7 @@ import BAExtra from "./BookAlignmentHeader/BAExtra";
 import DownloadPanel from "./VisualizationHeader/DownloadPanel";
 import { Context } from "../../../App";
 
-const SectionHeaderLayout = ({ item, children, toggle, setToggle, mb = "20px", showDownloadOptions = false, includeURL = false, setIncludeURL, includeMetadata, setIncludeMetadata, includeLegend, setIncludeLegend, includeSidebar, setIncludeSidebar, includeBottomBar, setIncludeBottomBar }) => {
+const SectionHeaderLayout = ({ item, children, toggle, setToggle, mb = "20px", showDownloadOptions = false, includeURL = false, setIncludeURL, includeMetadata, setIncludeMetadata, includeTocMarkers, setIncludeTocMarkers, includeLegend, setIncludeLegend, includeSidebar, setIncludeSidebar, includeBottomBar, setIncludeBottomBar }) => {
   const {
     showOptions,
     isFlipped,
@@ -66,6 +66,8 @@ const SectionHeaderLayout = ({ item, children, toggle, setToggle, mb = "20px", s
             setIncludeURL={setIncludeURL}
             includeMetadata={includeMetadata}
             setIncludeMetadata={setIncludeMetadata}
+            includeTocMarkers={includeTocMarkers}
+            setIncludeTocMarkers={setIncludeTocMarkers}
           />
         </Box>
       )}
