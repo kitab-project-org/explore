@@ -153,6 +153,8 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
     let msData = chartData.msData;
     let bStats = chartData.bookStats;
     let dataDateRange = dateRange;
+    console.log("MultiChart: bStats before filtering:");
+    console.log(bStats);
 
     if (selfReuseOnly) {
       msData = msData.filter(
@@ -202,12 +204,26 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
       if (minDisplay <= maxDisplay) displayMsRange = [minDisplay, maxDisplay];
     }
 
+    /*// Sort filtered books alphabetically by URI (= chronologically, since URIs start with 4-digit date).
+    // Main book is pinned to position 0; remaining books are sorted and assigned sequential indices.
+    // Sorting here rather than relying on chartData order makes the useMemo self-contained.
+    const mainBook = bStats.find(d => d.id === versionCode);
+    const otherBooks = bStats
+      .filter(d => d.id !== versionCode)
+      .sort((a, b) => {
+        const aKey = a.book ?? a.manuscript ?? a.id ?? '';
+        const bKey = b.book ?? b.manuscript ?? b.id ?? '';
+        return aKey > bKey ? 1 : bKey > aKey ? -1 : 0;
+      });
+    const sortedBStats = mainBook ? [mainBook, ...otherBooks] : otherBooks;*/
+
     // Recalculate index numbers — create new objects to avoid mutating chartData.
     // The main book always gets bookIndex=0 so its dots sit on the Y axis (xScale(0)=0)
     // regardless of how many books are in the filtered set.
     const bookIndexDict = {};
     const newBookUriDict = {};
     let nextIndex = 1;
+    //const filteredBookStats = sortedBStats.map((d) => {
     const filteredBookStats = bStats.map((d) => {
       const bookIndex = d.id === versionCode ? 0 : nextIndex++;
       bookIndexDict[d.id] = bookIndex;

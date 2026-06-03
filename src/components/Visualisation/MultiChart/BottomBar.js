@@ -138,8 +138,10 @@ const BottomBar = (props) => {
     };
     const onMouseout = () => showSelectedTooltipRef.current?.();
     const onClick = function(event, d) {
+      console.log("selected: "+d.id);
       if (isUploadRef.current) { onUploadRequestRef.current(d); return; }
       setSelectedBar({ id: d.id });
+      
     };
     const onDblclick = function(event, d) {
       if (isUploadRef.current) return;
@@ -289,6 +291,7 @@ const BottomBar = (props) => {
       } else if (e.key === 'Enter') {
         const d = bookStatsRef.current?.find(b => b.id === cur.id);
         if (d) {
+          console.log("pressed enter on"+d.id);
           let currentUrl = window.location.href;
           const newUrl = currentUrl.includes("_all")
             ? currentUrl.replace("_all", "_" + d.id)

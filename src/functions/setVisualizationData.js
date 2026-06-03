@@ -139,16 +139,16 @@ function prepareMsData(
 }
 
 function prepareStats(stats, mainBookID, mainBookURI, mainBookMilestones) {
-  // add stats of the main book to the stats array:
-  stats.push({
-    id: mainBookID,
-    book: mainBookURI,
-    alignments: mainBookMilestones,
-    ch_match: 0,
-  });
 
   // sort the stats by book URI:
-  stats.sort((a, b) => (a.book > b.book ? 1 : b.book > a.book ? -1 : 0));
+  //stats.sort((a, b) => (a.book > b.book ? 1 : b.book > a.book ? -1 : 0));
+  stats.sort((a, b) => {
+    const aKey = a.book ?? a.id ?? '';
+    const bKey = b.book ?? b.id ?? '';
+    return aKey > bKey ? 1 : bKey > aKey ? -1 : 0;
+  });
+  console.log("prepareStats: sorted stats:");
+  console.log(stats);
 
   // add date and book_index fields and create dictionaries:
   var bookIndexDict = {}; // keys: versionID, values: bookIndex
@@ -161,6 +161,22 @@ function prepareStats(stats, mainBookID, mainBookURI, mainBookMilestones) {
     stats[i]["date"] = isNaN(rawDate) ? null : rawDate;
     stats[i]["manuscript"] = stats[i]["book"] ? null : stats[i]["id"];
   }
+
+  // add stats of the main book to the stats array:
+  const rawDate = parseInt(mainBookURI.substring(0, 4));
+  const mainBookStats = {
+    id: mainBookID,
+    book: mainBookURI,
+    date: isNaN(rawDate) ? null : rawDate,
+    manuscript: isNaN(rawDate) ? mainBookID : null,
+    alignments: mainBookMilestones,
+    ch_match: 0,
+    bookIndex: 0,
+  };
+  stats = [mainBookStats, ...stats]
+  bookIndexDict[mainBookID] = 0
+  bookUriDict[mainBookID] = mainBookURI ?? mainBookID;
+
   return [stats, bookIndexDict, bookUriDict];
 }
 
