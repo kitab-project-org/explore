@@ -339,9 +339,10 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
     ).ch_match;*/
   const [minChMatch, maxChMatch] = d3.extent(filteredMsData, (d) => d.ch_match);
 
+  const filteredMsRangeSize = displayMsRange[1] - displayMsRange[0] + 1;
   let dotSize = Math.min(
     Math.ceil(width / filteredBookStats.length / 2),
-    Math.ceil(height / mainBookMilestones / 2),
+    Math.ceil(height / filteredMsRangeSize / 2),
     5
   );
 
