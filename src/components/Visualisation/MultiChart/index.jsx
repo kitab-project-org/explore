@@ -218,22 +218,44 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
       });
     const sortedBStats = mainBook ? [mainBook, ...otherBooks] : otherBooks;*/
 
-    // Recalculate index numbers — create new objects to avoid mutating chartData.
-    // The main book always gets bookIndex=0 so its dots sit on the Y axis (xScale(0)=0)
-    // regardless of how many books are in the filtered set.
+    // Build bookIndexDict first so filteredMsData can reference it.
     const bookIndexDict = {};
     const newBookUriDict = {};
     let nextIndex = 1;
-    //const filteredBookStats = sortedBStats.map((d) => {
-    const filteredBookStats = bStats.map((d) => {
-      const bookIndex = d.id === versionCode ? 0 : nextIndex++;
-      bookIndexDict[d.id] = bookIndex;
+    bStats.forEach((d) => {
+      bookIndexDict[d.id] = d.id === versionCode ? 0 : nextIndex++;
       newBookUriDict[d.id] = [d.book ?? d.manuscript];
-      return { ...d, bookIndex };
     });
+
     const filteredMsData = msData.map(d => ({
       ...d,
       bookIndex: bookIndexDict[d.id2],
+    }));
+
+    // When milestone range or TOC section filter is active, recalculate per-book
+    // ch_match and alignments from filteredMsData (which only contains visible data points).
+    const isMsFiltered = msRange[0] !== 1 || msRange[1] !== (storedMainBookMilestones ?? Math.ceil(tokens?.first / 300));
+    const isTocFiltered = (selectedSectionIds?.size ?? 0) > 0;
+    let bookChMatchRecalc = null, bookAlignmentsRecalc = null;
+    if (isMsFiltered || isTocFiltered) {
+      bookChMatchRecalc = {};
+      bookAlignmentsRecalc = {};
+      for (const d of filteredMsData) {
+        if (d.id2 !== versionCode) {
+          bookChMatchRecalc[d.id2] = (bookChMatchRecalc[d.id2] || 0) + d.ch_match;
+          bookAlignmentsRecalc[d.id2] = (bookAlignmentsRecalc[d.id2] || 0) + (Array.isArray(d.alignments) ? d.alignments.length : 1);
+        }
+      }
+    }
+
+    // Recalculate index numbers — create new objects to avoid mutating chartData.
+    // The main book always gets bookIndex=0 so its dots sit on the Y axis (xScale(0)=0)
+    // regardless of how many books are in the filtered set.
+    const filteredBookStats = bStats.map((d) => ({
+      ...d,
+      bookIndex: bookIndexDict[d.id],
+      ch_match:   bookChMatchRecalc    ? (bookChMatchRecalc[d.id]    ?? 0) : d.ch_match,
+      alignments: bookAlignmentsRecalc ? (bookAlignmentsRecalc[d.id] ?? 0) : d.alignments,
     }));
 
     // Recalculate msStats:
