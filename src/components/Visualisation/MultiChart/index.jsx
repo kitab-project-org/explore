@@ -4,6 +4,7 @@ import {
   Dialog,
   DialogContent,
   DialogTitle,
+  IconButton,
   Typography,
 } from "@mui/material";
 import * as d3 from "d3";
@@ -337,6 +338,25 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
   const [filterResetKey, setFilterResetKey] = useState(0);
   const [showFilterPanel, setShowFilterPanel] = useState(false);
   const [toggle, setToggle] = useState(false);
+  const multiVisRef = useRef(null);
+  const [tocPanelBounds, setTocPanelBounds] = useState({ top: 0, height: "100%" });
+  useEffect(() => {
+    const update = () => {
+      const el = multiVisRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      setTocPanelBounds({ top: rect.top, height: rect.height });
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    if (multiVisRef.current) observer.observe(multiVisRef.current);
+    window.addEventListener("scroll", update);
+    return () => { observer.disconnect(); window.removeEventListener("scroll", update); };
+  }, []);
+  // showTocPanel is independent from showFilterPanel so X closes only the TOC slide-out.
+  const [showTocPanel, setShowTocPanel] = useState(true);
+  // Reset showTocPanel whenever the filter button opens the panel.
+  useEffect(() => { if (showFilterPanel) setShowTocPanel(true); }, [showFilterPanel]);
 
   useEffect(() => {
     setSearchParams(prev => {
@@ -488,6 +508,7 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
 
       <Box
         id="multiVis"
+        ref={multiVisRef}
         sx={{
           position: "relative",
           overflowX: "clip",
@@ -615,21 +636,26 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
         <div className={"vizTooltip"} sx={{ style: "opacity: 0" }} />
         <Box
           sx={{
-            position: "absolute",
-            top: 0,
+            position: "fixed",
+            top: tocPanelBounds.top,
+            height: tocPanelBounds.height,
             right: 0,
-            bottom: 0,
             width: "300px",
             bgcolor: "background.paper",
             boxShadow: "-3px 0 12px rgba(0,0,0,0.18)",
-            zIndex: 10,
+            zIndex: 1200,
             display: "flex",
             flexDirection: "column",
             overflow: "hidden",
-            transform: (showFilterPanel && toc && Object.keys(toc.sections ?? {}).length > 0) ? "translateX(0)" : "translateX(100%)",
+            transform: (showFilterPanel && showTocPanel && toc && Object.keys(toc.sections ?? {}).length > 0) ? "translateX(0)" : "translateX(100%)",
             transition: "transform 0.25s ease",
           }}
         >
+          <Box sx={{ display: "flex", justifyContent: "flex-end", px: 1, pt: 0.5, flexShrink: 0 }}>
+            <IconButton size="small" onClick={() => setShowTocPanel(false)}>
+              <i className="fa-solid fa-xmark" style={{ fontSize: "14px" }} />
+            </IconButton>
+          </Box>
           <TocFilter
             toc={toc}
             selectedSectionIds={selectedSectionIds}

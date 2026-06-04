@@ -76,7 +76,7 @@ const VisualizationHeader = ({ restoreCanvas, isPairwiseViz, showFilterPanel, se
             </Tooltip>
           )}
           {setShowFilterPanel && (
-            <Tooltip title={isPairwiseViz ? "Filter by table of contents" : "Filter options"} placement="top">
+            <Tooltip title={isPairwiseViz ? "Filter by table of contents" : "Filter options and settings"} placement="top">
               <Button
                 onClick={() => setShowFilterPanel(v => !v)}
                 color="primary"
@@ -91,7 +91,7 @@ const VisualizationHeader = ({ restoreCanvas, isPairwiseViz, showFilterPanel, se
                   "&:hover": { bgcolor: showFilterPanel ? "#1e4d8c" : undefined },
                 }}
               >
-                <i className="fa-solid fa-filter"></i>
+                <i className={isPairwiseViz ? "fa-solid fa-filter" : "fa-solid fa-gear"}></i>
               </Button>
             </Tooltip>
           )}
