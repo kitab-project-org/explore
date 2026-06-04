@@ -105,7 +105,7 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
   const initMsCharsRange = getRangeParam("MsChars", fullMsCharsRange);
   const [msCharsRange, setMsCharsRange] = useState(initMsCharsRange);
   const [filterBooksToMsRange, setFilterBooksToMsRange] = useState(
-    () => searchParams.get("filterBooksToMs") === "1"
+    () => searchParams.get("filterBooksToMs") !== "0"  // default true; URL param can override
   );
 
   const initSelectedSectionIds = (() => {
@@ -239,12 +239,15 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
     const msStatsObj = {};
     for (const d of filteredMsData) {
       if (d.id2 !== versionCode) {
-        msStatsObj[d.ms1] = (msStatsObj[d.ms1] || 0) + d.ch_match;
+        if (!msStatsObj[d.ms1]) msStatsObj[d.ms1] = { ch_match: 0, alignments: 0 };
+        msStatsObj[d.ms1].ch_match += d.ch_match;
+        msStatsObj[d.ms1].alignments += Array.isArray(d.alignments) ? d.alignments.length : 1;
       }
     }
     const filteredMsStats = Object.keys(msStatsObj).map(key => ({
       ms_id: parseInt(key),
-      ch_match_total: msStatsObj[key],
+      ch_match_total: msStatsObj[key].ch_match,
+      alignments_total: msStatsObj[key].alignments,
     }));
 
     return {
@@ -322,6 +325,7 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
   const bottomBarMargin = useMemo(() => ({ ...visMargins, top: 0 }), [visMargins]);
 
   const [showDownloadOptions, setShowDownloadOptions] = useState(false);
+  const [statMetric, setStatMetric] = useState("alignments"); // "alignments" | "characters"
   const [includeLegend,       setIncludeLegend]       = useState(true);
   const [includeSidebar,      setIncludeSidebar]      = useState(true);
   const [includeBottomBar,    setIncludeBottomBar]    = useState(true);
@@ -353,7 +357,7 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
       } else {
         next.delete("sections");
       }
-      setOrDelete("filterBooksToMs", filterBooksToMsRange, 1);
+      setOrDelete("filterBooksToMs", !filterBooksToMsRange, 0);  // write "0" only when off
 
       return next;
     }, { replace: true });
@@ -435,6 +439,8 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
           setMsCharsRange={setMsCharsRange}
           filterBooksToMsRange={filterBooksToMsRange}
           setFilterBooksToMsRange={setFilterBooksToMsRange}
+          statMetric={statMetric}
+          setStatMetric={setStatMetric}
         />
       </Box>
 
@@ -540,6 +546,7 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
                 margin={visMargins}
                 selectedMs={selectedMs}
                 setSelectedMs={handleSetSelectedMs}
+                statMetric={statMetric}
               />
             </div>
           </div>
@@ -555,6 +562,7 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
             onUploadRequest={onUploadRequest}
             selectedBar={selectedBar}
             setSelectedBar={handleSetSelectedBar}
+            statMetric={statMetric}
           />
           <Dialog
             open={uploadDialogBook !== null}

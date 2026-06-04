@@ -3,6 +3,7 @@ import AlignmentsFilter from "./filters/AlignmentsFilter";
 import BookCharsFilter from "./filters/BookCharsFilter";
 import DateFilter from "./filters/DateFilter";
 import MilestoneFilter from "./filters/MilestoneFilter";
+import StatMetricFilter from "./filters/StatMetricFilter";
 
 
 
@@ -40,6 +41,10 @@ const MultiFilter = (props) => {
         fullBookCharRange={props.fullBookCharRange}
         setBookCharRange={props.setBookCharRange}
         initialValue={props.initialBookCharRange}
+      />
+      <StatMetricFilter
+        statMetric={props.statMetric}
+        setStatMetric={props.setStatMetric}
       />
     </Box>
   );

@@ -20,6 +20,8 @@ const BottomBar = (props) => {
   useEffect(() => { selectedBarRef.current = selectedBar; });
   const bookStatsRef = useRef(props.bookStats);
   useEffect(() => { bookStatsRef.current = props.bookStats; });
+  const statMetricRef = useRef(props.statMetric ?? "alignments");
+  useEffect(() => { statMetricRef.current = props.statMetric ?? "alignments"; });
   const showSelectedTooltipRef = useRef(null);
   // Stored by the main D3 effect so the highlight effect can position elements:
   const xScaleRef = useRef(null);
@@ -43,12 +45,16 @@ const BottomBar = (props) => {
     const tooltipDiv = d3.select(".vizTooltip");
     const barSvg = d3.select(".bottom-bar");
 
+    const useAlignments = props.statMetric !== "characters";
+    const getValue = d => useAlignments ? (d.alignments ?? 0) : d.ch_match;
+    const metricLabel = useAlignments ? "Number of alignments" : "Characters matched";
+
     let xScale = d3.scaleLinear()
       .domain([0, props.bookStats.length+2])
       .range([ 0, width ]);
-    let maxTotalChMatch = d3.max(props.bookStats, d => d.ch_match);
+    let maxVal = d3.max(props.bookStats, d => getValue(d));
     let yScale = d3.scaleLinear()
-      .domain([maxTotalChMatch, 0])
+      .domain([maxVal, 0])
       .range([0, height]);
 
     barSvg.selectAll(".bottom-bar-plot").remove();
@@ -106,7 +112,8 @@ const BottomBar = (props) => {
       );
     // Y axis label:
     barSvg.selectAll(".yLabel").remove();
-    const labelLines = wrapTextToSvgWidth("Characters reused", 100, axisLabelFontSize);
+    const metricLabelShort = useAlignments ? "Alignments" : "Chars matched";
+    const labelLines = wrapTextToSvgWidth(metricLabelShort, 100, axisLabelFontSize);
     let ySpace = -yTickWidth;
     labelLines.reverse().forEach((line) => {
       barSvg.append("text")
@@ -129,7 +136,7 @@ const BottomBar = (props) => {
     const onMouseover = function(event, d) {
       tooltipDiv.transition().duration(200).style("opacity", .9);
       let tooltipMsg = d.book ?? d.manuscript;
-      tooltipMsg += "<br/>Total characters matched: " + d3.format(",")(d.ch_match);
+      tooltipMsg += `<br/>${metricLabel}: ` + d3.format(",")(getValue(d));
       tooltipMsg += isUploadRef.current
         ? "<br/>(Click to select - double-click to upload pairwise TSV)"
         : "<br/>(Click to select - double-click for pairwise visualisation)";
@@ -160,9 +167,9 @@ const BottomBar = (props) => {
         enter => enter.append("rect")
           .attr("class", "bar")
           .attr("width", barWidth)
-          .attr("y", d => yScale(d.ch_match))
+          .attr("y", d => yScale(getValue(d)))
           .attr("x", d => xScale(d.bookIndex) - barWidth / 2)
-          .attr("height", d => height - yScale(d.ch_match))
+          .attr("height", d => height - yScale(getValue(d)))
           .style("fill", "#3FB8AF")
           .style("stroke", "#3FB8AF")
           .style("pointer-events", "none"),
@@ -194,7 +201,7 @@ const BottomBar = (props) => {
     chartHeightRef.current = height;
     barWidthRef.current = barWidth;
   }, [props.bookStats, props.height, props.width, props.margin, props.mainBookURI, // eslint-disable-line react-hooks/exhaustive-deps
-      props.hasDates, tickFontSize, axisLabelFontSize, yTickWidth]);
+      props.hasDates, props.statMetric, tickFontSize, axisLabelFontSize, yTickWidth]);
 
   // Highlight selected bar and show persistent tooltip.
   useEffect(() => {
@@ -222,7 +229,8 @@ const BottomBar = (props) => {
         const g = d3.select('#bottom-bar .bottom-bar');
 
         // Dotted line from bar's top to max value (y=0):
-        const y1 = yScaleRef.current ? yScaleRef.current(d.ch_match) : 0;
+        const barVal = statMetricRef.current !== "characters" ? (d.alignments ?? 0) : d.ch_match;
+        const y1 = yScaleRef.current ? yScaleRef.current(barVal) : 0;
         g.append('line')
           .attr('class', 'selection-highlight')
           .attr('x1', x)
@@ -250,8 +258,11 @@ const BottomBar = (props) => {
       if (!cur) { tooltipDiv.style("opacity", 0); return; }
       const d = bookStatsRef.current?.find(b => b.id === cur.id);
       if (!d) { tooltipDiv.style("opacity", 0); return; }
+      const useAlignPersist = statMetricRef.current !== "characters";
+      const persistVal = useAlignPersist ? (d.alignments ?? 0) : d.ch_match;
+      const persistLabel = useAlignPersist ? "Number of alignments" : "Characters matched";
       let tooltipMsg = d.book ?? d.manuscript;
-      tooltipMsg += "<br/>Total characters matched: " + d3.format(",")(d.ch_match);
+      tooltipMsg += `<br/>${persistLabel}: ` + d3.format(",")(persistVal);
       tooltipMsg += "<br/><b>(Press Enter for pairwise visualisation - Arrow keys to navigate - Escape to deselect)</b>";
       const bar = d3.select('#bottom-bar').selectAll('.bar').filter(b => b.id === cur.id);
       if (bar.empty()) return;

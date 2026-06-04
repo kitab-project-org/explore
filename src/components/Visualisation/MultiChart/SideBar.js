@@ -17,6 +17,8 @@ const SideBar = (props) => {
   useEffect(() => { selectedMsRef.current = selectedMs; });
   const msStatsRef = useRef(props.msStats);
   useEffect(() => { msStatsRef.current = props.msStats; });
+  const statMetricRef = useRef(props.statMetric ?? "alignments");
+  useEffect(() => { statMetricRef.current = props.statMetric ?? "alignments"; });
   const showSelectedTooltipRef = useRef(null);
   // Stored by the main D3 effect for use by the highlight effect:
   const xScaleRef = useRef(null);
@@ -39,9 +41,13 @@ const SideBar = (props) => {
     const tooltipDiv = d3.select(".vizTooltip");
     const barSvg = d3.select(".side-bar");
 
-    let maxTotalChMatch = d3.max(props.msStats, d => d.ch_match_total);
+    const useAlignments = props.statMetric !== "characters";
+    const getValue = d => useAlignments ? (d.alignments_total ?? 0) : d.ch_match_total;
+    const metricLabel = useAlignments ? "Number of alignments" : "Characters matched";
+
+    let maxVal = d3.max(props.msStats, d => getValue(d));
     let xScale = d3.scaleLinear()
-      .domain([0, maxTotalChMatch])
+      .domain([0, maxVal])
       .range([0, props.width]);
     let yScale = d3.scaleLinear()
       .domain([props.msRange[1]+1, props.msRange[0]-1])
@@ -61,7 +67,8 @@ const SideBar = (props) => {
     // X axis label:
     barSvg.selectAll(".xLabel").remove();
     const lineHeight = axisLabelFontSize * 1.3;
-    const labelLines = wrapTextToSvgWidth("Characters reused", 120, axisLabelFontSize);
+    const metricLabelShort = useAlignments ? "Alignments" : "Chars matched";
+    const labelLines = wrapTextToSvgWidth(metricLabelShort, 120, axisLabelFontSize);
     let ySpace = -axisLabelFontSize;
     labelLines.reverse().forEach((line) => {
       barSvg.append("text")
@@ -93,7 +100,7 @@ const SideBar = (props) => {
     // Shared handlers:
     const buildTooltipMsg = (d) => {
       let msg = "Milestone " + d.ms_id + ":";
-      msg += "<br/>Total characters matched: " + d3.format(",")(d.ch_match_total);
+      msg += `<br/>${metricLabel}: ` + d3.format(",")(getValue(d));
       const headings = getMilestoneHeadings(tocRef.current, d.ms_id);
       if (headings) msg += "<br/><b>Section(s):</b>" + headings;
       msg += "<br/><b>(click to enable navigation)</b>";
@@ -117,7 +124,7 @@ const SideBar = (props) => {
           .attr("height", barHeight)
           .attr("y", d => yScale(d.ms_id))
           .attr("x", 0)
-          .attr("width", d => xScale(d.ch_match_total))
+          .attr("width", d => xScale(getValue(d)))
           .style("fill", "#3FB8AF")
           .style("stroke", "#3FB8AF")
           .style("pointer-events", "none"),
@@ -148,7 +155,7 @@ const SideBar = (props) => {
     barHeightRef.current = barHeight;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.msStats, props.height, props.mainBookMilestones, props.msRange,
-      props.width, tickFontSize, axisLabelFontSize, props.margin.top, setSelectedMs]);
+      props.width, props.statMetric, tickFontSize, axisLabelFontSize, props.margin.top, setSelectedMs]);
 
   // Highlight selected bar and show persistent tooltip.
   useEffect(() => {
@@ -172,7 +179,8 @@ const SideBar = (props) => {
         const g = d3.select('#side-bar .side-bar-plot');
 
         // Dotted line from bar's right edge to max value:
-        const x1 = xScaleRef.current ? xScaleRef.current(d.ch_match_total) : 0;
+        const barStatVal = statMetricRef.current !== "characters" ? (d.alignments_total ?? 0) : d.ch_match_total;
+        const x1 = xScaleRef.current ? xScaleRef.current(barStatVal) : 0;
         g.append('line')
           .attr('class', 'selection-highlight')
           .attr('x1', x1)
@@ -202,8 +210,11 @@ const SideBar = (props) => {
       if (!cur) { tooltipDiv.style("opacity", 0); return; }
       const d = msStatsRef.current?.find(b => b.ms_id === cur.ms_id);
       if (!d) { tooltipDiv.style("opacity", 0); return; }
+      const persistAlign = statMetricRef.current !== "characters";
+      const persistVal = persistAlign ? (d.alignments_total ?? 0) : d.ch_match_total;
+      const persistLabel = persistAlign ? "Number of alignments" : "Characters matched";
       let msg = "Milestone " + d.ms_id + ":";
-      msg += "<br/>Total characters matched: " + d3.format(",")(d.ch_match_total);
+      msg += `<br/>${persistLabel}: ` + d3.format(",")(persistVal);
       const headings = getMilestoneHeadings(tocRef.current, d.ms_id);
       if (headings) msg += "<br/><b>Section(s):</b>" + headings;
       msg += "<br/><b>(Arrow keys to navigate - Escape to deselect)</b>";
