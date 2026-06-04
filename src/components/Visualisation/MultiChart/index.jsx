@@ -140,6 +140,9 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
   // hasDates uses unfiltered data (for MultiFilter display):
   const hasDates = chartData.bookStats.some(d => d.date !== null);
 
+  const mainBookMilestones = storedMainBookMilestones ?? Math.ceil(tokens.first / 300);
+  const fullMilestoneRange = [1, mainBookMilestones];
+
   // Memoize the entire filter + index pipeline so that array references are stable
   // when only selectedMarker changes (selectedMarker is not a dep here).
   const {
@@ -234,7 +237,7 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
 
     // When milestone range or TOC section filter is active, recalculate per-book
     // ch_match and alignments from filteredMsData (which only contains visible data points).
-    const isMsFiltered = msRange[0] !== 1 || msRange[1] !== (storedMainBookMilestones ?? Math.ceil(tokens?.first / 300));
+    const isMsFiltered = msRange[0] !== 1 || msRange[1] !== mainBookMilestones;
     const isTocFiltered = (selectedSectionIds?.size ?? 0) > 0;
     let bookChMatchRecalc = null, bookAlignmentsRecalc = null;
     if (isMsFiltered || isTocFiltered) {
@@ -282,7 +285,7 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
       dataDateRange,
     };
   }, [chartData, selfReuseOnly, mainAuthor, mainAuthorDate, mainBookURI, versionCode,
-      dateRange, bookCharRange, bookAlignRange, msCharsRange, msRange,
+      dateRange, bookCharRange, bookAlignRange, msCharsRange, msRange, mainBookMilestones,
       filterBooksToMsRange, selectedSectionIds, toc]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Keep full ranges in a ref so restoreCanvas can be a stable useCallback:
@@ -326,9 +329,6 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
       setFilterResetKey(k => k + 1);
     }
   }, [selfReuseOnly]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const mainBookMilestones = storedMainBookMilestones ?? Math.ceil(tokens.first / 300);
-  const fullMilestoneRange = [1, mainBookMilestones];
 
   // build variables needed to create axes:
   /*const maxChMatch = msData.reduce(
