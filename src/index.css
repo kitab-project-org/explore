@@ -79,9 +79,6 @@ code {
   fill-opacity: 0.165;
 }
 
-.brush .overlay {
-  cursor: auto !important;
-}
 
 .max-reference-lines {
   stroke-width: 5;

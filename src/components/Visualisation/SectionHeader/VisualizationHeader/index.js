@@ -56,7 +56,7 @@ const VisualizationHeader = ({ restoreCanvas, isPairwiseViz, showFilterPanel, se
           </Tooltip>
           {isPairwiseViz ? <FlipButton /> : ""}
           {isPairwiseViz && setZoomMode && (
-            <Tooltip title={zoomMode ? "Exit zoom mode" : "Zoom mode"} placement="top">
+            <Tooltip title={zoomMode ? "Exit zoom mode (shortcut: Z)" : "Zoom mode (shortcut: Z)"} placement="top">
               <Button
                 onClick={() => setZoomMode(v => !v)}
                 color="primary"

@@ -54,7 +54,6 @@ const Visual = (props) => {
     setFocusedDataIndex,
     setDisplayMs,
     focusedDataIndex,
-    setFlipTimeLoading,
     downloadedTexts,
     setDownloadedTexts,
     releaseCode,
@@ -125,6 +124,8 @@ const Visual = (props) => {
   const diffLoadTimerRef = useRef(null);
   // Debounce timer that batches React state updates during keyboard navigation.
   const navTimerRef = useRef(null);
+  // Tracks whether Shift is held while in zoom mode (for zoom-out cursor/behavior).
+  const shiftPressedRef = useRef(false);
   // Always-current state for the TOC marker D3 closures:
   const tocMarkersStateRef = useRef({});
   tocMarkersStateRef.current = { exp1: expandedTocMarkers1, exp2: expandedTocMarkers2 };
@@ -225,7 +226,7 @@ const Visual = (props) => {
     max,
     refLinesData = null,
     hoverLines = [{}, {}],
-    barWidth = 0.5,
+    barWidth = 1.5,
     barMaxHeight = 150,
     chunkSize = 300,
     connColor = "#FFCC66",
@@ -390,9 +391,16 @@ const Visual = (props) => {
     xScaleIdentity.domain(xIdentityDomain).range([1, width - 1]);
     x0Axis = d3.axisBottom(xScale1);
     x1Axis = d3.axisTop(xScale2).tickValues([1, max.book2]);
-    // Brush 1 covers the top bar panel; brush 2 covers the bottom bar panel:
-    brushHandle1.extent([[0, 0],              [width, barMaxHeight]]);
-    brushHandle2.extent([[0, barMaxHeight * 2],[width, barMaxHeight * 3]]);
+    // Brush extents follow the book reference lines (start=0, end=max.book).
+    // Function form so re-calling the brush recalculates with the current scale.
+    brushHandle1.extent(() => [
+      [Math.max(0, xScale1(0)),         0],
+      [Math.min(width, xScale1(max.book1)), barMaxHeight],
+    ]);
+    brushHandle2.extent(() => [
+      [Math.max(0, xScale2(0)),         barMaxHeight * 2],
+      [Math.min(width, xScale2(max.book2)), barMaxHeight * 3],
+    ]);
     refLinesData = [
       { x: 0,          y: 0,             yScale: y0Scale, solid: true,         xS: xScale1 },
       { x: max.book1,  y: 0,             yScale: y0Scale, solid: showBookEnd1,  xS: xScale1 },
@@ -446,7 +454,9 @@ const Visual = (props) => {
       .enter()
       .append("path")
       .attr("class", "connection")
-      .attr("stroke", connColor);
+      .attr("stroke", connColor)
+      .attr("stroke-width", 1.5)
+      .attr("fill", "none");
 
     connectionNodes.exit().remove();
     // --- Draw Connections Curves [END] :::
@@ -470,8 +480,9 @@ const Visual = (props) => {
     // --- Draw Book2 Bar Chart [END] :::
 
     // - Append Brushes (one per panel)
-    brushG.call(brushHandle1).select(".overlay");
-    brushG2.call(brushHandle2).select(".overlay");
+    brushG.call(brushHandle1);
+    brushG2.call(brushHandle2);
+    applyBrushCursor();
 
     // - Max Marking ::
     marksG
@@ -629,6 +640,11 @@ const Visual = (props) => {
     }
 
     drawTocMarkers();
+    // Reposition brush overlays to match the current scale (extent is function-based):
+    brushG.call(brushHandle1);
+    brushG2.call(brushHandle2);
+    applyBrushCursor();
+    if (zoomModeRef.current) { brushG.raise(); brushG2.raise(); }
     return t;
   }
 
@@ -772,26 +788,142 @@ const Visual = (props) => {
     }
 
     drawTocMarkers();
+    // Reposition brush overlays to match the current scale (extent is function-based):
+    brushG.call(brushHandle1);
+    brushG2.call(brushHandle2);
+    applyBrushCursor();
+    if (zoomModeRef.current) { brushG.raise(); brushG2.raise(); }
     return t;
   }
 
   /////////////// CHART HELPER FUNCTIONS: INTERACTIONS ////////////////////
 
+  // Force cursor as CSS style so it wins over D3's SVG cursor attribute.
+  function applyBrushCursor() {
+    if (!zoomModeRef.current) return;
+    const cur = shiftPressedRef.current ? "zoom-out" : "zoom-in";
+    brushG?.select(".overlay").style("cursor", cur);
+    brushG2?.select(".overlay").style("cursor", cur);
+  }
+
+  function zoomOutDomain(scale, identityDomain, bookMax, sel, sourceEvent) {
+    // Compute a 2× zoom-out centered on the midpoint of the brush/click.
+    const [px] = sel ? [(sel[0] + sel[1]) / 2] : [d3.pointer(sourceEvent, brushG.node())[0]];
+    const midMs   = scale.invert(px);
+    const curDomain = scale.domain();
+    const curSpan   = curDomain[1] - curDomain[0];
+    const fullSpan  = identityDomain[1] - identityDomain[0];
+    const newSpan   = Math.min(curSpan * 2, fullSpan);
+    if (newSpan >= fullSpan) return null; // already at full range → reset
+    const rawMin = midMs - newSpan / 2;
+    const newMin = Math.max(0, rawMin);
+    const newMax = Math.min(bookMax, newMin + newSpan);
+    return [newMax === bookMax ? Math.max(0, bookMax - newSpan) : newMin, newMax];
+  }
+
+  // Find the data point whose x position on the given scale is closest to targetPx.
+  function nearestBar(scale, getMs, targetPx) {
+    const data = filteredDataSetsRef.current;
+    if (!data.length) return null;
+    return data.reduce((best, d) => {
+      const dist = Math.abs(scale(Number(getMs(d))) - targetPx);
+      return dist < Math.abs(scale(Number(getMs(best))) - targetPx) ? d : best;
+    });
+  }
+
   function brushEnded1(e) {
     if (!e.sourceEvent) return;
     var sel = e.selection;
-    if (!sel) return;
-    currentXDomain1 = sel.map(d => Math.max(0, Math.round(xScale1.invert(d))));
-    xScale1.domain(currentXDomain1);
+
+    if (!zoomModeRef.current) {
+      // Normal mode: drag to select nearest bar, click-in-empty-space to deselect.
+      const getMs = d => isFlipped ? d.seq2 : d.seq1;
+      const bookNum = isFlipped ? 2 : 1;
+      if (sel) {
+        const mid = (sel[0] + sel[1]) / 2;
+        const data = filteredDataSetsRef.current;
+        // Prefer a bar inside the dragged range; fall back to nearest overall.
+        const inRange = data.filter(d => {
+          const x = xScale1(Number(getMs(d)));
+          return x >= sel[0] && x <= sel[1];
+        });
+        const target = inRange.length
+          ? inRange.reduce((a, b) => Math.abs(xScale1(Number(getMs(a))) - mid) <= Math.abs(xScale1(Number(getMs(b))) - mid) ? a : b)
+          : nearestBar(xScale1, getMs, mid);
+        if (target) { clickToSelect(null, target, bookNum); panToAlignment(target); }
+      } else {
+        clearSelectedLine(); // click in empty space → deselect
+      }
+      brushG.call(brushHandle1.move, null);
+      return;
+    }
+
+    if (e.sourceEvent.shiftKey) {
+      const newDomain = zoomOutDomain(xScale1, xIdentityDomain, max.book1, sel, e.sourceEvent);
+      currentXDomain1 = newDomain; // null = full reset handled in setLayout
+      xScale1.domain(newDomain || xIdentityDomain);
+    } else {
+      if (!sel) {
+        // Click without drag: zoom in 2× centered on click position.
+        const [px] = d3.pointer(e.sourceEvent, brushG.node());
+        const mid = xScale1.invert(px);
+        const span = Math.max((xScale1.domain()[1] - xScale1.domain()[0]) / 2, 1);
+        const lo = Math.max(0, mid - span / 2);
+        const hi = Math.min(max.book1, lo + span);
+        currentXDomain1 = [hi === max.book1 ? Math.max(0, max.book1 - span) : lo, hi];
+        xScale1.domain(currentXDomain1);
+      } else {
+        currentXDomain1 = sel.map(d => Math.max(0, Math.round(xScale1.invert(d))));
+        xScale1.domain(currentXDomain1);
+      }
+    }
     zoom();
   }
 
   function brushEnded2(e) {
     if (!e.sourceEvent) return;
     var sel = e.selection;
-    if (!sel) return;
-    currentXDomain2 = sel.map(d => Math.max(0, Math.round(xScale2.invert(d))));
-    xScale2.domain(currentXDomain2);
+
+    if (!zoomModeRef.current) {
+      const getMs = d => isFlipped ? d.seq1 : d.seq2;
+      const bookNum = isFlipped ? 1 : 2;
+      if (sel) {
+        const mid = (sel[0] + sel[1]) / 2;
+        const data = filteredDataSetsRef.current;
+        const inRange = data.filter(d => {
+          const x = xScale2(Number(getMs(d)));
+          return x >= sel[0] && x <= sel[1];
+        });
+        const target = inRange.length
+          ? inRange.reduce((a, b) => Math.abs(xScale2(Number(getMs(a))) - mid) <= Math.abs(xScale2(Number(getMs(b))) - mid) ? a : b)
+          : nearestBar(xScale2, getMs, mid);
+        if (target) { clickToSelect(null, target, bookNum); panToAlignment(target); }
+      } else {
+        clearSelectedLine();
+      }
+      brushG2.call(brushHandle2.move, null);
+      return;
+    }
+
+    if (e.sourceEvent.shiftKey) {
+      const newDomain = zoomOutDomain(xScale2, xIdentityDomain, max.book2, sel, e.sourceEvent);
+      currentXDomain2 = newDomain;
+      xScale2.domain(newDomain || xIdentityDomain);
+    } else {
+      if (!sel) {
+        // Click without drag: zoom in 2× centered on click position.
+        const [px] = d3.pointer(e.sourceEvent, brushG2.node());
+        const mid = xScale2.invert(px);
+        const span = Math.max((xScale2.domain()[1] - xScale2.domain()[0]) / 2, 1);
+        const lo = Math.max(0, mid - span / 2);
+        const hi = Math.min(max.book2, lo + span);
+        currentXDomain2 = [hi === max.book2 ? Math.max(0, max.book2 - span) : lo, hi];
+        xScale2.domain(currentXDomain2);
+      } else {
+        currentXDomain2 = sel.map(d => Math.max(0, Math.round(xScale2.invert(d))));
+        xScale2.domain(currentXDomain2);
+      }
+    }
     zoom();
   }
 
@@ -1067,7 +1199,7 @@ const Visual = (props) => {
     filterSelected(d1, getConnections())
       .transition()
       .attr("stroke", connColor)
-      .attr("stroke-width", null)
+      .attr("stroke-width", 1.5)
       .attr("opacity", opacityOnMouseOut);
 
     filterSelected(d1, getBars())
@@ -1087,7 +1219,6 @@ const Visual = (props) => {
     const myGen = ++diffLoadGenRef.current;
     // Ensure the selection state is consistent when called via double-click or keyboard Enter:
     if (d1 !== selectedLine) clickToSelect(e, d1);
-    setFlipTimeLoading(true);
     setFocusedDataIndex(null);
     const versionCode1 = metaData?.book1?.versionCode;
     const versionCode2 = metaData?.book2?.versionCode;
@@ -1236,8 +1367,8 @@ const Visual = (props) => {
     
     document.getElementById("belowBooks").scrollIntoView({ behavior: "smooth", block: "end" });
     // Bail if the user navigated away while this load was in flight.
-    if (diffLoadGenRef.current !== myGen) { setFlipTimeLoading(false); return; }
-    if (d1 === selectedLine) { setFlipTimeLoading(false); return; }
+    if (diffLoadGenRef.current !== myGen) { return; }
+    if (d1 === selectedLine) { return; }
 
     selectedLine && clearSelectedLine();
     selectedLine = d1;
@@ -1260,8 +1391,6 @@ const Visual = (props) => {
     function filterHidden(d) {
       return d.hidden;
     }
-
-    setFlipTimeLoading(false);
   }
 
   function clearSelectedLine() {
@@ -1274,7 +1403,7 @@ const Visual = (props) => {
     getConnections()
       .each(function(d) { d.hidden = false; })
       .attr("stroke", connColor)
-      .attr("stroke-width", null)
+      .attr("stroke-width", 1.5)
       .attr("opacity", null);
     getBars()
       .each(function(d) { d.hidden = false; })
@@ -1392,6 +1521,34 @@ const Visual = (props) => {
     createChart();
     // Clicking empty SVG space clears the current selection:
     svgD3.on("click", () => clearSelectedLineRef.current?.());
+    // Ctrl+scroll zooms the panel under the cursor.
+    svgD3.on("wheel.ctrl-zoom", (e) => {
+      if (!e.ctrlKey) return;
+      e.preventDefault();
+      const [mouseX, mouseY] = d3.pointer(e, drawingG.node());
+      const factor = e.deltaY > 0 ? 1.5 : 1 / 1.5;  // scroll down = zoom out
+      const zoomPanel = (scale, bookMax, getCurrent, setCurrent) => {
+        const midMs = scale.invert(mouseX);
+        const curDomain = scale.domain();
+        const curSpan = curDomain[1] - curDomain[0];
+        const fullSpan = xIdentityDomain[1] - xIdentityDomain[0];
+        const newSpan = Math.min(curSpan * factor, fullSpan);
+        if (newSpan >= fullSpan) { setCurrent(null); scale.domain(xIdentityDomain); return; }
+        const rawMin = midMs - newSpan / 2;
+        const newMin = Math.max(0, rawMin);
+        const newMax = Math.min(bookMax, newMin + newSpan);
+        const adjustedMin = newMax === bookMax ? Math.max(0, bookMax - newSpan) : newMin;
+        const d = [adjustedMin, newMax];
+        setCurrent(d); scale.domain(d);
+      };
+      if (mouseY >= 0 && mouseY <= barMaxHeight) {
+        zoomPanel(xScale1, max.book1, () => currentXDomain1, d => { currentXDomain1 = d; });
+        zoom();
+      } else if (mouseY >= barMaxHeight * 2 && mouseY <= barMaxHeight * 3) {
+        zoomPanel(xScale2, max.book2, () => currentXDomain2, d => { currentXDomain2 = d; });
+        zoom();
+      }
+    });
     setLayout();
     drawChart();
     getConnections();
@@ -1406,13 +1563,21 @@ const Visual = (props) => {
     // Re-apply zoom mode z-order and pointer-events after SVG rebuild
     // (createChart always places brushes at the bottom):
     if (zoomModeRef.current) {
+      brushG.style("display", null);
+      brushG2.style("display", null);
       brushG.raise();
       brushG2.raise();
       brushG.style("pointer-events", null);
       brushG2.style("pointer-events", null);
+      brushG.select(".overlay").style("cursor", "zoom-in");
+      brushG2.select(".overlay").style("cursor", "zoom-in");
     } else {
-      brushG.style("pointer-events", "none");
-      brushG2.style("pointer-events", "none");
+      brushG.style("display", null);
+      brushG2.style("display", null);
+      brushG.style("pointer-events", null);
+      brushG2.style("pointer-events", null);
+      brushG.select(".overlay").style("cursor", null);
+      brushG2.select(".overlay").style("cursor", null);
     }
   };
 
@@ -1420,16 +1585,44 @@ const Visual = (props) => {
   // In normal mode: lower them back to the bottom so bars receive events naturally.
   useEffect(() => {
     if (zoomMode) {
+      brushGRef.current?.style("display", null);
+      brushG2Ref.current?.style("display", null);
       brushGRef.current?.raise();
       brushG2Ref.current?.raise();
       brushGRef.current?.style("pointer-events", null);
       brushG2Ref.current?.style("pointer-events", null);
+      brushGRef.current?.select(".overlay").style("cursor", "zoom-in");
+      brushG2Ref.current?.select(".overlay").style("cursor", "zoom-in");
+
+      const onKeyDown = (e) => {
+        if (e.key === "Shift" && !shiftPressedRef.current) {
+          shiftPressedRef.current = true;
+          brushGRef.current?.select(".overlay").style("cursor", "zoom-out");
+          brushG2Ref.current?.select(".overlay").style("cursor", "zoom-out");
+        }
+      };
+      const onKeyUp = (e) => {
+        if (e.key === "Shift") {
+          shiftPressedRef.current = false;
+          brushGRef.current?.select(".overlay").style("cursor", "zoom-in");
+          brushG2Ref.current?.select(".overlay").style("cursor", "zoom-in");
+        }
+      };
+      document.addEventListener("keydown", onKeyDown);
+      document.addEventListener("keyup",   onKeyUp);
+      return () => {
+        document.removeEventListener("keydown", onKeyDown);
+        document.removeEventListener("keyup",   onKeyUp);
+        shiftPressedRef.current = false;
+      };
     } else {
       // Restore original order: brushG first, brushG2 second (lowest z-order).
       brushG2Ref.current?.lower();
       brushGRef.current?.lower();
-      brushGRef.current?.style("pointer-events", "none");
-      brushG2Ref.current?.style("pointer-events", "none");
+      brushGRef.current?.style("pointer-events", null);
+      brushG2Ref.current?.style("pointer-events", null);
+      brushGRef.current?.select(".overlay").style("cursor", null);
+      brushG2Ref.current?.select(".overlay").style("cursor", null);
     }
   }, [zoomMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -1525,11 +1718,18 @@ const Visual = (props) => {
   // Keyboard navigation for selected alignment.
   useEffect(() => {
     const handleKeyDown = (e) => {
+      const tag = document.activeElement?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || document.activeElement?.isContentEditable) return;
+
+      // Z toggles zoom mode regardless of current state.
+      if (e.key === 'z' || e.key === 'Z') {
+        setZoomMode(v => !v);
+        return;
+      }
+
       if (zoomModeRef.current) return;
       const cur = selectedDRef.current;
       if (!cur) return;
-      const tag = document.activeElement?.tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || document.activeElement?.isContentEditable) return;
 
       const { sorted, sortedBySeq2 } = navDataRef.current ?? {};
       if (!sorted) return;
