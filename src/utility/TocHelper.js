@@ -18,8 +18,13 @@ function findSections(starts, ms) {
 }
 
 function walkTree(sections, sectionId, trail = []) {
-  const { title, parent } = sections[sectionId];
-  trail.push(title);
+  const sec = sections[sectionId];
+  if (!sec) return trail;
+  const { title, parent, start_ms, end_ms } = sec;
+  const ms = start_ms != null
+    ? ` (ms ${start_ms}${end_ms != null && end_ms !== start_ms ? `–${end_ms}` : ''})`
+    : '';
+  trail.push(title + ms);
   if (parent) walkTree(sections, parent, trail);
   return trail;
 }

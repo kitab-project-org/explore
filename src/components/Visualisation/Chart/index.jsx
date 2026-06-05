@@ -16,6 +16,43 @@ import * as d3 from "d3";
 
 const TOC_ROW_HEIGHT = 16; // px per TOC marker row; shared by drawTocMarkers and margin calc
 
+// TOC navigation helpers (module-level, pure):
+function getTocSiblings(toc, id) {
+  if (!toc?.sections?.[id]) return [id];
+  const parent = toc.sections[id]?.parent;
+  return Object.keys(toc.sections)
+    .filter(sid => {
+      const p = toc.sections[sid]?.parent;
+      return (!parent && !p) || String(p) === String(parent);
+    })
+    .map(Number)
+    .sort((a, b) => (toc.sections[a]?.start_ms ?? 0) - (toc.sections[b]?.start_ms ?? 0));
+}
+function getTocChildren(toc, id) {
+  if (!toc?.sections) return [];
+  return Object.keys(toc.sections)
+    .filter(sid => String(toc.sections[sid]?.parent) === String(id))
+    .map(Number)
+    .sort((a, b) => (toc.sections[a]?.start_ms ?? 0) - (toc.sections[b]?.start_ms ?? 0));
+}
+// Tree-walk: at the last sibling, climb to the parent's next sibling (recursively).
+function getTocNext(toc, id) {
+  const siblings = getTocSiblings(toc, id);
+  const idx = siblings.indexOf(id);
+  if (idx < siblings.length - 1) return siblings[idx + 1];
+  const parent = toc.sections[id]?.parent;
+  if (parent != null) return getTocNext(toc, typeof parent === 'number' ? parent : parseInt(parent));
+  return null;
+}
+function getTocPrev(toc, id) {
+  const siblings = getTocSiblings(toc, id);
+  const idx = siblings.indexOf(id);
+  if (idx > 0) return siblings[idx - 1];
+  const parent = toc.sections[id]?.parent;
+  if (parent != null) return getTocPrev(toc, typeof parent === 'number' ? parent : parseInt(parent));
+  return null;
+}
+
 // Returns the maximum nesting depth of a TOC (0 if no TOC).
 function getMaxDepth(toc) {
   if (!toc?.sections) return 0;
@@ -104,6 +141,13 @@ const Visual = (props) => {
   // Expanded section IDs for the in-chart TOC triangle markers:
   const [expandedTocMarkers1, setExpandedTocMarkers1] = useState(new Set());
   const [expandedTocMarkers2, setExpandedTocMarkers2] = useState(new Set());
+  // Selected section ID per panel (for keyboard navigation):
+  const [selectedTocMarker1, setSelectedTocMarker1] = useState(null);
+  const [selectedTocMarker2, setSelectedTocMarker2] = useState(null);
+  // Which panel ('top'|'bottom') had the last TOC click — drives keyboard nav:
+  const activeTocPanelRef = useRef(null);
+  const selectedTocMarkerRef = useRef({ m1: null, m2: null });
+  selectedTocMarkerRef.current = { m1: selectedTocMarker1, m2: selectedTocMarker2 };
   // Always-current ref so closures (selectLineOnClicked) see the latest cache:
   const downloadedTextsRef = useRef(downloadedTexts);
   useEffect(() => { downloadedTextsRef.current = downloadedTexts; });
@@ -128,13 +172,18 @@ const Visual = (props) => {
   const shiftPressedRef = useRef(false);
   // Always-current state for the TOC marker D3 closures:
   const tocMarkersStateRef = useRef({});
-  tocMarkersStateRef.current = { exp1: expandedTocMarkers1, exp2: expandedTocMarkers2 };
+  tocMarkersStateRef.current = { exp1: expandedTocMarkers1, exp2: expandedTocMarkers2, sel1: selectedTocMarker1, sel2: selectedTocMarker2 };
   // Stable ref to drawTocMarkers so the expand-state useEffect can call the current closure:
   const drawTocMarkersRef = useRef(null);
+  // Stable ref to panToTocMarker so the keyboard handler can pan to off-screen triangles:
+  const panToTocMarkerRef = useRef(null);
+  // Stable ref to zoomToTocSection so the keyboard handler can zoom to a section's range:
+  const zoomToTocSectionRef = useRef(null);
   // Fetch TOC for each book (same URL pattern as MultiChart):
   useEffect(() => {
     setSelectedSections1(null);
     setExpandedTocMarkers1(new Set());
+    setSelectedTocMarker1(null);
     const vc = metaData?.book1?.versionCode?.split("-")[0];
     if (!vc || !releaseCode) return;
     let cancelled = false;
@@ -148,6 +197,7 @@ const Visual = (props) => {
   useEffect(() => {
     setSelectedSections2(null);
     setExpandedTocMarkers2(new Set());
+    setSelectedTocMarker2(null);
     const vc = metaData?.book2?.versionCode?.split("-")[0];
     if (!vc || !releaseCode) return;
     let cancelled = false;
@@ -160,7 +210,7 @@ const Visual = (props) => {
 
   // Always-current refs for section highlights (used inside D3 closures):
   const tocHighlightRef = useRef({});
-  tocHighlightRef.current = { toc1, toc2, sel1: selectedSections1, sel2: selectedSections2 };
+  tocHighlightRef.current = { toc1, toc2, sel1: selectedSections1, sel2: selectedSections2, isFlipped };
 
   // All datasets (unfiltered) for D3 rendering — zoom handles visibility via clip:
   const filteredDataSetsRef = useRef(chartData?.dataSets ?? []);
@@ -1002,14 +1052,18 @@ const Visual = (props) => {
     tocMarkersG.selectAll("*").remove();
     if (!includeTocMarkersRef.current) return;
 
-    const { exp1, exp2 } = tocMarkersStateRef.current;
+    const { exp1, exp2, sel1, sel2 } = tocMarkersStateRef.current;
     const { toc1: t1, toc2: t2 } = tocHighlightRef.current;
-    const topToc  = isFlipped ? t2 : t1;
-    const botToc  = isFlipped ? t1 : t2;
-    const topExp  = isFlipped ? exp2 : exp1;
-    const botExp  = isFlipped ? exp1 : exp2;
+    const topToc    = isFlipped ? t2 : t1;
+    const botToc    = isFlipped ? t1 : t2;
+    const topExp    = isFlipped ? exp2 : exp1;
+    const botExp    = isFlipped ? exp1 : exp2;
+    const topSel    = isFlipped ? sel2 : sel1;   // selected section in top panel
+    const botSel    = isFlipped ? sel1 : sel2;   // selected section in bottom panel
     const setTopExp = isFlipped ? setExpandedTocMarkers2 : setExpandedTocMarkers1;
     const setBotExp = isFlipped ? setExpandedTocMarkers1 : setExpandedTocMarkers2;
+    const setTopSel = isFlipped ? setSelectedTocMarker2 : setSelectedTocMarker1;
+    const setBotSel = isFlipped ? setSelectedTocMarker1 : setSelectedTocMarker2;
 
     const rowHeight = TOC_ROW_HEIGHT;
     const triSize   = 5;
@@ -1041,33 +1095,42 @@ const Visual = (props) => {
     }
 
     // Draw one row of triangles. inverted=true → up-pointing (bottom panel).
-    function drawRow(toc, ids, scale, yCenter, inverted, expanded, setExpanded) {
+    function drawRow(toc, ids, scale, yCenter, inverted, expanded, setExpanded, selectedId, setSelectedId) {
       ids.forEach(id => {
         const sec = toc.sections[id];
         if (!sec) return;
         const x = scale(sec.start_ms);
         if (x < -triSize || x > width + triSize) return;
         const isExpanded = expanded.has(id);
+        const isSelected = selectedId === id;
         const canExpand  = hasChildren(toc, id);
-        // ▼ down-pointing: flat top, tip at bottom
-        // ▲ up-pointing:   flat bottom, tip at top
         const path = inverted
           ? `M ${-triSize},${triSize} L ${triSize},${triSize} L 0,${-triSize} Z`
           : `M ${-triSize},${-triSize} L ${triSize},${-triSize} L 0,${triSize} Z`;
         const g = tocMarkersG.append("g")
           .attr("transform", `translate(${x},${yCenter})`)
-          .attr("cursor", canExpand ? "pointer" : "default");
+          .attr("data-toc-id", id)
+          .attr("cursor", "pointer");
         g.append("path")
           .attr("d", path)
           .attr("fill", isExpanded ? "#2862a5" : "#4a90d9")
-          .attr("fill-opacity", canExpand ? 0.85 : 0.4);
-        if (canExpand) {
-          g.on("click", () => setExpanded(prev => {
-            const next = new Set(prev);
-            next.has(id) ? next.delete(id) : next.add(id);
-            return next;
-          }));
-        }
+          .attr("fill-opacity", isSelected ? 1 : (canExpand ? 0.85 : 0.4))
+          .attr("stroke", isSelected ? "black" : "none")
+          .attr("stroke-width", isSelected ? 2 : 0);
+        g.on("click", (e) => {
+          e.stopPropagation(); // prevent SVG click from clearing the bar selection
+          // Select this triangle:
+          setSelectedId(id);
+          activeTocPanelRef.current = inverted ? 'bottom' : 'top';
+          // Expand/collapse if it has children:
+          if (canExpand) {
+            setExpanded(prev => {
+              const next = new Set(prev);
+              next.has(id) ? next.delete(id) : next.add(id);
+              return next;
+            });
+          }
+        });
         g.on("mouseover", (ev) => setToolTip(p => ({
           ...p, isActive: true, layerX: ev.layerX, layerY: ev.layerY,
           sectionTitle: getSectionHierarchy(toc, id),
@@ -1083,7 +1146,7 @@ const Visual = (props) => {
       const numRows = rows.length;
       rows.forEach((ids, rowIndex) => {
         const yCenter = -(numRows - rowIndex - 0.5) * rowHeight;
-        drawRow(topToc, ids, xScale1, yCenter, false, topExp, setTopExp);
+        drawRow(topToc, ids, xScale1, yCenter, false, topExp, setTopExp, topSel, setTopSel);
       });
     }
 
@@ -1094,9 +1157,40 @@ const Visual = (props) => {
       const numRows = rows.length;
       rows.forEach((ids, rowIndex) => {
         const yCenter = barBottom + (numRows - rowIndex - 0.5) * rowHeight;
-        drawRow(botToc, ids, xScale2, yCenter, true, botExp, setBotExp);
+        drawRow(botToc, ids, xScale2, yCenter, true, botExp, setBotExp, botSel, setBotSel);
       });
     }
+  }
+
+  // Zoom the appropriate panel to show exactly a section's milestone range.
+  function zoomToTocSection(toc, sectionId, useTop) {
+    const sec = toc?.sections?.[sectionId];
+    if (!sec || sec.start_ms == null) return;
+    const newDomain = [Math.max(0, sec.start_ms - 2), (sec.end_ms ?? sec.start_ms) + 2];
+    if (useTop) { currentXDomain1 = newDomain; xScale1.domain(newDomain); }
+    else        { currentXDomain2 = newDomain; xScale2.domain(newDomain); }
+    zoom();
+  }
+
+  // Pan the appropriate panel so a TOC triangle at `sectionId` is visible.
+  // useTop=true → top panel (xScale1/currentXDomain1), false → bottom (xScale2/currentXDomain2).
+  function panToTocMarker(toc, sectionId, useTop) {
+    const sec = toc?.sections?.[sectionId];
+    if (!sec) return;
+    const ms    = sec.start_ms;
+    const scale = useTop ? xScale1 : xScale2;
+    const px    = scale(ms);
+    if (px >= 0 && px <= width) return; // already visible
+    const domain   = scale.domain();
+    const span     = domain[1] - domain[0];
+    const bookMax  = useTop ? max.book1 : max.book2;
+    const newMin   = Math.max(0, ms - span / 2);
+    const newMax   = Math.min(bookMax, newMin + span);
+    const adjMin   = newMax === bookMax ? Math.max(0, bookMax - span) : newMin;
+    const newDomain = [adjMin, newMax];
+    if (useTop) { currentXDomain1 = newDomain; xScale1.domain(newDomain); }
+    else        { currentXDomain2 = newDomain; xScale2.domain(newDomain); }
+    zoom();
   }
 
   function panToAlignment(d1) {
@@ -1560,6 +1654,8 @@ const Visual = (props) => {
     clearSelectedLineRef.current = clearSelectedLine;
     panToAlignmentRef.current = panToAlignment;
     drawTocMarkersRef.current = drawTocMarkers;
+    panToTocMarkerRef.current = panToTocMarker;
+    zoomToTocSectionRef.current = zoomToTocSection;
     // Re-apply zoom mode z-order and pointer-events after SVG rebuild
     // (createChart always places brushes at the bottom):
     if (zoomModeRef.current) {
@@ -1631,10 +1727,10 @@ const Visual = (props) => {
     normalChart(); // eslint-disable-line react-hooks/exhaustive-deps
   }, [toc1, toc2, includeTocMarkers]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // When the user expands/collapses a marker row, just redraw the markers (no full rebuild).
+  // Redraw markers when expand state or selection changes.
   useEffect(() => {
     drawTocMarkersRef.current?.();
-  }, [expandedTocMarkers1, expandedTocMarkers2]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [expandedTocMarkers1, expandedTocMarkers2, selectedTocMarker1, selectedTocMarker2]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /////////////////////////////////////////////////////////////////////
 
@@ -1728,6 +1824,78 @@ const Visual = (props) => {
       }
 
       if (zoomModeRef.current) return;
+
+      // TOC triangle navigation (takes priority over bar navigation when a triangle is selected).
+      const { m1, m2 } = selectedTocMarkerRef.current;
+      const activePanel = activeTocPanelRef.current;
+      if (activePanel !== null && (m1 !== null || m2 !== null)) {
+        const { toc1: ct1, toc2: ct2, isFlipped: fl } = tocHighlightRef.current;
+        const toc       = activePanel === 'top' ? (fl ? ct2 : ct1) : (fl ? ct1 : ct2);
+        const currentId = activePanel === 'top' ? (fl ? m2  : m1)  : (fl ? m1  : m2);
+        const setSel    = activePanel === 'top'
+          ? (fl ? setSelectedTocMarker2 : setSelectedTocMarker1)
+          : (fl ? setSelectedTocMarker1 : setSelectedTocMarker2);
+        const setExp    = activePanel === 'top'
+          ? (fl ? setExpandedTocMarkers2 : setExpandedTocMarkers1)
+          : (fl ? setExpandedTocMarkers1 : setExpandedTocMarkers2);
+
+        if (toc && currentId !== null) {
+          const useTop = activePanel === 'top';
+          const panAfter = (id) => panToTocMarkerRef.current?.(toc, id, useTop);
+          // Show tooltip for the newly selected triangle.
+          const showTocTooltip = (id) => {
+            const el = document.querySelector(`#svgChart .toc-markers [data-toc-id="${id}"]`);
+            const boxRect = document.getElementById("chartBox")?.getBoundingClientRect();
+            if (!el || !boxRect) return;
+            const r = el.getBoundingClientRect();
+            setToolTip(p => ({
+              ...p, isActive: true,
+              layerX: r.left - boxRect.left + r.width / 2,
+              layerY: r.top  - boxRect.top  + r.height / 2,
+              sectionTitle: getSectionHierarchy(toc, id),
+            }));
+          };
+          // Auto-expand the newly selected section so its children become visible.
+          const autoExpand = (id) => {
+            if (getTocChildren(toc, id).length) {
+              setExp(prev => {
+                if (prev.has(id)) return prev;
+                const n = new Set(prev); n.add(id); return n;
+              });
+            }
+          };
+          const navigate = (id) => { setSel(id); autoExpand(id); panAfter(id); showTocTooltip(id); };
+          if (e.key === 'ArrowRight') {
+            e.preventDefault();
+            const next = getTocNext(toc, currentId);
+            if (next !== null) navigate(next);
+          } else if (e.key === 'ArrowLeft') {
+            e.preventDefault();
+            const prev = getTocPrev(toc, currentId);
+            if (prev !== null) navigate(prev);
+          } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            const parent = toc.sections[currentId]?.parent;
+            if (parent != null) navigate(typeof parent === 'number' ? parent : parseInt(parent));
+          } else if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            const children = getTocChildren(toc, currentId);
+            if (children.length) {
+              setExp(prev => { const n = new Set(prev); n.add(currentId); return n; });
+              navigate(children[0]);
+            }
+          } else if (e.key === 'Enter') {
+            e.preventDefault();
+            zoomToTocSectionRef.current?.(toc, currentId, useTop);
+          } else if (e.key === 'Escape') {
+            setSel(null);
+            activeTocPanelRef.current = null;
+            setToolTip(p => ({ ...p, isActive: false, sectionTitle: null }));
+          }
+          return; // consumed by TOC navigation
+        }
+      }
+
       const cur = selectedDRef.current;
       if (!cur) return;
 
