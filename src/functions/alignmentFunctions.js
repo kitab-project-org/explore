@@ -15,13 +15,13 @@ export const extractAlignment = (msText, startTok, endTok, token="word", release
         msText = msText.replace(doNotCountRegex, (m) => " ".repeat(m.length));
       } else {
         tokRegex = arCharRegexWithSpace;
-        if (relNo == 8) {
+        if (relNo === 8) {
           // remove all non-letter characters + digits + Latin letters (incl. those with diacritics)
-          let deleteRegex = new RegExp("[\P{L}\d"+transcription_chars+"]", "gu"); 
+          let deleteRegex = new RegExp("[\\P{L}\\d"+transcription_chars+"]", "gu");
           msText = msText.replace(deleteRegex, (m) => " ".repeat(m.length));
         } else {
           // remove all non-letter characters + digits + ASCII characters
-          let deleteRegex = new RegExp("[\P{L}\dA-Za-z]", "gu"); 
+          let deleteRegex = new RegExp("[\\P{L}\\dA-Za-z]", "gu");
           msText = msText.replace(deleteRegex, (m) => " ".repeat(m.length));
         }
       }  

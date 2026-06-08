@@ -8,10 +8,7 @@ import { imechToHtml } from "../../../utility/Helper";
 // (from openiti/helper/rgx.py: transcription_chars)
 const TRANSCRIPTION_RE = /[0-9a-zA-ZāĀăĂēĒĕĔṭṬṯṮūŪīĪĭĬİıōŌṣṢšŠḍḌḏḎǧǦġĠğĞḫḪḥḤḳḲẓẒžŽčČçÇñÑãÃáÁàÀäÄéÉèÈêÊëËïÏîÎôÔóÓòÒōÕöÖüÜûÛúÚùÙʿʾ' ]/u;
 
-// release 9+ token splitter and do-not-count patterns
-// tok_splitter = r"((?:\|[A-Z]+\|)|[\s~#|]+)"
-const TOK_SPLITTER = /(?:\|[A-Z]+\|)|[\s~#|]+/;
-// do_not_count patterns joined (simplified JS equivalents)
+// release 9+ do-not-count patterns (simplified JS equivalents)
 const DO_NOT_COUNT = /[|$][A-Z]+[|$]|@|\bY[A-Z]?\d+\b|(?:Folio|Page)(?:Beg|Beginning|End)?V|\bms[A-Z]?\d+|!\[[^\]]*\]\([^)]*\)|^\W*\d+\W+$/;
 
 /**
