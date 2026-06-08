@@ -53,26 +53,35 @@ function getTocPrev(toc, id) {
   return null;
 }
 
-// Returns the maximum nesting depth of a TOC (0 if no TOC).
+// Returns the visible rows of TOC triangles for a given expand state.
+// rows[0] = roots, rows[1] = visible children of expanded roots, etc.
+function getRows(toc, expanded) {
+  if (!toc?.sections) return [];
+  const allIds = Object.keys(toc.sections).map(Number);
+  const roots = allIds
+    .filter(id => !toc.sections[id]?.parent)
+    .sort((a, b) => (toc.sections[a]?.start_ms ?? 0) - (toc.sections[b]?.start_ms ?? 0));
+  if (roots.length === 0) return [];
+  const rows = [roots];
+  let current = roots;
+  while (current.length) {
+    const expandedSet = new Set(current.filter(id => expanded.has(id)).map(String));
+    if (!expandedSet.size) break;
+    const children = allIds
+      .filter(id => { const p = toc.sections[id]?.parent; return p != null && expandedSet.has(String(p)); })
+      .sort((a, b) => (toc.sections[a]?.start_ms ?? 0) - (toc.sections[b]?.start_ms ?? 0));
+    if (!children.length) break;
+    rows.push(children);
+    current = children;
+  }
+  return rows;
+}
+
+// Maximum number of TOC rows a tree can ever produce (used to reserve fixed SVG margin space).
 function getMaxDepth(toc) {
   if (!toc?.sections) return 0;
-  const children = {};
-  for (const id of Object.keys(toc.sections)) {
-    const p = toc.sections[id]?.parent;
-    if (!p) continue;
-    const key = String(p);
-    if (!children[key]) children[key] = [];
-    children[key].push(id);
-  }
-  let maxDepth = 0;
-  const dfs = (id, depth) => {
-    if (depth > maxDepth) maxDepth = depth;
-    (children[String(id)] || []).forEach(cid => dfs(cid, depth + 1));
-  };
-  Object.keys(toc.sections)
-    .filter(id => !toc.sections[id]?.parent)
-    .forEach(id => dfs(id, 1));
-  return maxDepth;
+  const allIds = new Set(Object.keys(toc.sections).map(Number));
+  return getRows(toc, allIds).length;
 }
 
 const Visual = (props) => {
@@ -170,6 +179,9 @@ const Visual = (props) => {
   const navTimerRef = useRef(null);
   // Tracks whether Shift is held while in zoom mode (for zoom-out cursor/behavior).
   const shiftPressedRef = useRef(false);
+  // Full SVG dimensions stored after setLayout so the viewBox crop can be applied without a full redraw.
+  const svgFullHeightRef = useRef(0);
+  const svgFullWidthRef  = useRef(0);
   // Always-current state for the TOC marker D3 closures:
   const tocMarkersStateRef = useRef({});
   tocMarkersStateRef.current = { exp1: expandedTocMarkers1, exp2: expandedTocMarkers2, sel1: selectedTocMarker1, sel2: selectedTocMarker2 };
@@ -288,7 +300,8 @@ const Visual = (props) => {
   //var margin =  { top: 40, right: 20, bottom: 20, left: 60 };
   var padding = { top: 40, right: 0,  bottom: 40, left: 40 };
 
-  // Extra margin to accommodate in-chart TOC marker rows (zero when markers are hidden).
+  // Fixed margin for the maximum possible TOC depth — keeps the SVG layout stable while
+  // the user expands/collapses levels (viewBox crop handles the visual trimming instead).
   const pvmTop    = visMargins.top    + (includeTocMarkers ? getMaxDepth(isFlipped ? toc2 : toc1) : 0) * TOC_ROW_HEIGHT;
   const pvmBottom = visMargins.bottom + (includeTocMarkers ? getMaxDepth(isFlipped ? toc1 : toc2) : 0) * TOC_ROW_HEIGHT;
 
@@ -406,6 +419,8 @@ const Visual = (props) => {
     console.log(visMargins);
 
     svgD3.attr("width", outerWidth - 30).attr("height", outerHeight);
+    svgFullHeightRef.current = outerHeight;
+    svgFullWidthRef.current  = outerWidth - 30;
 
     drawingG.attr(
       "transform",
@@ -986,6 +1001,11 @@ const Visual = (props) => {
     currentXDomain2 = null;
     setSelectedSections1(null);
     setSelectedSections2(null);
+    setExpandedTocMarkers1(new Set());
+    setExpandedTocMarkers2(new Set());
+    setSelectedTocMarker1(null);
+    setSelectedTocMarker2(null);
+    activeTocPanelRef.current = null;
     setToolTip({ isActive: false, layerX: 0, layerY: 0,
       data: { book1: { ms: "", pos1: "", pos2: "" }, book2: { ms: "", pos1: "", pos2: "" } } });
     normalChart();
@@ -1067,28 +1087,6 @@ const Visual = (props) => {
 
     const rowHeight = TOC_ROW_HEIGHT;
     const triSize   = 5;
-
-    // Build array-of-arrays: rows[0]=roots, rows[1]=visible children of expanded roots, etc.
-    function getRows(toc, expanded) {
-      if (!toc?.sections) return [];
-      const allIds = Object.keys(toc.sections).map(Number);
-      const roots = allIds
-        .filter(id => !toc.sections[id]?.parent)
-        .sort((a, b) => (toc.sections[a]?.start_ms ?? 0) - (toc.sections[b]?.start_ms ?? 0));
-      const rows = [roots];
-      let current = roots;
-      while (current.length) {
-        const expandedSet = new Set(current.filter(id => expanded.has(id)).map(String));
-        if (!expandedSet.size) break;
-        const children = allIds
-          .filter(id => { const p = toc.sections[id]?.parent; return p != null && expandedSet.has(String(p)); })
-          .sort((a, b) => (toc.sections[a]?.start_ms ?? 0) - (toc.sections[b]?.start_ms ?? 0));
-        if (!children.length) break;
-        rows.push(children);
-        current = children;
-      }
-      return rows;
-    }
 
     function hasChildren(toc, id) {
       return Object.values(toc.sections).some(s => String(s.parent) === String(id));
@@ -1677,6 +1675,8 @@ const Visual = (props) => {
       brushG.select(".overlay").style("cursor", null);
       brushG2.select(".overlay").style("cursor", null);
     }
+    // Crop unused TOC rows by adjusting viewBox to match the currently visible rows.
+    applySvgCrop();
   };
 
   // In zoom mode: raise brush groups above drawingG/marksG so the overlay intercepts all events.
@@ -1724,15 +1724,44 @@ const Visual = (props) => {
     }
   }, [zoomMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Crop the SVG height/viewBox to hide unused TOC rows without touching the coordinate system.
+  const applySvgCrop = () => {
+    const fullH = svgFullHeightRef.current;
+    const fullW = svgFullWidthRef.current;
+    if (!fullH || !fullW) return;
+    const topToc = isFlipped ? toc2 : toc1;
+    const botToc = isFlipped ? toc1 : toc2;
+    const topExp = isFlipped ? expandedTocMarkers2 : expandedTocMarkers1;
+    const botExp = isFlipped ? expandedTocMarkers1 : expandedTocMarkers2;
+    const visRows1 = includeTocMarkers ? getRows(topToc, topExp).length : 0;
+    const visRows2 = includeTocMarkers ? getRows(botToc, botExp).length : 0;
+    const maxD1    = includeTocMarkers ? getMaxDepth(topToc) : 0;
+    const maxD2    = includeTocMarkers ? getMaxDepth(botToc) : 0;
+    const offsetTop = (maxD1 - visRows1) * TOC_ROW_HEIGHT;
+    const offsetBot = (maxD2 - visRows2) * TOC_ROW_HEIGHT;
+    const croppedH  = fullH - offsetTop - offsetBot;
+    const svgEl = document.getElementById("svgChart");
+    if (svgEl) {
+      svgEl.setAttribute("height", croppedH);
+      svgEl.setAttribute("viewBox", `0 ${offsetTop} ${fullW} ${croppedH}`);
+    }
+  };
+
   // When TOC data arrives or marker visibility changes, rebuild so pvmTop/pvmBottom take effect.
   useEffect(() => {
     normalChart(); // eslint-disable-line react-hooks/exhaustive-deps
   }, [toc1, toc2, includeTocMarkers]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Redraw markers when expand state or selection changes.
+  // Expand/collapse: only update viewBox crop + redraw markers — no full chart rebuild.
+  useEffect(() => {
+    applySvgCrop(); // eslint-disable-line react-hooks/exhaustive-deps
+    drawTocMarkersRef.current?.();
+  }, [expandedTocMarkers1, expandedTocMarkers2]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Selection changes only affect marker styling, not layout.
   useEffect(() => {
     drawTocMarkersRef.current?.();
-  }, [expandedTocMarkers1, expandedTocMarkers2, selectedTocMarker1, selectedTocMarker2]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedTocMarker1, selectedTocMarker2]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /////////////////////////////////////////////////////////////////////
 

@@ -42,7 +42,6 @@ const TocFilter = ({ toc, selectedSectionIds, setSelectedSectionIds }) => {
     return result;
   }, [searchQuery, toc, children, topLevel]);
 
-  if (!toc) return null;
 
   const toggleSection = (id) => {
     const next = new Set(selectedSectionIds ?? []);
@@ -116,7 +115,10 @@ const TocFilter = ({ toc, selectedSectionIds, setSelectedSectionIds }) => {
         sx={{ width: "100%", mb: 1 }}
       />
       <Box sx={{ flex: 1, overflowY: "auto", border: "1px solid #ccc", borderRadius: 1, p: 1, minHeight: 0 }}>
-        {topLevel.map(id => renderSection(id))}
+        {(!toc || topLevel.length === 0)
+          ? <Typography sx={{ fontStyle: "italic", opacity: 0.6, textAlign: "center", p: 1 }}>(no table of contents available)</Typography>
+          : topLevel.map(id => renderSection(id))
+        }
       </Box>
       <Button
         size="small"
