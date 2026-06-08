@@ -21,7 +21,7 @@ const DiffGrid = ({ parsedBookAlignment, alignmentOnly, currentMs2, bc1, ec1, bc
   const {
     isFlipped, books, displayMs, setDisplayMs,
     normalizeAlif, normalizeYa, normalizeHa, removePunct, removeTags,
-    nSharedChars, nRefineChars,
+    nSharedChars, nRefineChars, bookIntoRows,
   } = useContext(Context);
 
   const [open, setOpen] = useState(false);
@@ -57,14 +57,13 @@ const DiffGrid = ({ parsedBookAlignment, alignmentOnly, currentMs2, bc1, ec1, bc
     return html;
   }
 
-  const [ctxBefore, setCtxBefore] = useState({ book1: "", book2: "" });
-  const [ctxAfter,  setCtxAfter]  = useState({ book1: "", book2: "" });
+  const [ctxBefore, setCtxBefore] = useState([]);
+  const [ctxAfter,  setCtxAfter]  = useState([]);
 
   useEffect(() => {
     if (alignmentOnly) return;
     let cancelled = false;
     const compute = async () => {
-      // build the context from the i.mech milestone texts
       const [br1, ar1] = buildContextRaw(
         books.book1.ms,
         parsedBookAlignment.beforeAlignment1, parsedBookAlignment.afterAlignment1,
@@ -75,25 +74,24 @@ const DiffGrid = ({ parsedBookAlignment, alignmentOnly, currentMs2, bc1, ec1, bc
         parsedBookAlignment.beforeAlignment2, parsedBookAlignment.afterAlignment2,
         displayMs.book2
       );
-      const [, b1Html, b2Html] = await kitabDiff(br1, br2, false, nSharedChars, nRefineChars);
+      const [, b1Html, b2Html] = await kitabDiff(br1, br2, bookIntoRows, nSharedChars, nRefineChars);
       if (cancelled) return;
-      const [, a1Html, a2Html] = await kitabDiff(ar1, ar2, false, nSharedChars, nRefineChars);
+      const [, a1Html, a2Html] = await kitabDiff(ar1, ar2, bookIntoRows, nSharedChars, nRefineChars);
       if (cancelled) return;
-      setCtxBefore({
-        book1: formatMsMarkers(b1Html),
-        book2: formatMsMarkers(b2Html),
-      });
-      setCtxAfter({ 
-        book1: formatMsMarkers(a1Html), 
-        book2: formatMsMarkers(a2Html) 
-      });
+      const toRows = (h1, h2) => {
+        const r1 = h1.split(/ *###NEW_ROW### */g);
+        const r2 = h2.split(/ *###NEW_ROW### */g);
+        return r1.map((r, i) => ({ book1: formatMsMarkers(r), book2: formatMsMarkers(r2[i] ?? "") }));
+      };
+      setCtxBefore(toRows(b1Html, b2Html));
+      setCtxAfter(toRows(a1Html, a2Html));
     };
     compute();
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [alignmentOnly, parsedBookAlignment, displayMs,
       normalizeAlif, normalizeYa, normalizeHa, removePunct, removeTags,
-      nSharedChars, nRefineChars, books.book1.ms, ms2]);
+      nSharedChars, nRefineChars, bookIntoRows, books.book1.ms, ms2]);
 
   const alignmentRows = [];
   const splitS1 = parsedBookAlignment.s1.split(/ *###NEW_ROW### */g);
@@ -107,9 +105,9 @@ const DiffGrid = ({ parsedBookAlignment, alignmentOnly, currentMs2, bc1, ec1, bc
   const handleClose = () => setOpen(false);
 
   const allRows = [
-    ...(alignmentOnly ? [] : [{ book1: ctxBefore.book1, book2: ctxBefore.book2 }]),
+    ...(alignmentOnly ? [] : ctxBefore),
     ...alignmentRows,
-    ...(alignmentOnly ? [] : [{ book1: ctxAfter.book1,  book2: ctxAfter.book2 }]),
+    ...(alignmentOnly ? [] : ctxAfter),
   ];
 
   return (
@@ -171,14 +169,16 @@ const DiffGrid = ({ parsedBookAlignment, alignmentOnly, currentMs2, bc1, ec1, bc
                   <NextMilestoneLoader alignmentOnly={alignmentOnly} displayMs={displayMs} setDisplayMs={setDisplayMs}
                     bookNo={isFlipped ? 1 : 2} books={books} previous={true} />
                 </TableRow>
-                <TableRow className={"diffTableRow"}>
-                  {columns.map(col => (
-                    <TableCell key={col.field} dir="rtl" align="right"
-                      sx={{ verticalAlign: "top" }} className={"diffTableCell"}
-                      dangerouslySetInnerHTML={{ __html: ctxBefore[col.field] }}
-                    />
-                  ))}
-                </TableRow>
+                {ctxBefore.map((row, rowIndex) => (
+                  <TableRow key={rowIndex} className={"diffTableRow"}>
+                    {columns.map(col => (
+                      <TableCell key={col.field} dir="rtl" align="right"
+                        sx={{ verticalAlign: "top" }} className={"diffTableCell"}
+                        dangerouslySetInnerHTML={{ __html: row[col.field] }}
+                      />
+                    ))}
+                  </TableRow>
+                ))}
               </>
             )}
 
@@ -200,14 +200,16 @@ const DiffGrid = ({ parsedBookAlignment, alignmentOnly, currentMs2, bc1, ec1, bc
             {/* Context after alignment */}
             {!alignmentOnly && (
               <>
-                <TableRow className={"diffTableRow"}>
-                  {columns.map(col => (
-                    <TableCell key={col.field} dir="rtl" align="right"
-                      sx={{ verticalAlign: "top" }} className={"diffTableCell"}
-                      dangerouslySetInnerHTML={{ __html: ctxAfter[col.field] }}
-                    />
-                  ))}
-                </TableRow>
+                {ctxAfter.map((row, rowIndex) => (
+                  <TableRow key={rowIndex} className={"diffTableRow"}>
+                    {columns.map(col => (
+                      <TableCell key={col.field} dir="rtl" align="right"
+                        sx={{ verticalAlign: "top" }} className={"diffTableCell"}
+                        dangerouslySetInnerHTML={{ __html: row[col.field] }}
+                      />
+                    ))}
+                  </TableRow>
+                ))}
                 <TableRow className={"diffTableRow"}>
                   <NextMilestoneLoader alignmentOnly={alignmentOnly} displayMs={displayMs} setDisplayMs={setDisplayMs}
                     bookNo={isFlipped ? 2 : 1} books={books} previous={false} />
