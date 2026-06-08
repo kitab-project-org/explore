@@ -316,7 +316,7 @@ const ScatterPlot = (props) => {
           book2: {
             versionCode: versionCode2,
             title: chartData.bookUriDict[d.id2]?.[0] ?? d.id2,
-            content: b2Downloaded,
+            content: b2Downloaded?.msTexts,
             ms: d?.ms2,
             first_ms: null,
             last_ms: null,
