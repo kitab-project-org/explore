@@ -1410,7 +1410,7 @@ const Visual = (props) => {
         book2: {
           versionCode: versionCode2,
           title: metaData?.book2?.bookTitle?.label,
-          content: b2Downloaded,
+          content: b2Downloaded?.msTexts,
           ms: d1?.seq2,
         },
       });
