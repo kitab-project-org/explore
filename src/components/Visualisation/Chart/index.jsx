@@ -3,7 +3,7 @@ import { useContext, useEffect, useState, useRef } from "react";
 //import { useSearchParams } from "react-router-dom";
 import Section, { MetadataSvg } from "../Metadata/Section";
 import TocFilter from "../MultiChart/filters/TocFilter";
-import { getSectionHierarchy } from "../../../utility/TocHelper";
+import { getSectionHierarchy, getMilestoneHeadings } from "../../../utility/TocHelper";
 import MSToggler from "../SectionHeader/MSToggler";
 import SectionHeaderLayout from "../SectionHeader/SectionHeaderLayout";
 import VisualizationHeader from "../SectionHeader/VisualizationHeader";
@@ -1426,13 +1426,15 @@ const Visual = (props) => {
         ms1Text,
         d1?.bw1,
         d1?.ew1,
-        "word"
+        "word",
+        releaseCode
       );
       let [s2, startChar2, endChar2] = extractAlignment(
         ms2Text,
         d1?.bw2,
         d1?.ew2,
-        "word"
+        "word",
+        releaseCode
       );
 
       let beforeAlignment1 = ms1Text.slice(0, startChar1);
@@ -2082,6 +2084,24 @@ const Visual = (props) => {
                     : toolTip?.data?.book1?.pos2
                 }`}
               </Typography>
+              {(() => {
+                const toc = isFlipped ? toc2 : toc1;
+                const ms = isFlipped ? toolTip?.data?.book2?.ms : toolTip?.data?.book1?.ms;
+                const headings = getMilestoneHeadings(toc, ms);
+                if (!headings){
+                  return <Typography 
+                            sx={{ fontSize: "12px", fontStyle: "italic", opacity: 0.7 }}
+                          >
+                            (no table of contents available)
+                          </Typography>;
+                }
+                return headings ? (
+                  <>
+                    <Typography sx={{ fontSize: "12px", fontWeight: "bold" }}>Section(s):</Typography>
+                    <div style={{ fontSize: "12px" }} dangerouslySetInnerHTML={{ __html: headings }} />
+                  </>
+                ) : null;
+              })()}
               <Typography sx={{ fontSize: "12px" }} fontWeight={"bold"}>
                 Book 2{" "}
                 {isFlipped
@@ -2104,6 +2124,24 @@ const Visual = (props) => {
                     : toolTip?.data?.book2?.pos2
                 }`}
               </Typography>
+              {(() => {
+                const toc = isFlipped ? toc1 : toc2;
+                const ms = isFlipped ? toolTip?.data?.book1?.ms : toolTip?.data?.book2?.ms;
+                const headings = getMilestoneHeadings(toc, ms);
+                if (!headings){
+                  return <Typography 
+                            sx={{ fontSize: "12px", fontStyle: "italic", opacity: 0.7 }}
+                          >
+                            (no table of contents available)
+                          </Typography>;
+                }
+                return headings ? (
+                  <>
+                    <Typography sx={{ fontSize: "12px", fontWeight: "bold" }}>Section(s):</Typography>
+                    <div style={{ fontSize: "12px" }} dangerouslySetInnerHTML={{ __html: headings }} />
+                  </>
+                ) : null;
+              })()}
               {toolTip.isSelected ? (
                 <Typography sx={{ fontSize: "11px", mt: "6px", fontStyle: "italic", opacity: 0.85 }}>
                   Press Enter to view aligned text - Right/Left arrow to navigate · Up/Down arrow to switch book · Escape to deselect
