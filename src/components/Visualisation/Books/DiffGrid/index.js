@@ -226,7 +226,7 @@ const DiffGrid = ({ parsedBookAlignment, alignmentOnly, currentMs2, bc1, ec1, bc
                   <TableCell
                     key={`${rowIndex}-${col.field}`}
                     dir="rtl" align="right"
-                    sx={{ verticalAlign: "top", fontWeight: "bold" }}
+                    sx={{ verticalAlign: "top", fontWeight: alignmentOnly ? "normal" : "bold" }}
                     className={"diffTableCell"}
                     dangerouslySetInnerHTML={{ __html: row[col.field] }}
                   />
