@@ -212,6 +212,7 @@ input[type="search"]::-webkit-search-cancel-button {
   text-align: center;
   font-size: 14px;
   color: #059669;
+  background-color: white;
 }
 .pageNo {
   text-align: center;

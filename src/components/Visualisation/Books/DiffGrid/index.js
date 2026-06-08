@@ -51,8 +51,11 @@ const DiffGrid = ({ parsedBookAlignment, alignmentOnly, currentMs2, bc1, ec1, bc
   };
 
   // Replace MS_START_N markers in diff HTML output with milestone heading markup.
-  const insertMsHeadings = (html) =>
-    html.replace(/MS_START_(\d+)/g, '<br/><span class="msNo">(start of ms$1)</span> ');
+  const formatMsMarkers = (html) => {
+    html = html.replace(/MS_START_(\d+)/g, '<span class="msNo"><br/>(start of ms$1)<br/></span>');
+    html = html.replace(/<span class="\w+">MS_START_(\d*)<\/span>\s*<span class="(\w+)">?(\d+)/g, '<span class="msNo"><br/>(start of ms$1$3)<br/></span> <span class="$2">');
+    return html;
+  }
 
   const [ctxBefore, setCtxBefore] = useState({ book1: "", book2: "" });
   const [ctxAfter,  setCtxAfter]  = useState({ book1: "", book2: "" });
@@ -61,6 +64,7 @@ const DiffGrid = ({ parsedBookAlignment, alignmentOnly, currentMs2, bc1, ec1, bc
     if (alignmentOnly) return;
     let cancelled = false;
     const compute = async () => {
+      // build the context from the i.mech milestone texts
       const [br1, ar1] = buildContextRaw(
         books.book1.ms,
         parsedBookAlignment.beforeAlignment1, parsedBookAlignment.afterAlignment1,
@@ -75,8 +79,14 @@ const DiffGrid = ({ parsedBookAlignment, alignmentOnly, currentMs2, bc1, ec1, bc
       if (cancelled) return;
       const [, a1Html, a2Html] = await kitabDiff(ar1, ar2, false, nSharedChars, nRefineChars);
       if (cancelled) return;
-      setCtxBefore({ book1: insertMsHeadings(b1Html), book2: insertMsHeadings(b2Html) });
-      setCtxAfter({ book1: insertMsHeadings(a1Html), book2: insertMsHeadings(a2Html) });
+      setCtxBefore({
+        book1: formatMsMarkers(b1Html),
+        book2: formatMsMarkers(b2Html),
+      });
+      setCtxAfter({ 
+        book1: formatMsMarkers(a1Html), 
+        book2: formatMsMarkers(a2Html) 
+      });
     };
     compute();
     return () => { cancelled = true; };
