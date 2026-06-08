@@ -1,20 +1,39 @@
-import { arTokRegex, arCharRegexWithSpace } from "../assets/js/openITI.js";
+import { arTokRegex, arCharRegexWithSpace, anyLetterOrDigitRegexWithSpace, doNotCountRegex, transcription_chars } from "../assets/js/openITI.js";
 
 // extract the alignment from a milestone text
-export const extractAlignment = (msText, startTok, endTok, token="word") => {
+// releaseVersion: release code string (e.g. "2024.1.9"); determines which
+// char regex to use for "char" token mode (>= v9: with digits, < v9: without).
+export const extractAlignment = (msText, startTok, endTok, token="word", releaseVersion=null) => {
     let tokRegex;
     if (token === "word"){
       tokRegex = arTokRegex;
     } else {
-      tokRegex = arCharRegexWithSpace;
+      const nums = (releaseVersion ?? "").match(/\d+/g) ?? [];
+      const relNo = nums.length ? parseInt(nums[nums.length - 1], 10) : 0;
+      if (relNo >= 9){
+        tokRegex = anyLetterOrDigitRegexWithSpace;
+        msText = msText.replace(doNotCountRegex, (m) => " ".repeat(m.length));
+      } else {
+        tokRegex = arCharRegexWithSpace;
+        if (relNo == 8) {
+          // remove all non-letter characters + digits + Latin letters (incl. those with diacritics)
+          let deleteRegex = new RegExp("[\P{L}\d"+transcription_chars+"]", "gu"); 
+          msText = msText.replace(deleteRegex, (m) => " ".repeat(m.length));
+        } else {
+          // remove all non-letter characters + digits + ASCII characters
+          let deleteRegex = new RegExp("[\P{L}\dA-Za-z]", "gu"); 
+          msText = msText.replace(deleteRegex, (m) => " ".repeat(m.length));
+        }
+      }  
+      tokRegex = relNo >= 9 ? anyLetterOrDigitRegexWithSpace : arCharRegexWithSpace;
     }
-    console.log("TOKEN TYPE: "+token);
-    console.log(tokRegex);
+    
     // get the start index of each Arabic token in the milestone text:
-    let tokenMatches = msText.matchAll(tokRegex);
+    //let tokenMatches = msText.matchAll(tokRegex);
     //console.log([...tokenMatches]);
     let tokenStartIndices = [];
-    for (const m of tokenMatches) {
+    for (const m of msText.matchAll(tokRegex)) {
+      //console.log(m);
       tokenStartIndices.push(m.index);
     }
     
@@ -22,8 +41,7 @@ export const extractAlignment = (msText, startTok, endTok, token="word") => {
     const startChar = tokenStartIndices[startTok] || 0;
     const endChar = tokenStartIndices[endTok] ||  msText.length;
     const alignment = msText.slice(startChar, endChar);
-    console.log(alignment);
-   
+       
     return [alignment, startChar, endChar];
   };
 /*

@@ -48,7 +48,7 @@ const Section = ({ data }) => {
               onClick={() => toggleSidePanel({ version_id: data?.versionCode, release_code: releaseCode }, 1)}
             >
               <Typography sx={{ fontSize: "12px" }}>
-                {isManuscript ? (data?.shelfmark ?? "N/A") : (data?.bookTitle?.label ?? "N/A")}
+                {isManuscript ? (data?.shelfmark.split(" :: ")[0] ?? "N/A") : (data?.bookTitle?.label.split(" :: ")[0] ?? "N/A")}
               </Typography>
             </Link>
           </Tooltip>
@@ -76,7 +76,7 @@ const Section = ({ data }) => {
               onClick={() => toggleSidePanel({ version_id: data?.versionCode, release_code: releaseCode }, 0)}
             >
               <Typography sx={{ fontSize: "12px" }}>
-                {isManuscript ? (data?.manuscriptHolding ?? "N/A") : (data?.bookAuthor ?? "N/A")}
+                {isManuscript ? (data?.manuscriptHolding.split(" :: ")[0] ?? "N/A") : (data?.bookAuthor.split(" :: ")[0] ?? "N/A")}
               </Typography>
             </Link>
           </Tooltip>
@@ -140,11 +140,11 @@ export const MetadataSvg = ({ id, data, svgWidth, marginLeft = 0 }) => {
     { label: 'Version Code', value: data?.versionCode ?? 'N/A' },
     {
       label: isManuscript ? 'Shelfmark' : 'Book Title',
-      value: isManuscript ? (data?.shelfmark ?? 'N/A') : (data?.bookTitle?.label ?? 'N/A'),
+      value: isManuscript ? (data?.shelfmark.split(" :: ")[0] ?? 'N/A') : (data?.bookTitle?.label.split(" :: ")[0] ?? 'N/A'),
     },
     {
       label: isManuscript ? 'Manuscript Holding' : 'Book Author',
-      value: isManuscript ? (data?.manuscriptHolding ?? 'N/A') : (data?.bookAuthor ?? 'N/A'),
+      value: isManuscript ? (data?.manuscriptHolding.split(" :: ")[0] ?? 'N/A') : (data?.bookAuthor.split(" :: ")[0] ?? 'N/A'),
     },
     ...(!isManuscript && data?.bookTitle?.path
       ? [{ label: 'Death Date', value: `${parseInt(data.bookTitle.path.slice(0, 4))} AH` }]

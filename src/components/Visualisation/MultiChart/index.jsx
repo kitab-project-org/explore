@@ -14,6 +14,8 @@ import SideBar from "./SideBar";
 import MultiFilter from "./MultiFilter";
 import TocFilter from "./filters/TocFilter";
 import ScatterLegend from "./ScatterLegend";
+import MilestoneTextPanel from "./MilestoneTextPanel";
+import { getMilestoneText } from "../../../functions/getMilestoneText";
 import SectionHeaderLayout from "../SectionHeader/SectionHeaderLayout";
 import VisualizationHeader from "../SectionHeader/VisualizationHeader";
 import { getHighestValueInArrayOfObjects, wrapTextToSvgWidth } from "../../../utility/Helper";
@@ -36,6 +38,8 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
     setSelectedMarker,
     axisLabelFontSize,
     setSelfReuseOnly,
+    downloadedTexts,
+    setDownloadedTexts,
   } = useContext(Context);
 
   const [searchParams, setSearchParams] = useSearchParams();
@@ -143,6 +147,13 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
   const mainBookMilestones = storedMainBookMilestones ?? Math.ceil(tokens.first / 300);
   const fullMilestoneRange = [1, mainBookMilestones];
 
+  const [milestoneTextInfo, setMilestoneTextInfo] = useState(null); // { ms_id, text, loading }
+  const [textFilter, setTextFilter] = useState(null); // { ms_id, start, end } char range
+  const textPanelRef = useRef(null);
+  useEffect(() => {
+    if (milestoneTextInfo) textPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [milestoneTextInfo]);
+
   // Memoize the entire filter + index pipeline so that array references are stable
   // when only selectedMarker changes (selectedMarker is not a dep here).
   const {
@@ -191,6 +202,15 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
     if (filterBooksToMsRange) {
       const idsWithData = new Set(msData.map(d => d.id2));
       bStats = bStats.filter(d => d.id === versionCode || idsWithData.has(d.id));
+    }
+
+    // Text-selection filter: keep only dots whose alignment overlaps the selected cleaned-char range.
+    if (textFilter) {
+      const { ms_id, cleanedStart, cleanedEnd } = textFilter;
+      msData = msData.filter(d =>
+        d.ms1 === ms_id &&
+        (d.alignments ?? []).some(a => a.b1 != null && a.e1 != null && a.b1 < cleanedEnd && a.e1 > cleanedStart)
+      );
     }
 
     // TOC section filter + Y axis zoom:
@@ -286,7 +306,7 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
     };
   }, [chartData, selfReuseOnly, mainAuthor, mainAuthorDate, mainBookURI, versionCode,
       dateRange, bookCharRange, bookAlignRange, msCharsRange, msRange, mainBookMilestones,
-      filterBooksToMsRange, selectedSectionIds, toc]); // eslint-disable-line react-hooks/exhaustive-deps
+      filterBooksToMsRange, selectedSectionIds, toc, textFilter]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Keep full ranges in a ref so restoreCanvas can be a stable useCallback:
   const fullRangesRef = useRef(null);
@@ -308,6 +328,9 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
     setMsCharsRange(r.fullMsCharsRange);
     setSelectedSectionIds(null);
     setFilterBooksToMsRange(false);
+    setTextFilter(null);
+    setMilestoneTextInfo(null);
+    setSelectedMs(null);
     r.setSelfReuseOnly(false);
     setSelectedMarker(null);
     setFilterResetKey(k => k + 1);
@@ -358,6 +381,14 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
   const handleSetSelectedMs  = useCallback((ms)  => { setSelectedMs(ms);   if (ms)  setSelectedBar(null); }, []);
   const handleSetSelectedBar = useCallback((bar) => { setSelectedBar(bar); if (bar) setSelectedMs(null);  }, []);
   const onUploadRequest = useCallback((d) => setUploadDialogBook(d), []);
+
+  const handleViewMilestoneText = useCallback(async (ms_id) => {
+    setMilestoneTextInfo({ ms_id, text: null, loading: true });
+    const text = await getMilestoneText(
+      releaseCode, versionCode, ms_id, downloadedTexts, setDownloadedTexts
+    );
+    setMilestoneTextInfo({ ms_id, text: text ?? null, loading: false });
+  }, [releaseCode, versionCode, downloadedTexts, setDownloadedTexts]); // eslint-disable-line react-hooks/exhaustive-deps
   const [filterResetKey, setFilterResetKey] = useState(0);
   const [showFilterPanel, setShowFilterPanel] = useState(false);
   const [toggle, setToggle] = useState(false);
@@ -591,6 +622,7 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
                 selectedMs={selectedMs}
                 setSelectedMs={handleSetSelectedMs}
                 statMetric={statMetric}
+                onViewMilestoneText={handleViewMilestoneText}
               />
             </div>
           </div>
@@ -608,6 +640,21 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
             setSelectedBar={handleSetSelectedBar}
             statMetric={statMetric}
           />
+          {milestoneTextInfo && (
+            <Box ref={textPanelRef} sx={{ mx: `${visMargins.left}px`, maxWidth: `${width + visMargins.right}px` }}>
+              <MilestoneTextPanel
+                ms_id={milestoneTextInfo.ms_id}
+                text={milestoneTextInfo.text}
+                loading={milestoneTextInfo.loading}
+                versionCode={versionCode}
+                releaseCode={releaseCode}
+                alignments={filteredMsData.filter(d => d.ms1 === milestoneTextInfo.ms_id)}
+                onClose={() => { setMilestoneTextInfo(null); setTextFilter(null); }}
+                onFilter={({ cleanedStart, cleanedEnd }) =>
+                  setTextFilter({ ms_id: milestoneTextInfo.ms_id, cleanedStart, cleanedEnd })}
+              />
+            </Box>
+          )}
           <Dialog
             open={uploadDialogBook !== null}
             onClose={() => setUploadDialogBook(null)}

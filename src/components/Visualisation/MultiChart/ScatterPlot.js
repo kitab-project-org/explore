@@ -281,8 +281,8 @@ const ScatterPlot = (props) => {
             const ms2Text = await getMilestoneText(
               releaseCode, versionCode2, al.ms2, downloadedTexts, setDownloadedTexts
             );
-            const [s1, startChar1, endChar1] = extractAlignment(ms1Text, al.b1, al.e1, "char");
-            const [s2, startChar2, endChar2] = extractAlignment(ms2Text, al.b2, al.e2, "char");
+            const [s1, startChar1, endChar1] = extractAlignment(ms1Text, al.b1, al.e1, "char", releaseCode);
+            const [s2, startChar2, endChar2] = extractAlignment(ms2Text, al.b2, al.e2, "char", releaseCode);
             return {
               ms2: al.ms2,
               s1,
@@ -302,11 +302,12 @@ const ScatterPlot = (props) => {
 
         let b1Downloaded = downloadedTexts[releaseCode][mainVersionCode]["downloadedMs"];
         let b2Downloaded = downloadedTexts[releaseCode][versionCode2]["downloadedMs"];
-
+        console.log("mainVersionCode:"+mainVersionCode);
+        console.log(chartData.bookUriDict[mainVersionCode]);
         setBooks({
           book1: {
             versionCode: mainVersionCode,
-            title: chartData.bookUriDict[mainVersionCode]?.[0] ?? mainVersionCode,
+            title: chartData.bookUriDict[mainVersionCode] ?? mainVersionCode,
             content: b1Downloaded?.msTexts,
             ms: d?.ms1,
             first_ms: null,

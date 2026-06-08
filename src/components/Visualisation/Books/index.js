@@ -268,6 +268,10 @@ const Books = ({ chartSpecificBar }) => {
                   isLeft={false}
                   alignmentOnly={alignmentOnly}
                   currentMs2={currentAlignment?.ms2}
+                  bc1={currentAlignment?.bc1}
+                  ec1={currentAlignment?.ec1}
+                  bc2={currentAlignment?.bc2}
+                  ec2={currentAlignment?.ec2}
                 />
               </>
             )}

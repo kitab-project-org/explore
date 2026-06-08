@@ -17,6 +17,8 @@ const SideBar = (props) => {
   useEffect(() => { selectedMsRef.current = selectedMs; });
   const msStatsRef = useRef(props.msStats);
   useEffect(() => { msStatsRef.current = props.msStats; });
+  const onViewMilestoneTextRef = useRef(props.onViewMilestoneText);
+  useEffect(() => { onViewMilestoneTextRef.current = props.onViewMilestoneText; });
   const statMetricRef = useRef(props.statMetric ?? "alignments");
   useEffect(() => { statMetricRef.current = props.statMetric ?? "alignments"; });
   const showSelectedTooltipRef = useRef(null);
@@ -217,7 +219,7 @@ const SideBar = (props) => {
       msg += `<br/>${persistLabel}: ` + d3.format(",")(persistVal);
       const headings = getMilestoneHeadings(tocRef.current, d.ms_id);
       if (headings) msg += "<br/><b>Section(s):</b>" + headings;
-      msg += "<br/><b>(Arrow keys to navigate - Escape to deselect)</b>";
+      msg += "<br/><b>(Arrow keys to navigate - Enter to view text - Escape to deselect)</b>";
       const bar = d3.select('#side-bar').selectAll('.bar').filter(b => b.ms_id === cur.ms_id);
       if (bar.empty()) return;
       const barRect = bar.node().getBoundingClientRect();
@@ -254,6 +256,9 @@ const SideBar = (props) => {
           setSelectedMs(nextMarker);
           showSelectedTooltipRef.current?.(nextMarker);
         }
+      } else if (e.key === 'Enter') {
+        const d = msStatsRef.current?.find(b => b.ms_id === cur.ms_id);
+        if (d) onViewMilestoneTextRef.current?.(cur.ms_id);
       } else if (e.key === 'Escape') {
         setSelectedMs(null);
       }
