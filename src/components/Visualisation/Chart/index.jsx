@@ -179,6 +179,8 @@ const Visual = (props) => {
   const navTimerRef = useRef(null);
   // Tracks whether Shift is held while in zoom mode (for zoom-out cursor/behavior).
   const shiftPressedRef = useRef(false);
+  // True after the first diff load; suppresses auto-scroll on subsequent arrow-key navigation.
+  const diffShownRef = useRef(false);
   // Full SVG dimensions stored after setLayout so the viewBox crop can be applied without a full redraw.
   const svgFullHeightRef = useRef(0);
   const svgFullWidthRef  = useRef(0);
@@ -1006,6 +1008,7 @@ const Visual = (props) => {
     setSelectedTocMarker1(null);
     setSelectedTocMarker2(null);
     activeTocPanelRef.current = null;
+    diffShownRef.current = false;
     setToolTip({ isActive: false, layerX: 0, layerY: 0,
       data: { book1: { ms: "", pos1: "", pos2: "" }, book2: { ms: "", pos1: "", pos2: "" } } });
     normalChart();
@@ -1459,7 +1462,10 @@ const Visual = (props) => {
     }
 
     
-    document.getElementById("belowBooks").scrollIntoView({ behavior: "smooth", block: "end" });
+    if (!diffShownRef.current) {
+      document.getElementById("belowBooks").scrollIntoView({ behavior: "smooth", block: "end" });
+      diffShownRef.current = true;
+    }
     // Bail if the user navigated away while this load was in flight.
     if (diffLoadGenRef.current !== myGen) { return; }
     if (d1 === selectedLine) { return; }
@@ -1785,6 +1791,11 @@ const Visual = (props) => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isFlipped]);
+
+  // Reset diff-shown flag when a new book pair is loaded.
+  useEffect(() => {
+    diffShownRef.current = false;
+  }, [chartData]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // redraw the chart when the margins change
   useEffect(() => {
