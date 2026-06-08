@@ -12,6 +12,7 @@ import {
 import NextMilestoneLoader from "../NextMilestoneLoader";
 import ExpandView from "../../Books/ExpandView";
 import { cleanBeforeDiff } from "../../../../utility/Helper";
+import { getMilestoneHeadings } from "../../../../utility/TocHelper";
 import { kitabDiff } from "../../../../assets/js/kitabDiff";
 import { Context } from "../../../../App";
 import "../../../../index.css";
@@ -21,8 +22,25 @@ const DiffGrid = ({ parsedBookAlignment, alignmentOnly, currentMs2, bc1, ec1, bc
   const {
     isFlipped, books, displayMs, setDisplayMs,
     normalizeAlif, normalizeYa, normalizeHa, removePunct, removeTags,
-    nSharedChars, nRefineChars, bookIntoRows,
+    nSharedChars, nRefineChars, bookIntoRows, releaseCode,
   } = useContext(Context);
+
+  const [toc1, setToc1] = useState(undefined);
+  const [toc2, setToc2] = useState(undefined);
+  useEffect(() => {
+    const vc = books.book1.versionCode?.split("-")[0];
+    if (!vc || !releaseCode) return;
+    fetch(`https://raw.githubusercontent.com/OpenITI/openiti_toc/refs/heads/v${releaseCode}/tocs/${vc}_TOC.json`)
+      .then(r => r.ok ? r.json() : null).then(setToc1).catch(() => setToc1(null));
+  }, [books.book1.versionCode, releaseCode]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    const vc = books.book2.versionCode?.split("-")[0];
+    if (!vc || !releaseCode) return;
+    fetch(`https://raw.githubusercontent.com/OpenITI/openiti_toc/refs/heads/v${releaseCode}/tocs/${vc}_TOC.json`)
+      .then(r => r.ok ? r.json() : null).then(setToc2).catch(() => setToc2(null));
+  }, [books.book2.versionCode, releaseCode]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const [secsOpen, setSecsOpen] = useState({ book1: true, book2: true });
 
   const [open, setOpen] = useState(false);
 
@@ -30,8 +48,8 @@ const DiffGrid = ({ parsedBookAlignment, alignmentOnly, currentMs2, bc1, ec1, bc
   const charRange1 = (bc1 != null && ec1 != null) ? `, chars ${bc1}–${ec1}` : "";
   const charRange2 = (bc2 != null && ec2 != null) ? `, chars ${bc2}–${ec2}` : "";
   let columns = [
-    { field: "book1", headerName: `${books.book1.title} (milestone ${books.book1.ms}${charRange1})` },
-    { field: "book2", headerName: `${books.book2.title} (milestone ${ms2}${charRange2})` },
+    { field: "book1", headerName: `${books.book1.title.split(" :: ")[0]} (milestone ${books.book1.ms}${charRange1})` },
+    { field: "book2", headerName: `${books.book2.title.split(" :: ")[0]} (milestone ${ms2}${charRange2})` },
   ];
   columns = isFlipped ? [...columns].reverse() : columns;
 
@@ -141,21 +159,40 @@ const DiffGrid = ({ parsedBookAlignment, alignmentOnly, currentMs2, bc1, ec1, bc
       <Table size="small" stickyHeader className="diffTable">
         <TableHead columns={columns} className="diffTableHeader">
           <TableRow className={"diffTableHeaderRow"}>
-            {columns.map((col, colIndex) => (
-              <TableCell
-                className={"diffHeaderCell"}
-                key={colIndex}
-                align="center"
-                style={{ width: "50%" }}
-              >
-                {col.headerName}
-                <Tooltip title="Expand View" placement="top">
-                  <IconButton onClick={() => handleOpen(col)} sx={{ ml: "10px" }}>
-                    <i className="fa-solid fa-expand" style={{ fontSize: "12px" }}></i>
-                  </IconButton>
-                </Tooltip>
-              </TableCell>
-            ))}
+            {columns.map((col, colIndex) => {
+              const toc = col.field === "book1" ? toc1 : toc2;
+              const ms  = col.field === "book1" ? books.book1.ms : ms2;
+              const headings = getMilestoneHeadings(toc, ms);
+              return (
+                <TableCell
+                  className={"diffHeaderCell"}
+                  key={colIndex}
+                  align="center"
+                  style={{ width: "50%", verticalAlign: "top", fontWeight: "bold" }}
+                >
+                  {col.headerName}
+                  <Tooltip title="Expand View" placement="top">
+                    <IconButton onClick={() => handleOpen(col)} sx={{ ml: "10px" }}>
+                      <i className="fa-solid fa-expand" style={{ fontSize: "12px" }}></i>
+                    </IconButton>
+                  </Tooltip>
+                  {toc !== undefined && (!headings
+                    ? <span style={{ display: "block", fontSize: "12px", fontStyle: "italic", opacity: 0.6 }}>(no table of contents available)</span>
+                    : <>
+                        <span
+                          style={{ display: "block", fontSize: "12px", fontWeight: "bold", cursor: "pointer", userSelect: "none", color: "#2862a5" }}
+                          onClick={() => setSecsOpen(prev => ({ ...prev, [col.field]: !prev[col.field] }))}
+                        >
+                          {secsOpen[col.field] ? "Hide section headers" : "Show section header(s)"}
+                        </span>
+                        {secsOpen[col.field] && (
+                          <div dir="rtl" style={{ fontSize: "12px", textAlign: "right" }} dangerouslySetInnerHTML={{ __html: headings }} />
+                        )}
+                      </>
+                  )}
+                </TableCell>
+              );
+            })}
           </TableRow>
         </TableHead>
         <TableBody sx={{ body: { borderBottom: "none" } }} className="diffTableBody">

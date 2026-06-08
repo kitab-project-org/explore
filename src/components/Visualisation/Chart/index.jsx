@@ -267,6 +267,8 @@ const Visual = (props) => {
       book2: { ms: "", pos1: "", pos2: "" },
     },
   });
+  const [secs1Open, setSecs1Open] = useState(true);
+  const [secs2Open, setSecs2Open] = useState(true);
 
   //console.log(chartData);
 
@@ -2137,8 +2139,11 @@ const Visual = (props) => {
                 }
                 return headings ? (
                   <>
-                    <Typography sx={{ fontSize: "12px", fontWeight: "bold" }}>Section(s):</Typography>
-                    <div style={{ fontSize: "12px" }} dangerouslySetInnerHTML={{ __html: headings }} />
+                    <Typography sx={{ fontSize: "12px", fontWeight: "bold", cursor: "pointer", userSelect: "none", color: "#2862a5" }}
+                                onClick={() => setSecs1Open(v => !v)}>
+                      {secs1Open ? "Hide section headers" : "Show section header(s)"}
+                    </Typography>
+                    {secs1Open && <div style={{ fontSize: "12px" }} dangerouslySetInnerHTML={{ __html: headings }} />}
                   </>
                 ) : null;
               })()}
@@ -2177,8 +2182,11 @@ const Visual = (props) => {
                 }
                 return headings ? (
                   <>
-                    <Typography sx={{ fontSize: "12px", fontWeight: "bold" }}>Section(s):</Typography>
-                    <div style={{ fontSize: "12px" }} dangerouslySetInnerHTML={{ __html: headings }} />
+                    <Typography sx={{ fontSize: "12px", fontWeight: "bold", cursor: "pointer", userSelect: "none", color: "#2862a5" }}
+                                onClick={() => setSecs2Open(v => !v)}>
+                      {secs2Open ? "Hide section headers" : "Show section header(s)"}
+                    </Typography>
+                    {secs2Open && <div style={{ fontSize: "12px" }} dangerouslySetInnerHTML={{ __html: headings }} />}
                   </>
                 ) : null;
               })()}
