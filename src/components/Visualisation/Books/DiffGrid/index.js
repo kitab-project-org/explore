@@ -1,4 +1,4 @@
-import { useContext, useState } from "react";
+import { useContext, useState, useEffect } from "react";
 import {
   IconButton,
   TableContainer,
@@ -11,13 +11,18 @@ import {
 } from "@mui/material";
 import NextMilestoneLoader from "../NextMilestoneLoader";
 import ExpandView from "../../Books/ExpandView";
-import { imechToHtml } from "../../../../utility/Helper";
+import { cleanBeforeDiff } from "../../../../utility/Helper";
+import { kitabDiff } from "../../../../assets/js/kitabDiff";
 import { Context } from "../../../../App";
 import "../../../../index.css";
 
 
 const DiffGrid = ({ parsedBookAlignment, alignmentOnly, currentMs2, bc1, ec1, bc2, ec2 }) => {
-  const { isFlipped, books, displayMs, setDisplayMs } = useContext(Context);
+  const {
+    isFlipped, books, displayMs, setDisplayMs,
+    normalizeAlif, normalizeYa, normalizeHa, removePunct, removeTags,
+    nSharedChars, nRefineChars,
+  } = useContext(Context);
 
   const [open, setOpen] = useState(false);
 
@@ -25,101 +30,77 @@ const DiffGrid = ({ parsedBookAlignment, alignmentOnly, currentMs2, bc1, ec1, bc
   const charRange1 = (bc1 != null && ec1 != null) ? `, chars ${bc1}–${ec1}` : "";
   const charRange2 = (bc2 != null && ec2 != null) ? `, chars ${bc2}–${ec2}` : "";
   let columns = [
-    {
-      field: "book1",
-      headerName: `${books.book1.title} (milestone ${books.book1.ms}${charRange1})`,
-    },
-    {
-      field: "book2",
-      headerName: `${books.book2.title} (milestone ${ms2}${charRange2})`,
-    },
+    { field: "book1", headerName: `${books.book1.title} (milestone ${books.book1.ms}${charRange1})` },
+    { field: "book2", headerName: `${books.book2.title} (milestone ${ms2}${charRange2})` },
   ];
-  columns = isFlipped ? columns.reverse() : columns;
-  const createMsContext = (
-    msNo,
-    beforeAlignment,
-    afterAlignment,
-    displayMs
-  ) => {
-    console.log("msNo", msNo);
-    console.log("beforeAlignment", beforeAlignment);
-    console.log("afterAlignment", afterAlignment);
-    console.log("displayMs", displayMs);
-    let before = [];
-    let after = [];
-    const sortedKeys = Object.keys(displayMs).sort();
-    after.push(`<div>${imechToHtml(afterAlignment)}</div>`);
-    for (let k of sortedKeys) {
-      if (parseInt(k) < msNo) {
-        before.push(
-          `<div class="msNo">(start of ms${k})</div><div>${imechToHtml(
-            displayMs[k]
-          )}</div>`
-        );
-      } else if (parseInt(k) > msNo) {
-        after.push(
-          `<div class="msNo">(start of ms${k})</div><div>${imechToHtml(
-            displayMs[k]
-          )}</div>`
-        );
-      }
+  columns = isFlipped ? [...columns].reverse() : columns;
+
+  // Build raw text for context diffing with MS_START_N markers that survive cleanBeforeDiff.
+  // The markers use only letters, digits and underscores, which cleanImech leaves untouched.
+  const buildContextRaw = (msNo, beforeAlign, afterAlign, msTexts) => {
+    const clean = (t) => cleanBeforeDiff(t ?? "", normalizeAlif, normalizeYa, normalizeHa, removePunct, removeTags);
+    const sortedKeys = Object.keys(msTexts ?? {}).map(Number).sort((a, b) => a - b);
+    const before = [];
+    const after = [clean(afterAlign)];
+    for (const k of sortedKeys) {
+      if (k < msNo) before.push(`MS_START_${k} ${clean(msTexts[k])}`);
+      else if (k > msNo) after.push(`MS_START_${k} ${clean(msTexts[k])}`);
     }
-    before.push(
-      `<div class="msNo">(start of ms${msNo})</div><div>${imechToHtml(
-        beforeAlignment
-      )}</div>`
-    );
-    return [before.join("\n"), after.join("\n")];
+    before.push(`MS_START_${msNo} ${clean(beforeAlign)}`);
+    return [before.join(" "), after.join(" ")];
   };
 
-  const [before1, after1] = createMsContext(
-    books.book1.ms,
-    parsedBookAlignment.beforeAlignment1,
-    parsedBookAlignment.afterAlignment1,
-    displayMs.book1
-  );
-  const [before2, after2] = createMsContext(
-    ms2,
-    parsedBookAlignment.beforeAlignment2,
-    parsedBookAlignment.afterAlignment2,
-    displayMs.book2
-  );
+  // Replace MS_START_N markers in diff HTML output with milestone heading markup.
+  const insertMsHeadings = (html) =>
+    html.replace(/MS_START_(\d+)/g, '<br/><span class="msNo">(start of ms$1)</span> ');
 
-  const beforeAlignmentRow = [
-    {
-      book1: before1,
-      book2: before2,
-    },
-  ];
+  const [ctxBefore, setCtxBefore] = useState({ book1: "", book2: "" });
+  const [ctxAfter,  setCtxAfter]  = useState({ book1: "", book2: "" });
 
-  const afterAlignmentRow = [
-    {
-      book1: after1,
-      book2: after2,
-    },
-  ];
+  useEffect(() => {
+    if (alignmentOnly) return;
+    let cancelled = false;
+    const compute = async () => {
+      const [br1, ar1] = buildContextRaw(
+        books.book1.ms,
+        parsedBookAlignment.beforeAlignment1, parsedBookAlignment.afterAlignment1,
+        displayMs.book1
+      );
+      const [br2, ar2] = buildContextRaw(
+        ms2,
+        parsedBookAlignment.beforeAlignment2, parsedBookAlignment.afterAlignment2,
+        displayMs.book2
+      );
+      const [, b1Html, b2Html] = await kitabDiff(br1, br2, false, nSharedChars, nRefineChars);
+      if (cancelled) return;
+      const [, a1Html, a2Html] = await kitabDiff(ar1, ar2, false, nSharedChars, nRefineChars);
+      if (cancelled) return;
+      setCtxBefore({ book1: insertMsHeadings(b1Html), book2: insertMsHeadings(b2Html) });
+      setCtxAfter({ book1: insertMsHeadings(a1Html), book2: insertMsHeadings(a2Html) });
+    };
+    compute();
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [alignmentOnly, parsedBookAlignment, displayMs,
+      normalizeAlif, normalizeYa, normalizeHa, removePunct, removeTags,
+      nSharedChars, nRefineChars, books.book1.ms, ms2]);
 
   const alignmentRows = [];
   const splitS1 = parsedBookAlignment.s1.split(/ *###NEW_ROW### */g);
   const splitS2 = parsedBookAlignment.s2.split(/ *###NEW_ROW### */g);
   for (let i = 0; i < splitS1.length; i++) {
-    alignmentRows.push({
-      book1: splitS1[i],
-      book2: splitS2[i],
-    });
+    alignmentRows.push({ book1: splitS1[i], book2: splitS2[i] });
   }
 
-  const rows = alignmentOnly
-    ? alignmentRows
-    : [...beforeAlignmentRow, ...alignmentRows, ...afterAlignmentRow];
-
   const [spCol, setSpCol] = useState();
-  const handleOpen = (val) => {
-    setSpCol(val);
-    setOpen(true);
-  };
-
+  const handleOpen  = (val) => { setSpCol(val); setOpen(true); };
   const handleClose = () => setOpen(false);
+
+  const allRows = [
+    ...(alignmentOnly ? [] : [{ book1: ctxBefore.book1, book2: ctxBefore.book2 }]),
+    ...alignmentRows,
+    ...(alignmentOnly ? [] : [{ book1: ctxAfter.book1,  book2: ctxAfter.book2 }]),
+  ];
 
   return (
     <TableContainer className="diffTableContainer">
@@ -127,48 +108,24 @@ const DiffGrid = ({ parsedBookAlignment, alignmentOnly, currentMs2, bc1, ec1, bc
         <ExpandView
           open={open}
           handleClose={handleClose}
-          rows={[...beforeAlignmentRow, ...alignmentRows, ...afterAlignmentRow]}
+          rows={allRows}
           spCol={spCol}
           prevLoad={
             spCol.field === "book1" ? (
-              <NextMilestoneLoader
-                alignmentOnly={alignmentOnly}
-                displayMs={displayMs}
-                setDisplayMs={setDisplayMs}
-                bookNo={isFlipped ? 2 : 1}
-                books={books}
-                previous={true}
-              />
+              <NextMilestoneLoader alignmentOnly={alignmentOnly} displayMs={displayMs} setDisplayMs={setDisplayMs}
+                bookNo={isFlipped ? 2 : 1} books={books} previous={true} />
             ) : (
-              <NextMilestoneLoader
-                alignmentOnly={alignmentOnly}
-                displayMs={displayMs}
-                setDisplayMs={setDisplayMs}
-                bookNo={isFlipped ? 1 : 2}
-                books={books}
-                previous={true}
-              />
+              <NextMilestoneLoader alignmentOnly={alignmentOnly} displayMs={displayMs} setDisplayMs={setDisplayMs}
+                bookNo={isFlipped ? 1 : 2} books={books} previous={true} />
             )
           }
           nextLoad={
             spCol.field === "book1" ? (
-              <NextMilestoneLoader
-                alignmentOnly={alignmentOnly}
-                displayMs={displayMs}
-                setDisplayMs={setDisplayMs}
-                bookNo={isFlipped ? 2 : 1}
-                books={books}
-                previous={false}
-              />
+              <NextMilestoneLoader alignmentOnly={alignmentOnly} displayMs={displayMs} setDisplayMs={setDisplayMs}
+                bookNo={isFlipped ? 2 : 1} books={books} previous={false} />
             ) : (
-              <NextMilestoneLoader
-                alignmentOnly={alignmentOnly}
-                displayMs={displayMs}
-                setDisplayMs={setDisplayMs}
-                bookNo={isFlipped ? 1 : 2}
-                books={books}
-                previous={false}
-              />
+              <NextMilestoneLoader alignmentOnly={alignmentOnly} displayMs={displayMs} setDisplayMs={setDisplayMs}
+                bookNo={isFlipped ? 1 : 2} books={books} previous={false} />
             )
           }
         />
@@ -185,85 +142,69 @@ const DiffGrid = ({ parsedBookAlignment, alignmentOnly, currentMs2, bc1, ec1, bc
               >
                 {col.headerName}
                 <Tooltip title="Expand View" placement="top">
-                  <IconButton
-                    onClick={() => handleOpen(col)}
-                    sx={{ ml: "10px" }}
-                  >
-                    <i
-                      className="fa-solid fa-expand"
-                      style={{ fontSize: "12px" }}
-                    ></i>
+                  <IconButton onClick={() => handleOpen(col)} sx={{ ml: "10px" }}>
+                    <i className="fa-solid fa-expand" style={{ fontSize: "12px" }}></i>
                   </IconButton>
                 </Tooltip>
               </TableCell>
             ))}
           </TableRow>
         </TableHead>
-        <TableBody
-          sx={{
-            body: {
-              borderBottom: "none",
-            },
-          }}
-          className="diffTableBody"
-        >
+        <TableBody sx={{ body: { borderBottom: "none" } }} className="diffTableBody">
           <>
+            {/* Context before alignment */}
             {!alignmentOnly && (
-              <TableRow className={"diffTableRow"}>
-                <NextMilestoneLoader
-                  alignmentOnly={alignmentOnly}
-                  displayMs={displayMs}
-                  setDisplayMs={setDisplayMs}
-                  bookNo={isFlipped ? 2 : 1}
-                  books={books}
-                  previous={true}
-                />
-                <NextMilestoneLoader
-                  alignmentOnly={alignmentOnly}
-                  displayMs={displayMs}
-                  setDisplayMs={setDisplayMs}
-                  bookNo={isFlipped ? 1 : 2}
-                  books={books}
-                  previous={true}
-                />
-              </TableRow>
+              <>
+                <TableRow className={"diffTableRow"}>
+                  <NextMilestoneLoader alignmentOnly={alignmentOnly} displayMs={displayMs} setDisplayMs={setDisplayMs}
+                    bookNo={isFlipped ? 2 : 1} books={books} previous={true} />
+                  <NextMilestoneLoader alignmentOnly={alignmentOnly} displayMs={displayMs} setDisplayMs={setDisplayMs}
+                    bookNo={isFlipped ? 1 : 2} books={books} previous={true} />
+                </TableRow>
+                <TableRow className={"diffTableRow"}>
+                  {columns.map(col => (
+                    <TableCell key={col.field} dir="rtl" align="right"
+                      sx={{ verticalAlign: "top" }} className={"diffTableCell"}
+                      dangerouslySetInnerHTML={{ __html: ctxBefore[col.field] }}
+                    />
+                  ))}
+                </TableRow>
+              </>
             )}
 
-            {rows.map((row, rowIndex) => (
-              <TableRow key={rowIndex + 1} className={"diffTableRow"}>
-                {columns.map((col) => (
+            {/* Alignment rows, boxed to set them apart from context */}
+            {alignmentRows.map((row, rowIndex) => (
+              <TableRow key={rowIndex} className={"diffTableRow"}>
+                {columns.map((col, colIndex) => (
                   <TableCell
-                    key={`${rowIndex + 1}-${col.field}`}
-                    dir="rtl"
-                    align="right"
-                    sx={{ verticalAlign: "top" }}
+                    key={`${rowIndex}-${col.field}`}
+                    dir="rtl" align="right"
+                    sx={{ verticalAlign: "top", fontWeight: "bold" }}
                     className={"diffTableCell"}
-                    dangerouslySetInnerHTML={{
-                      __html: row[col.field],
-                    }}
-                  ></TableCell>
+                    dangerouslySetInnerHTML={{ __html: row[col.field] }}
+                  />
                 ))}
               </TableRow>
             ))}
+
+            {/* Context after alignment */}
             {!alignmentOnly && (
-              <TableRow className={"diffTableRow"}>
-                <NextMilestoneLoader
-                  alignmentOnly={alignmentOnly}
-                  displayMs={displayMs}
-                  setDisplayMs={setDisplayMs}
-                  bookNo={isFlipped ? 2 : 1}
-                  books={books}
-                  previous={false}
-                />
-                <NextMilestoneLoader
-                  alignmentOnly={alignmentOnly}
-                  displayMs={displayMs}
-                  setDisplayMs={setDisplayMs}
-                  bookNo={isFlipped ? 1 : 2}
-                  books={books}
-                  previous={false}
-                />
-              </TableRow>
+              <>
+                <TableRow className={"diffTableRow"}>
+                  {columns.map(col => (
+                    <TableCell key={col.field} dir="rtl" align="right"
+                      sx={{ verticalAlign: "top" }} className={"diffTableCell"}
+                      dangerouslySetInnerHTML={{ __html: ctxAfter[col.field] }}
+                    />
+                  ))}
+                </TableRow>
+                <TableRow className={"diffTableRow"}>
+                  <NextMilestoneLoader alignmentOnly={alignmentOnly} displayMs={displayMs} setDisplayMs={setDisplayMs}
+                    bookNo={isFlipped ? 2 : 1} books={books} previous={false} />
+                  <NextMilestoneLoader alignmentOnly={alignmentOnly} displayMs={displayMs} setDisplayMs={setDisplayMs}
+                    bookNo={isFlipped ? 1 : 2} books={books} previous={false} />
+                </TableRow>
+              </>
             )}
           </>
         </TableBody>
