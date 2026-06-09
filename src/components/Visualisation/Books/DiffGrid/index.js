@@ -48,8 +48,8 @@ const DiffGrid = ({ parsedBookAlignment, alignmentOnly, currentMs2, bc1, ec1, bc
   const charRange1 = (bc1 != null && ec1 != null) ? `, chars ${bc1}–${ec1}` : "";
   const charRange2 = (bc2 != null && ec2 != null) ? `, chars ${bc2}–${ec2}` : "";
   let columns = [
-    { field: "book1", headerName: `${books.book1.title.split(" :: ")[0]} (milestone ${books.book1.ms}${charRange1})` },
-    { field: "book2", headerName: `${books.book2.title.split(" :: ")[0]} (milestone ${ms2}${charRange2})` },
+    { field: "book1", headerName: `${books.book1.title?.split(" :: ")[0]} (milestone ${books.book1.ms}${charRange1})` },
+    { field: "book2", headerName: `${books.book2.title?.split(" :: ")[0]} (milestone ${ms2}${charRange2})` },
   ];
   columns = isFlipped ? [...columns].reverse() : columns;
 

@@ -452,7 +452,7 @@ const Visual = (props) => {
     // --- Set Scales on Basis of the chartData ::
 
     max = maxValues;
-    xIdentityDomain = [0, max.peak];
+    xIdentityDomain = [0, max.peak + 1];
     currentXDomain1 = currentXDomain1 || xIdentityDomain;
     currentXDomain2 = currentXDomain2 || xIdentityDomain;
     xScale1.domain(currentXDomain1).range([1, width - 1]);
@@ -471,10 +471,10 @@ const Visual = (props) => {
       [Math.min(width, xScale2(max.book2)), barMaxHeight * 3],
     ]);
     refLinesData = [
-      { x: 0,          y: 0,             yScale: y0Scale, solid: true,         xS: xScale1 },
-      { x: max.book1,  y: 0,             yScale: y0Scale, solid: showBookEnd1,  xS: xScale1 },
-      { x: 0,          y: barMaxHeight*2, yScale: y1Scale, solid: true,         xS: xScale2 },
-      { x: max.book2,  y: barMaxHeight*2, yScale: y1Scale, solid: showBookEnd2, xS: xScale2 },
+      { x: 0,              y: 0,             yScale: y0Scale, solid: true,         xS: xScale1 },
+      { x: max.book1 + 1,  y: 0,             yScale: y0Scale, solid: showBookEnd1,  xS: xScale1 },
+      { x: 0,              y: barMaxHeight*2, yScale: y1Scale, solid: true,         xS: xScale2 },
+      { x: max.book2 + 1,  y: barMaxHeight*2, yScale: y1Scale, solid: showBookEnd2, xS: xScale2 },
     ];
 
     hoverLines = [
@@ -663,10 +663,10 @@ const Visual = (props) => {
       .selectAll(".max-reference-lines")
       .transition(t)
       .attr("x1", function (d) {
-        return d.xS(d.x);
+        return d.xS(d.x) + (d.xOff || 0);
       })
       .attr("x2", function (d) {
-        return d.xS(d.x);
+        return d.xS(d.x) + (d.xOff || 0);
       })
       .attr("y1", function (d) {
         return d.yScale(0) + d.y;
@@ -815,10 +815,10 @@ const Visual = (props) => {
       .selectAll(".max-reference-lines")
       .transition(t)
       .attr("x1", function (d) {
-        return d.xS(d.x);
+        return d.xS(d.x) + (d.xOff || 0);
       })
       .attr("x2", function (d) {
-        return d.xS(d.x);
+        return d.xS(d.x) + (d.xOff || 0);
       })
       .attr("y1", function (d) {
         return d.yScale(0) + d.y;
@@ -1343,13 +1343,13 @@ const Visual = (props) => {
       setBooks({
         book1: {
           versionCode: versionCode1,
-          title: metaData?.book1?.bookTitle?.label,
+          title: metaData?.book1?.manuscriptUri ?? metaData?.book1?.bookTitle?.label,
           content: [],
           ms: d1?.seq1,
         },
         book2: {
           versionCode: versionCode2,
-          title: metaData?.book2?.bookTitle?.label,
+          title: metaData?.book2?.manuscriptUri ?? metaData?.book2?.bookTitle?.label,
           content: [],
           ms: d1?.seq2,
         },
@@ -1408,13 +1408,13 @@ const Visual = (props) => {
       setBooks({
         book1: {
           versionCode: versionCode1,
-          title: metaData?.book1?.bookTitle?.label,
+          title: metaData?.book1?.manuscriptUri ?? metaData?.book1?.bookTitle?.label,
           content: b1Downloaded?.msTexts,
           ms: d1?.seq1,
         },
         book2: {
           versionCode: versionCode2,
-          title: metaData?.book2?.bookTitle?.label,
+          title: metaData?.book2?.manuscriptUri ?? metaData?.book2?.bookTitle?.label,
           content: b2Downloaded?.msTexts,
           ms: d1?.seq2,
         },

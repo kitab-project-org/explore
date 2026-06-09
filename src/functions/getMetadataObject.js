@@ -9,6 +9,7 @@ export const getMetadataObject = (book1, book2, releaseCode) => {
         path: useVersionUri ? book?.version_uri : book?.text?.text_uri,
       },
       bookAuthor: isManuscript ? null : book?.text?.author[0]?.author_lat_prefered,
+      manuscriptUri: isManuscript ? book?.manuscript?.manuscript_uri : null,
       shelfmark: isManuscript ? book?.manuscript?.shelfmark : null,
       manuscriptHolding: isManuscript
         ? (holding?.names?.en ?? holding?.loc_uri ?? null)
