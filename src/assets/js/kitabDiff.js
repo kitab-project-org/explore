@@ -406,6 +406,7 @@ function parseDiffHtml(diffHtml, intoRows, arChars, refine_n) {
     console.log(wikiHtml);
   }
   var rootNode = wikiHtml.getElementsByTagName("pre")[0];
+  if (!rootNode) return ["", ""];
   if (VERBOSE) {
     console.log(rootNode);
   }
@@ -509,7 +510,9 @@ function parseDiffHtml(diffHtml, intoRows, arChars, refine_n) {
         }
       });
     } else if (c.classList.contains("wikEdDiffBlock")) {
-      // =>  position in text B of a text block that is in both texts but in a different location
+        // => destination in text B of a block moved from a different position in A;
+        //    may contain wikEdDiffInsert/Delete children marking edits within the moved block
+
 
       if (VERBOSE) {
         console.log("MOVED, B " + c.textContent);
@@ -625,7 +628,7 @@ async function kitabDiff(a, b, intoRows = false, arChars = 20, refine_n = 3) {
     const o = stripToPlain(original);
     const s = stripToPlain(diffed);
     if (o === s) {
-      console.log("KitabDiff kept the strings intact");
+      console.log("Integrity check: KitabDiff kept the strings intact");
       return;
     }
     const len = Math.min(o.length, s.length);
