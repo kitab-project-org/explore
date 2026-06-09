@@ -35,6 +35,7 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
     selfReuseOnly,
     visMargins,
     releaseCode,
+    selectedMarker,
     setSelectedMarker,
     axisLabelFontSize,
     setSelfReuseOnly,
@@ -378,8 +379,9 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
   const [includeBottomBar,    setIncludeBottomBar]    = useState(true);
   const [selectedMs,  setSelectedMs]  = useState(null); // { ms_id } — lifted from SideBar
   const [selectedBar, setSelectedBar] = useState(null); // { id }    — lifted from BottomBar
-  const handleSetSelectedMs  = useCallback((ms)  => { setSelectedMs(ms);   if (ms)  setSelectedBar(null); }, []);
-  const handleSetSelectedBar = useCallback((bar) => { setSelectedBar(bar); if (bar) setSelectedMs(null);  }, []);
+  const handleSetSelectedMs  = useCallback((ms)  => { setSelectedMs(ms);   if (ms) { setSelectedBar(null);  setSelectedMarker(null); } }, [setSelectedMarker]);
+  const handleSetSelectedBar = useCallback((bar) => { setSelectedBar(bar); if (bar) { setSelectedMs(null);  setSelectedMarker(null); } }, [setSelectedMarker]);
+  useEffect(() => { if (selectedMarker) { setSelectedMs(null); setSelectedBar(null); } }, [selectedMarker]); // eslint-disable-line react-hooks/exhaustive-deps
   const onUploadRequest = useCallback((d) => setUploadDialogBook(d), []);
 
   const handleViewMilestoneText = useCallback(async (ms_id) => {
