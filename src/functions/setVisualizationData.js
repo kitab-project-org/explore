@@ -369,11 +369,17 @@ export const setMultiVizData = (values) => {
           dynamicTyping: true, // converts numeric fields to integers
           skipEmptyLines: true,
           complete: (result) => {
-            // derive the last milestone number from the ms1 column of the msdata CSV:
-            const mainBookMilestones = result.data.reduce(
+            // for uploads, derive milestones from CSV data (no tok_length available);
+            // for regular books, use tok_length/300 for the actual full milestone count
+            const mainBookMilestonesFromData = result.data.reduce(
               (max, r) => (Number.isFinite(r.ms1) && r.ms1 > max ? r.ms1 : max),
               0
             );
+            const mainBookMilestones = isUpload
+              ? mainBookMilestonesFromData
+              : (book1?.release_version?.tok_length
+                  ? Math.ceil(book1.release_version.tok_length / 300)
+                  : mainBookMilestonesFromData);
             // parse stats csv file
             // (contains text reuse stats for book 1, arranged per book2):
             Papa.parse(statsFile, {
