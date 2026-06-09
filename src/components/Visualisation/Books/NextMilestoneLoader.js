@@ -84,6 +84,13 @@ const NextMilestoneLoader = ({ alignmentOnly, books, bookNo, previous }) => {
       }
     });
   }
+  if (previous) {
+    const currentMs = bookNo === 1 ? books.book1.ms : books.book2.ms;
+    const allDisplayedMsNos = Object.keys(bookNo === 1 ? displayMs.book1 : displayMs.book2).map(Number);
+    const firstDisplayed = Math.min(...allDisplayedMsNos, currentMs);
+    if (firstDisplayed <= 1) return <TableCell />;
+  }
+
   return (
     <TableCell align="center">
       <Button onClick={loadNextMs}>
