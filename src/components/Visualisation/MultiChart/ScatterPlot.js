@@ -370,7 +370,7 @@ const ScatterPlot = (props) => {
         .call(d3.axisLeft(yScale)
           .tickSize(2)
           .tickPadding(5)
-          .tickFormat((val) => val === 0 ? null : val)
+          .tickFormat((val) => (val === 0 || !Number.isInteger(val) || val < props.msRange[0] || val > props.msRange[1]) ? null : val)
         );
 
     // Add/update Y axis label in-place:
