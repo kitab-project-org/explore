@@ -117,6 +117,8 @@ const ScatterPlot = (props) => {
   const showSelectedTooltipRef = useRef(null);
   // Guard so the URL-param effect only fires once:
   const urlParamsProcessedRef = useRef(false);
+  // True after the first diff load; suppresses auto-scroll on subsequent navigation.
+  const diffShownRef = useRef(false);
 
   // Pre-computed lookup maps for O(1) keyboard navigation:
   const navData = useMemo(() => {
@@ -330,7 +332,10 @@ const ScatterPlot = (props) => {
         setBooksAlignment(allAlignments);
       }
 
-      document.getElementById("belowBooks").scrollIntoView({behavior: "smooth", block: "end"});
+      if (!diffShownRef.current) {
+        document.getElementById("belowBooks").scrollIntoView({behavior: "smooth", block: "end"});
+        diffShownRef.current = true;
+      }
     };
     // Keep the ref current so the keyboard listener can call this function:
     handleClickedDotRef.current = handleClickedDot;
