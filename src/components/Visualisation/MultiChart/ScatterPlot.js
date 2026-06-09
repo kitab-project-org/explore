@@ -157,10 +157,12 @@ const ScatterPlot = (props) => {
       // (sequential scale does not give great results): 
       // calculate the quantile thresholds for all ch_match values except the max value
       // (so that the max value is the only one that gets to be black):
+      const filteredValues = props.msdata.map(d => d.ch_match).filter(x => x < props.maxChMatch - 1);
+      const nBuckets = Math.min(filteredValues.length, 10);
+      const quantileRange = Array.from({ length: nBuckets }, (_, i) => i + 1);
       let quantileScale = d3.scaleQuantile()
-        .domain(props.msdata.map(
-          d => d.ch_match).filter(x => x < props.maxChMatch-1))
-        .range([1,2,3,4,5,6,7,8,9,10]) // get 10 quantiles; the 11th will be for the main book
+        .domain(filteredValues)
+        .range(quantileRange) // up to 10 buckets; the last will be for the max value
       // get the array of quantile thresholds and add the maxMatch value to it:
       let quantiles = quantileScale.quantiles();
       // add the maxValue, for the main text:
@@ -169,7 +171,7 @@ const ScatterPlot = (props) => {
       quantiles = quantiles.map(x => Math.round(x));
       // use these thresholds to create a new threshold scale
       // (number of colors needs to be one larger than number of thresholds)      
-      const colScale = d3.scaleThreshold(quantiles, colors);
+      const colScale = d3.scaleThreshold(quantiles, colors.slice(-(quantiles.length + 1)));
       setColorScale(() => colScale);
     } else {
       console.log("props.msdata not defined!");
