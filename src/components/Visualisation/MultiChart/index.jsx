@@ -450,7 +450,7 @@ const MultiVisual = ({ includeURL, setIncludeURL, ...props }) => {
       `MS chars: ${msCharsRange[0].toLocaleString()}–${msCharsRange[1].toLocaleString()}`,
     (selectedSectionIds?.size > 0) &&
       `${selectedSectionIds.size} section${selectedSectionIds.size > 1 ? 's' : ''} selected`,
-    filterBooksToMsRange && "Books outside milestone range hidden",
+    filterBooksToMsRange && (msRange[0] !== fullMilestoneRange[0] || msRange[1] !== fullMilestoneRange[1]) && "Books outside milestone range hidden",
     selfReuseOnly && "Self reuse only",
   ].filter(Boolean);
 
