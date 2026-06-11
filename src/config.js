@@ -5,7 +5,7 @@ export const config = {
   //DEV_BASE_URL: "http://127.0.0.1:8000",
   DEV_BASE_URL: "https://labelstudio.kitab-project.org/kitab-api",
   PROD_BASE_URL: "https://kitab-metadata-api.azurewebsites.net",
-  DEV_ENV: true,
+  DEV_ENV: false,
   GITHUB_BASE_URL: "https://github.com/OpenITI",
   GITHUB_BASE_RAW_URL: "https://raw.githubusercontent.com/OpenITI",
   KITAB_DEV_URL: "https://dev.kitab-project.org",
