@@ -1,4 +1,4 @@
-import { useEffect, useRef, useContext } from "react";
+import { useEffect, useRef, useContext, memo } from "react";
 import * as d3 from "d3";
 import "../../../index.css";
 import { bisectLeft, calculateTooltipPos, wrapTextToSvgWidth } from "../../../utility/Helper";
@@ -7,11 +7,27 @@ import { Context } from "../../../App";
 
 const BottomBar = (props) => {
   const ref = useRef();
+  const isUploadRef = useRef(props.isUpload);
+  useEffect(() => { isUploadRef.current = props.isUpload; });
+  const onUploadRequestRef = useRef(props.onUploadRequest);
+  useEffect(() => { onUploadRequestRef.current = props.onUploadRequest; });
   const { tickFontSize, axisLabelFontSize, yTickWidth } = useContext(Context);
   let height = props.height - props.margin.top - props.margin.bottom;
   let width = props.width;
-  console.log("BOOK STATS PASSED TO BOTTOMBAR:");
-  console.log(props.bookStats);
+
+  const { selectedBar, setSelectedBar } = props;
+  const selectedBarRef = useRef(selectedBar);
+  useEffect(() => { selectedBarRef.current = selectedBar; });
+  const bookStatsRef = useRef(props.bookStats);
+  useEffect(() => { bookStatsRef.current = props.bookStats; });
+  const statMetricRef = useRef(props.statMetric ?? "alignments");
+  useEffect(() => { statMetricRef.current = props.statMetric ?? "alignments"; });
+  const showSelectedTooltipRef = useRef(null);
+  // Stored by the main D3 effect so the highlight effect can position elements:
+  const xScaleRef = useRef(null);
+  const yScaleRef = useRef(null);
+  const chartHeightRef = useRef(0);
+  const barWidthRef = useRef(0);
 
   // initialize the svg on mount:
   useEffect(() => {
@@ -23,30 +39,32 @@ const BottomBar = (props) => {
         .attr("class", "bottom-bar");
   },[props.margin.left, props.margin.top, props.dateRange]);
 
-  // create the axes etc. for every change of relevant variables:
+  // create the axes and bars for every change of relevant variables:
   useEffect(() => {
     console.log("updating bottom bar");
     const tooltipDiv = d3.select(".vizTooltip");
     const barSvg = d3.select(".bottom-bar");
-    
-    // build X axis scale:
+
+    const useAlignments = props.statMetric !== "characters";
+    const getValue = d => useAlignments ? (d.alignments ?? 0) : d.ch_match;
+    const metricLabel = useAlignments ? "Number of alignments" : "Characters matched";
+
     let xScale = d3.scaleLinear()
-      .domain([0, props.bookStats.length+2])  // each book will have its own space on the X axis
+      .domain([0, props.bookStats.length+2])
       .range([ 0, width ]);
-    // build Y axis scale:
-    let maxTotalChMatch = d3.max(props.bookStats, d => d.ch_match);
-    //let maxTotalChMatch = props.maxTotalChMatch;
+    let maxVal = d3.max(props.bookStats, d => getValue(d));
     let yScale = d3.scaleLinear()
-      .domain([maxTotalChMatch, 0])
+      .domain([maxVal, 0])
       .range([0, height]);
 
-    // Add X axis:
+    barSvg.selectAll(".bottom-bar-plot").remove();
+
+    // X axis:
     let allYears = props.bookStats.map(d => d.date);
     let tickIndices = [];
     let tickLabelDict = [];
     let prev = 0;
     for (const year of [200,400,600,800,1000,1200,1400]) {
-        // find the index position of the year in the array:
         const i = bisectLeft(allYears, year);
         if (i > prev && i < props.bookStats.length){
           tickIndices.push(props.bookStats[i].bookIndex);
@@ -60,47 +78,30 @@ const BottomBar = (props) => {
       .attr("transform", "translate(0," + height + ")")
       .call(d3.axisBottom(xScale)
         .tickValues(tickIndices)
-        .tickFormat((val,i) => { return tickLabelDict[val]})
+        .tickFormat((val) => tickLabelDict[val])
         .tickPadding(2)
       );
-    
-    // Add X axis label: 
+
+    // X axis label:
     barSvg.selectAll(".xLabel").remove();
     const lineHeight = axisLabelFontSize * 1.3;
-    const xLabelText = "Books for which passim detected text reuse with "+props.mainBookURI+" (chronologically arranged)";
-    const xLabelLines = wrapTextToSvgWidth(
-      xLabelText, 
-      width, 
-      axisLabelFontSize
-    );
+    const xLabelText = props.hasDates
+      ? "Books for which passim detected text reuse with " + props.mainBookURI + " (chronologically arranged)"
+      : "Books for which passim detected text reuse with " + props.mainBookURI + " (alphabetically arranged)";
+    const xLabelLines = wrapTextToSvgWidth(xLabelText, width, axisLabelFontSize);
     let space = height + props.margin.top + props.margin.bottom;
     xLabelLines.forEach((line) => {
-      // define the point where the text ends ("text-anchor", "end"): 
-      const x = width;
-      const y = space;
       barSvg.append("text")
         .attr("class", "xLabel")
-        .attr("text-anchor", "end") // text will end at x,y
-        .attr("x", x) 
-        .attr("y", y) 
-        .style("font-size", `${axisLabelFontSize}px`) 
+        .attr("text-anchor", "end")
+        .attr("x", width)
+        .attr("y", space)
+        .style("font-size", `${axisLabelFontSize}px`)
         .text(line);
-      space += lineHeight;  // move the 
+      space += lineHeight;
     });
 
-    /*// Add X axis label:  see https://stackoverflow.com/a/11194968/4045481
-    const lineHeight = axisLabelFontSize * 1.3;
-    let xLabelText = "Books for which passim detected text reuse with "+props.mainBookURI+" (chronologically arranged)";
-    barSvg.selectAll(".xLabel").remove();
-    barSvg.append("text")
-      .attr("class", "xLabel")
-      .attr("text-anchor", "end")
-      .attr("x", width)
-      .attr("y", height + props.margin.top + props.margin.bottom)
-      .style("font-size", `${axisLabelFontSize}px`)
-      .text(xLabelText);*/
-
-    // Add Y axis:
+    // Y axis:
     barSvg.selectAll(".yAxis").remove();
     barSvg.append("g")
       .attr("class", "yAxis")
@@ -109,11 +110,10 @@ const BottomBar = (props) => {
         .ticks(3)
         .tickSize(2)
       );
-    // Add Y axis label:
+    // Y axis label:
     barSvg.selectAll(".yLabel").remove();
-    
-    // set the Y axis label (wrapping it if necessary):
-    const labelLines = wrapTextToSvgWidth("Characters reused", 100, axisLabelFontSize);
+    const metricLabelShort = useAlignments ? "Alignments" : "Chars matched";
+    const labelLines = wrapTextToSvgWidth(metricLabelShort, 100, axisLabelFontSize);
     let ySpace = -yTickWidth;
     labelLines.reverse().forEach((line) => {
       barSvg.append("text")
@@ -121,92 +121,212 @@ const BottomBar = (props) => {
         .attr("text-anchor", "end")
         .attr("y", ySpace)
         .attr("transform", "rotate(-90)")
-        .style("font-size", `${axisLabelFontSize}px`) 
+        .style("font-size", `${axisLabelFontSize}px`)
         .text(line);
       ySpace -= lineHeight;
     });
-      
-    // update the tick font size
-    barSvg
-      .selectAll(`.tick text`).style("font-size", `${tickFontSize}px`);
 
-    let barPlot = barSvg.append('g')
-      .attr("class", "bottom-bar-plot");
-    
-    // add/update data:
-    let barWidth = Math.min(3, width/props.bookStats.length);
+    barSvg.selectAll(`.tick text`).style("font-size", `${tickFontSize}px`);
+
+    let barPlot = barSvg.append('g').attr("class", "bottom-bar-plot");
+    let barWidth = Math.min(3, width / props.bookStats.length);
+    let hitWidth = Math.max(barWidth + 4, 7);
+
+    // Shared event handlers:
+    const onMouseover = function(event, d) {
+      tooltipDiv.transition().duration(200).style("opacity", .9);
+      let tooltipMsg = d.book ?? d.manuscript;
+      tooltipMsg += `<br/>${metricLabel}: ` + d3.format(",")(getValue(d));
+      tooltipMsg += isUploadRef.current
+        ? "<br/>(Click to select - double-click to upload pairwise TSV)"
+        : "<br/>(Click to select - double-click for pairwise visualisation)";
+      const [x, y] = calculateTooltipPos(event, tooltipDiv, tooltipMsg, "multiVis");
+      tooltipDiv.html(tooltipMsg).style("left", `${x}px`).style("top", `${y}px`);
+    };
+    const onMouseout = () => showSelectedTooltipRef.current?.();
+    const onClick = function(event, d) {
+      console.log("selected: "+d.id);
+      if (isUploadRef.current) { onUploadRequestRef.current(d); return; }
+      setSelectedBar({ id: d.id });
+      
+    };
+    const onDblclick = function(event, d) {
+      if (isUploadRef.current) return;
+      let currentUrl = window.location.href;
+      const newUrl = currentUrl.includes("_all")
+        ? currentUrl.replace("_all", "_" + d.id)
+        : currentUrl.split("&")[0] + "_" + d.id;
+      window.open(newUrl, "_blank");
+    };
+
+    // Visible bars (pointer-events disabled — hit areas handle interaction):
     barPlot
-      .selectAll("rect")
+      .selectAll(".bar")
       .data(props.bookStats, d => d)
       .join(
-        // create a new <rect> tag for the number of 
-        // data points that are not yet in the graph:
-        enter => (
-          enter
-            .append("rect")
-              .attr("class", "bar")
-            .attr("width", barWidth)
-            .attr("y", d => yScale(d.ch_match))
-            .attr("x", d => xScale(d.bookIndex) - barWidth/2)
-            .attr("height", d => height -  yScale(d.ch_match) )
-            .style("fill", "#3FB8AF")
-            .style("stroke", "#3FB8AF")
-            // add tooltip:
-            .on("mouseover", function(event, d) {
-                // make the tooltip visible:
-                tooltipDiv.transition()
-                    .duration(200)
-                    .style("opacity", .9);
-                // create the text for the tooltip:
-                let tooltipMsg = d.book;
-                tooltipMsg += "<br/>Total characters matched: " + d3.format(",")(d.ch_match);
-                tooltipMsg += "<br/>(Click bar to see pairwise visualisation)";
-                // position the tooltip so that it remains in sight:
-                const [x, y] = calculateTooltipPos(event, tooltipDiv, tooltipMsg, "multiVis");
-                tooltipDiv.html(tooltipMsg)
-                  .style("left", `${x}px`)
-                  .style("top", `${y}px`);
-            })
-            .on("mouseout", function(event, d) {
-                // hide the tooltip:
-                tooltipDiv.transition()
-                    .duration(200)
-                    .style("opacity", 0);
-            })
-            .on("click", function(event,d){
-                // show the book-to-book visualisation
-                // in a separate tab:
-                let currentUrl = window.location.href;
-                let newUrl;
-                if (currentUrl.includes("_all")){
-                  newUrl = currentUrl.replace("_all", "_"+d.id);
-                } else {
-                  newUrl = currentUrl.split("&")[0] + "_" + d.id;
-                }
-                window.open(newUrl, "_blank");
-            })
-        ),
-        /*
-        // define the transition between reloads:
-        update => (
-            update
-        ),*/
-        // remove superfluous rectangles in the graph:
-        exit => (
-            exit.call(exit => exit.remove())
-        )
-      )    
-    
-  });
-  
+        enter => enter.append("rect")
+          .attr("class", "bar")
+          .attr("width", barWidth)
+          .attr("y", d => yScale(getValue(d)))
+          .attr("x", d => xScale(d.bookIndex) - barWidth / 2)
+          .attr("height", d => height - yScale(getValue(d)))
+          .style("fill", "#3FB8AF")
+          .style("stroke", "#3FB8AF")
+          .style("pointer-events", "none"),
+        exit => exit.remove()
+      );
+
+    // Full-height transparent hit areas for easier clicking:
+    barPlot
+      .selectAll(".bar-hit")
+      .data(props.bookStats, d => d)
+      .join(
+        enter => enter.append("rect")
+          .attr("class", "bar-hit")
+          .attr("width", hitWidth)
+          .attr("y", 0)
+          .attr("x", d => xScale(d.bookIndex) - hitWidth / 2)
+          .attr("height", height)
+          .attr("fill", "transparent")
+          .style("cursor", "pointer")
+          .on("mouseover", onMouseover)
+          .on("mouseout",  onMouseout)
+          .on("click",     onClick)
+          .on("dblclick",  onDblclick),
+        exit => exit.remove()
+      );
+    // Store for use by the highlight effect:
+    xScaleRef.current = xScale;
+    yScaleRef.current = yScale;
+    chartHeightRef.current = height;
+    barWidthRef.current = barWidth;
+  }, [props.bookStats, props.height, props.width, props.margin, props.mainBookURI, // eslint-disable-line react-hooks/exhaustive-deps
+      props.hasDates, props.statMetric, tickFontSize, axisLabelFontSize, yTickWidth]);
+
+  // Highlight selected bar and show persistent tooltip.
+  useEffect(() => {
+    const marker = selectedBar;
+    d3.selectAll('#bottom-bar .bar')
+      .style("stroke", d => (marker && d.id === marker.id) ? "#000" : "#3FB8AF")
+      .style("stroke-width", d => (marker && d.id === marker.id) ? 2 : 1);
+    if (marker) {
+      d3.selectAll('#bottom-bar .bar')
+        .filter(d => d.id === marker.id)
+        .raise();
+    }
+
+    // Remove previous highlight band and triangle:
+    d3.select('#bottom-bar .bottom-bar').selectAll('.selection-highlight').remove();
+
+    if (marker && xScaleRef.current) {
+      const d = bookStatsRef.current?.find(b => b.id === marker.id);
+      if (d) {
+        const x  = xScaleRef.current(d.bookIndex);
+        const h  = chartHeightRef.current;
+        const bw = barWidthRef.current;
+        const tri = 5;
+        const triY = h + 4;
+        const g = d3.select('#bottom-bar .bottom-bar');
+
+        // Dotted line from bar's top to max value (y=0):
+        const barVal = statMetricRef.current !== "characters" ? (d.alignments ?? 0) : d.ch_match;
+        const y1 = yScaleRef.current ? yScaleRef.current(barVal) : 0;
+        g.append('line')
+          .attr('class', 'selection-highlight')
+          .attr('x1', x)
+          .attr('x2', x)
+          .attr('y1', y1)
+          .attr('y2', 0)
+          .attr('stroke', '#f90')
+          .attr('stroke-width', bw + 2)
+          .attr('stroke-dasharray', '3,3')
+          .attr('pointer-events', 'none');
+
+        // Option B: downward triangle on the x-axis line:
+        g.append('path')
+          .attr('class', 'selection-highlight')
+          .attr('d', `M${x},${triY} L${x - tri},${triY + tri} L${x + tri},${triY + tri} Z`)
+          .attr('fill', '#f90')
+          .attr('pointer-events', 'none');
+      }
+    }
+
+    const showTooltip = (forMarker) => {
+      const cur = forMarker !== undefined ? forMarker : selectedBarRef.current;
+      const tooltipDiv = d3.select(".vizTooltip");
+      tooltipDiv.interrupt();
+      if (!cur) { tooltipDiv.style("opacity", 0); return; }
+      const d = bookStatsRef.current?.find(b => b.id === cur.id);
+      if (!d) { tooltipDiv.style("opacity", 0); return; }
+      const useAlignPersist = statMetricRef.current !== "characters";
+      const persistVal = useAlignPersist ? (d.alignments ?? 0) : d.ch_match;
+      const persistLabel = useAlignPersist ? "Number of alignments" : "Characters matched";
+      let tooltipMsg = d.book ?? d.manuscript;
+      tooltipMsg += `<br/>${persistLabel}: ` + d3.format(",")(persistVal);
+      tooltipMsg += "<br/><b>(Press Enter for pairwise visualisation - Arrow keys to navigate - Escape to deselect)</b>";
+      const bar = d3.select('#bottom-bar').selectAll('.bar').filter(b => b.id === cur.id);
+      if (bar.empty()) return;
+      const barRect = bar.node().getBoundingClientRect();
+      const pageX = barRect.left + barRect.width / 2 + window.scrollX;
+      const pageY = barRect.top + window.scrollY;
+      const [x, y] = calculateTooltipPos({ pageX, pageY }, tooltipDiv, tooltipMsg, "multiVis");
+      tooltipDiv.html(tooltipMsg).style("left", `${x}px`).style("top", `${y}px`).style("opacity", 0.9);
+    };
+
+    showSelectedTooltipRef.current = showTooltip;
+    showTooltip(selectedBar);
+  }, [selectedBar, props.bookStats]);
+
+  // Keyboard navigation — left/right arrows only.
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      const cur = selectedBarRef.current;
+      if (!cur) return;
+      const tag = document.activeElement?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || document.activeElement?.isContentEditable) return;
+
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+        e.preventDefault();
+        const stats = bookStatsRef.current ?? [];
+        const idx = stats.findIndex(d => d.id === cur.id);
+        if (idx === -1) return;
+        const nextIdx = e.key === 'ArrowRight'
+          ? (idx + 1) % stats.length
+          : (idx - 1 + stats.length) % stats.length;
+        const next = stats[nextIdx];
+        if (next) {
+          const nextMarker = { id: next.id };
+          setSelectedBar(nextMarker);
+          showSelectedTooltipRef.current?.(nextMarker);
+        }
+      } else if (e.key === 'Enter') {
+        const d = bookStatsRef.current?.find(b => b.id === cur.id);
+        if (d) {
+          console.log("pressed enter on"+d.id);
+          let currentUrl = window.location.href;
+          const newUrl = currentUrl.includes("_all")
+            ? currentUrl.replace("_all", "_" + d.id)
+            : currentUrl.split("&")[0] + "_" + d.id;
+          window.open(newUrl, "_blank");
+        }
+      } else if (e.key === 'Escape') {
+        setSelectedBar(null);
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // empty deps — reads current values through refs
+
   return (
-    <svg 
+    <svg
       ref={ref}
       id="bottom-bar"
       width={width + props.margin.left + props.margin.right}
       height={props.height + props.margin.top + props.margin.bottom}
+      style={{ fontFamily: "Arial" }}
     />
   );
 }
 
-export default BottomBar
+export default memo(BottomBar)

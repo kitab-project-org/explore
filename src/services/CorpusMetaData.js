@@ -11,9 +11,12 @@ export async function getCorpusMetaData(
   normalizedSearch,
   annotationFilter,
   orderBy,
-  analysisPriority,
+  showPrimary,
+  showSecondary,
   releaseCode,
-  advanceSearch
+  advanceSearch,
+  activeTextTypes,
+  languageQuery
 ) {
   try {
     let QUERY_PARAMS = "";
@@ -35,12 +38,14 @@ export async function getCorpusMetaData(
       : "";
     let searchQuery =
       searchField && query
-        ? `&${searchField === "title" ? "title_lat" : "author_lat"}=${query}`
+        ? `&${searchField}=${query}`
         : query
         ? `&search=${query}`
         : "";
     let normalize = normalizedSearch ? `` : `&normalize=false`;
-    let statusQuery = analysisPriority ? `` : "&analysis_priority=pri";
+    let statusQuery = (showPrimary && showSecondary) || (!showPrimary && !showSecondary)
+      ? ``
+      : showPrimary ? `&analysis_priority=pri` : `&analysis_priority=sec`;
     let releaseCodeQuery = !releaseCode ? `` : `/${releaseCode}`;
     // let max_char_count =
     //   advanceSearch?.max_char_count === ""
@@ -89,9 +94,14 @@ export async function getCorpusMetaData(
         ? ``
         : `&died_after_AH=${advanceSearch?.died_after_AH}`;
 
+    // only send text_type when a subset is selected; omitting it returns all types
+    const textTypeFilter = activeTextTypes.length === 0 ? `` : `&text_type=${activeTextTypes.join(',')}`;
+    // only send language when a subset is selected; omitting it returns all languages
+    const languageFilter = languageQuery ? `&language=${languageQuery}` : ``;
+
     QUERY_PARAMS = `?&ordering=${orderBy}&page=${
       !page ? 1 : page
-    }&page_size=${pagesize}${annotationFilterQuery}${statusQuery}${searchQuery}${normalize}${max_tok_count}${min_tok_count}${editor}${edition_place}${publisher}${edition_date}${died_before_AH}${died_after_AH}`;
+    }&page_size=${pagesize}${annotationFilterQuery}${statusQuery}${searchQuery}${normalize}${max_tok_count}${min_tok_count}${editor}${edition_place}${publisher}${edition_date}${died_before_AH}${died_after_AH}${textTypeFilter}${languageFilter}`;
 
     if (releaseCodeQuery) {
       const res = await fetch(
@@ -112,6 +122,54 @@ export async function getCorpusMetaData(
   } catch (error) {
     return error;
   }
+}
+
+// Build the URL for the version-tsv endpoint with the same filters as getCorpusMetaData
+// but without pagination (returns all matching rows as a TSV file).
+export function getCorpusMetaDataTsvUrl(
+  query,
+  searchField,
+  normalizedSearch,
+  annotationFilter,
+  orderBy,
+  showPrimary,
+  showSecondary,
+  releaseCode,
+  advanceSearch,
+  activeTextTypes,
+  languageQuery
+) {
+  const filterString = () => {
+    let str = "";
+    str = annotationFilter?.notYetAnnotated ? str + "(not yet annotated)," : str;
+    str = annotationFilter?.inProgress ? str + "inProgress," : str;
+    str = annotationFilter?.completed ? str + "completed," : str;
+    str = annotationFilter?.mARkdown ? str + "mARkdown," : str;
+    if (str.endsWith(",")) str = str.slice(0, -1);
+    return str;
+  };
+  const annotationFilterQuery = annotationFilter ? `&annotation_status=${filterString()}` : "";
+  const searchQuery = searchField && query
+    ? `&${searchField}=${query}`
+    : query ? `&search=${query}` : "";
+  const normalize = normalizedSearch ? `` : `&normalize=false`;
+  const statusQuery = (showPrimary && showSecondary) || (!showPrimary && !showSecondary)
+    ? ``
+    : showPrimary ? `&analysis_priority=pri` : `&analysis_priority=sec`;
+  const max_tok_count = advanceSearch?.max_tok_count === "" ? `` : `&tok_count_lte=${advanceSearch?.max_tok_count}`;
+  const min_tok_count = advanceSearch?.min_tok_count === "" ? `` : `&tok_count_gte=${advanceSearch?.min_tok_count}`;
+  const editor = advanceSearch?.editor === "" ? `` : `&editor=${advanceSearch?.editor}`;
+  const edition_place = advanceSearch?.edition_place === "" ? `` : `&edition_place=${advanceSearch?.edition_place}`;
+  const publisher = advanceSearch?.publisher === "" ? `` : `&publisher=${advanceSearch?.publisher}`;
+  const edition_date = advanceSearch?.edition_date === "" ? `` : `&edition_date=${advanceSearch?.edition_date}`;
+  const died_before_AH = advanceSearch?.died_before_AH === "" ? `` : `&died_before_AH=${advanceSearch?.died_before_AH}`;
+  const died_after_AH = advanceSearch?.died_after_AH === "" ? `` : `&died_after_AH=${advanceSearch?.died_after_AH}`;
+  const textTypeFilter = activeTextTypes.length === 0 ? `` : `&text_type=${activeTextTypes.join(',')}`;
+  const languageFilter = languageQuery ? `&language=${languageQuery}` : ``;
+
+  const QUERY_PARAMS = `?ordering=${orderBy}${annotationFilterQuery}${statusQuery}${searchQuery}${normalize}${max_tok_count}${min_tok_count}${editor}${edition_place}${publisher}${edition_date}${died_before_AH}${died_after_AH}${textTypeFilter}${languageFilter}`;
+  const BASE = DEV_ENV ? DEV_BASE_URL : PROD_BASE_URL;
+  return `${BASE}/${releaseCode}/version-tsv/${QUERY_PARAMS}`;
 }
 
 // get sidepanel data base on version uri and release code
@@ -211,14 +269,28 @@ export async function getAggregatedStats() {
   }
 }
 
-// get corpus insight data
-
+// get corpus insight data for a single release
 export async function getCorpusInsightData(releaseCode) {
   try {
-    const RELEASE_CODE = releaseCode;
-    const res = await fetch(`${DEV_BASE_URL}/${RELEASE_CODE}/corpusinsights/`, {
-      mode: "cors",
-    });
+    const res = await fetch(
+      `${DEV_ENV ? DEV_BASE_URL : PROD_BASE_URL}/${releaseCode}/corpusinsights/`,
+      { mode: "cors" }
+    );
+    const data = await res.json();
+    return data;
+  } catch (error) {
+    return error;
+  }
+}
+
+// get corpus insight data for all releases (used to populate the version dropdown
+// and derive which releases have subcorpora)
+export async function getAllReleasesInsights() {
+  try {
+    const res = await fetch(
+      `${DEV_ENV ? DEV_BASE_URL : PROD_BASE_URL}/all-releases/corpusinsights/`,
+      { mode: "cors" }
+    );
     const data = await res.json();
     return data;
   } catch (error) {

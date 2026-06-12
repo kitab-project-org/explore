@@ -37,6 +37,7 @@ export default function MultiSlider({ min, max, handler, label }) {
     <Box sx={{ width: "100%", boxSizing: "border-box" }}>
       <Typography gutterBottom>{label}</Typography>
       <Slider
+        className="multi-slider"
         getAriaLabel={() => "Minimum distance shift"}
         value={value2}
         onChange={handleChange2}

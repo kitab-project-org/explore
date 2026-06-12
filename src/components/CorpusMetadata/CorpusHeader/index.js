@@ -1,9 +1,10 @@
-import { Box, Typography } from "@mui/material";
+import { Box, Button, Typography } from "@mui/material";
 import VersionDropdown from "../../Common/VersionDropdown";
 
-const CorpusHeader = () => {
+const CorpusHeader = ({ onStartTour }) => {
   return (
     <Box
+      id="CorpusHeader"
       display={"flex"}
       justifyContent={"space-between"}
       alignItems={"center"}
@@ -29,7 +30,19 @@ const CorpusHeader = () => {
       >
         OpenITI Corpus Metadata
       </Typography>
-      <VersionDropdown />
+      <Box display="flex" alignItems="center" gap={1}>
+        <Button
+          id="take-a-tour-btn"
+          size="small"
+          variant="outlined"
+          startIcon={<i className="fa-solid fa-signs-post"></i>}
+          onClick={onStartTour}
+          sx={{ textTransform: "none", whiteSpace: "nowrap" }}
+        >
+          Take a tour
+        </Button>
+        <VersionDropdown />
+      </Box>
     </Box>
   );
 };

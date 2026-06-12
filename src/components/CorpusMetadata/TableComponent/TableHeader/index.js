@@ -1,29 +1,47 @@
-import { Box, TableCell, TableHead, TableRow } from "@mui/material";
+import { useContext } from "react";
+import { Box, Checkbox, TableCell, TableHead, TableRow, Tooltip } from "@mui/material";
 import SortingComponent from "./SortingButtons/SortingComponent";
+import { Context } from "../../../../App";
 
 const TableHeader = ({ columns, classes }) => {
-  // get table cell width
+  const { rows, checkedBooks, setCheckedBooks } = useContext(Context);
+
+  const allChecked = rows?.length > 0 && rows.every(r => checkedBooks.some(c => c.id === r.id));
+  const someChecked = !allChecked && rows?.some(r => checkedBooks.some(c => c.id === r.id));
+
+  const handleSelectAll = () => {
+    if (allChecked) {
+      setCheckedBooks(checkedBooks.filter(c => !rows.some(r => r.id === c.id)));
+    } else {
+      const newRows = rows.filter(r => !checkedBooks.some(c => c.id === r.id));
+      setCheckedBooks([...checkedBooks, ...newRows]);
+    }
+  };
+  // get table cell width; the two multifunctional columns keep the same width
+  // regardless of whether manuscripts are included
   const getWidth = (value) => {
     if (value === "More") {
-      return "9%";
+      return "1%";
     } else if (value === "Text Reuse") {
-      return "9%";
-    } else if (value === "Author Death Date") {
-      return "9%";
+      return "10%";
     } else if (value === "Token Count") {
       return "9%";
-    } else if (value === "Book Title") {
-      return "30%";
-    } else if (value === "Author") {
-      return "13%";
+    } else if (value === "Author Death Date") {
+      return "10%";
+    } else if (value === "Author" || value === "Author / Holding") {
+      return "22%";
+    } else if (value === "Book Title" || value === "Book Title / Shelfmark") {
+      return "35%";
     } else if (value === "Version ID") {
-      return "14%";
+      return "19%";
     } else {
       return "auto";
     }
   };
 
-  // return dynamic components
+  // return sorting button components; the two multifunctional columns sort by
+  // text fields when manuscripts are included — manuscript rows without those
+  // fields will naturally sort to the end
   const returnComponent = (column) => {
     if (column === "Author Death Date ") {
       return (
@@ -36,20 +54,20 @@ const TableHeader = ({ columns, classes }) => {
       return (
         <SortingComponent ascending={"tok_length"} descending={"-tok_length"} />
       );
-    } else if (column === "Book Title") {
+    /*} else if (column === "Book Title" || column === "Book Title / Shelfmark") {
       return (
         <SortingComponent
           ascending={"version__text__title_lat_prefered"}
           descending={"-version__text__title_lat_prefered"}
         />
       );
-    } else if (column === "Author") {
+    } else if (column === "Author" || column === "Author / Holding") {
       return (
         <SortingComponent
           ascending={"version__text__author__author_lat_prefered"}
           descending={"-version__text__author__author_lat_prefered"}
         />
-      );
+      );*/
     } else if (column === "Text Reuse") {
       return (
         <SortingComponent
@@ -76,6 +94,7 @@ const TableHeader = ({ columns, classes }) => {
 
   return (
     <TableHead
+      id="table-header"
       sx={{
         color: "text.primary",
         fontSize: 34,
@@ -94,17 +113,17 @@ const TableHeader = ({ columns, classes }) => {
         sx={{
           width: "100%",
           display: "flex",
-          alignItems: "center",
+          alignItems: "stretch",
           justifyContent: "start",
         }}
       >
         {columns.map((column) => (
           <TableCell
             className={classes.tableHeaderCell}
+            id={column.field.replace("_", "-")+"-header"}
             key={column.field}
             sx={{
               width: `${getWidth(column.headerName)} !important`,
-              height: "40px",
               display: {
                 xs: column.headerName === "Author Death Date" ? "none" : "flex",
                 sm: "flex",
@@ -122,8 +141,22 @@ const TableHeader = ({ columns, classes }) => {
               lineHeight={"18px"}
               textAlign="center"
             >
-              {returnComponent(column.headerName)}
-              {column.headerName}
+              {column.headerName === "More" ? (
+                <Tooltip title="Select / deselect all on this page">
+                  <Checkbox
+                    size="small"
+                    checked={allChecked}
+                    indeterminate={someChecked}
+                    onChange={handleSelectAll}
+                    sx={{ color: "white", "&.Mui-checked": { color: "white" }, "&.MuiCheckbox-indeterminate": { color: "white" }, p: 0 }}
+                  />
+                </Tooltip>
+              ) : (
+                <>
+                  {returnComponent(column.headerName)}
+                  {column.headerName}
+                </>
+              )}
             </Box>
           </TableCell>
         ))}

@@ -1,7 +1,171 @@
+import { saveSvgAsPng, svgAsDataUri } from "save-svg-as-png";
 import { srtFolders, lightSrtFolders, srtFoldersGitHub} from "../assets/srtFolders"
 import { config } from "../config";
+
+
 const { GITHUB_BASE_URL, GITHUB_BASE_RAW_URL } = config;
 
+// Returns true for Chrome and other Chromium-based browsers (excludes Firefox, Safari).
+// These browsers have a ~5MB limit on data URIs used for downloads, which can corrupt
+// very large PNG exports.
+const isChrome = () =>
+  typeof navigator !== "undefined" &&
+  /Chrome/.test(navigator.userAgent) &&
+  /Google Inc/.test(navigator.vendor);
+
+// Merge several SVG elements into one, using their current DOM positions to
+// determine the layout. The first id in the array is treated as the origin.
+const mergeChartSVGs = (svgIds) => {
+  const ns = "http://www.w3.org/2000/svg";
+  const elements = svgIds.map(id => document.getElementById(id)).filter(Boolean);
+  if (!elements.length) return null;
+
+  const rects = elements.map(el => el.getBoundingClientRect());
+  const left   = Math.min(...rects.map(r => r.left));
+  const top    = Math.min(...rects.map(r => r.top));
+  const right  = Math.max(...rects.map(r => r.right));
+  const bottom = Math.max(...rects.map(r => r.bottom));
+  const totalWidth  = right  - left;
+  const totalHeight = bottom - top;
+
+  const combined = document.createElementNS(ns, "svg");
+  combined.setAttribute("xmlns", ns);
+  combined.setAttribute("width",  totalWidth);
+  combined.setAttribute("height", totalHeight);
+
+  const bg = document.createElementNS(ns, "rect");
+  bg.setAttribute("width",  totalWidth);
+  bg.setAttribute("height", totalHeight);
+  bg.setAttribute("fill",   "white");
+  combined.appendChild(bg);
+
+  elements.forEach((el, i) => {
+    const g = document.createElementNS(ns, "g");
+    g.setAttribute("transform",
+      `translate(${rects[i].left - left}, ${rects[i].top - top})`);
+    Array.from(el.childNodes).forEach(child => g.appendChild(child.cloneNode(true)));
+    combined.appendChild(g);
+  });
+
+  return combined;
+};
+
+// When the bottom bar is not included in the merged SVG, inject its X axis
+// (date ticks + axis label) at the same position it would normally occupy.
+const injectBottomBarXAxis = (mergedSvg, includedIds) => {
+  const ns = "http://www.w3.org/2000/svg";
+  const bottomBarEl = document.getElementById('bottom-bar');
+  const innerBarG   = bottomBarEl?.querySelector('.bottom-bar');
+  const bbXAxisEl   = innerBarG?.querySelector('.xAxis');
+  if (!bottomBarEl || !innerBarG || !bbXAxisEl) return;
+
+  const includedRects = includedIds
+    .map(id => document.getElementById(id)).filter(Boolean)
+    .map(el => el.getBoundingClientRect());
+  if (!includedRects.length) return;
+  const minLeft = Math.min(...includedRects.map(r => r.left));
+  const minTop  = Math.min(...includedRects.map(r => r.top));
+
+  // Compute y-shift: move bottom bar axis up to align with the scatterplot's
+  // own axis line (which sits at the bottom of the chart area).
+  const scatterXAxisEl  = document.querySelector('#scatterChart .scatter-plot .xAxis');
+  const bbAxisRect      = bbXAxisEl.getBoundingClientRect();
+  const scatterAxisRect = scatterXAxisEl?.getBoundingClientRect();
+  const yShift = scatterAxisRect ? scatterAxisRect.top - bbAxisRect.top : 0;
+
+  const bbRect = bottomBarEl.getBoundingClientRect();
+  const outerG = document.createElementNS(ns, "g");
+  outerG.setAttribute("transform",
+    `translate(${bbRect.left - minLeft}, ${bbRect.top - minTop + yShift})`);
+
+  // Shallow-clone the inner group (preserves its translate transform) then
+  // only copy .xAxis and .xLabel into it, leaving out bars and yAxis.
+  const innerG = innerBarG.cloneNode(false);
+  ['.xAxis', '.xLabel'].forEach(sel =>
+    innerBarG.querySelectorAll(sel).forEach(el =>
+      innerG.appendChild(el.cloneNode(true))
+    )
+  );
+  outerG.appendChild(innerG);
+  mergedSvg.appendChild(outerG);
+
+  // Remove the scatterplot's blank xAxis so only the labelled one remains.
+  mergedSvg.querySelectorAll('.scatter-plot .xAxis').forEach(el => el.remove());
+
+  // Extend the merged SVG height to include the xLabel below the axis.
+  const neededHeight = bbRect.bottom - minTop + yShift;
+  const currentHeight = parseFloat(mergedSvg.getAttribute("height")) || 0;
+  if (neededHeight > currentHeight) {
+    mergedSvg.setAttribute("height", neededHeight);
+    const bg = mergedSvg.querySelector("rect");
+    if (bg) bg.setAttribute("height", neededHeight);
+  }
+};
+
+const getSvgEl = (svgIdOrEl) =>
+  typeof svgIdOrEl === "string" ? document.getElementById(svgIdOrEl) : svgIdOrEl;
+
+const downloadSVG = (svgIdOrEl, downloadFileName) => {
+  const svg = getSvgEl(svgIdOrEl);
+
+  svgAsDataUri(svg)
+    .then(uri => {
+      const link = document.createElement('a');
+      link.download = downloadFileName.replace(".png", ".svg");
+      link.href = uri;                     // data URI
+      document.body.appendChild(link);     // required for Firefox
+      link.click();                        // trigger download
+      document.body.removeChild(link);     // cleanup
+    })
+    .catch(err => {
+      console.error("Failed to download SVG:", err);
+    });
+}
+
+const downloadPNG = (svgIdOrEl, downloadFileName, outputImageWidth, dpi) => {
+  const svg = getSvgEl(svgIdOrEl);
+  const newSvg = svg.cloneNode(true);
+
+  let scale = 3; // default scale: 300 %
+
+  if (outputImageWidth) {  // context variable!
+    const inchPerMM = 1 / 25.4;
+    // Use the width attribute as fallback for off-DOM elements (e.g. merged SVGs):
+    const svgPixelWidth = svg.clientWidth || parseFloat(svg.getAttribute("width")) || 1;
+    const outputWidthInInches = outputImageWidth * inchPerMM;
+    const targetPixelWidth = outputWidthInInches * (dpi || 300); // dpi is also a context variable; use 300 if dpi is undefined
+    scale = targetPixelWidth / svgPixelWidth / window.devicePixelRatio;
+    console.log("window.devicePixelRatio: "+window.devicePixelRatio)
+
+    /*
+      NB: the save-svg-as-png library gets the width of the svg in one of these ways:
+      * - svg.viewBox.baseVal["width"] : returns 0 in our case
+      * - newSvg.getAttribute("width") : returns same value as svg.clientWidth
+      * - svg.getBoundingClientRect()["width"] : returns same value as svg.clientWidth
+      * - window.getComputedStyle(svg).getPropertyValue("width") : returns same value as svg.clientWidth
+    
+    console.log('svg.viewBox.baseVal["width"]: '+svg.viewBox.baseVal["width"]);
+    console.log('newSvg.getAttribute("width"): '+newSvg.getAttribute("width"));
+    console.log('svg.getBoundingClientRect()["width"]: '+svg.getBoundingClientRect()["width"]);
+    console.log('window.getComputedStyle(svg).getPropertyValue("width") '+window.getComputedStyle(svg).getPropertyValue("width"));
+    
+    
+    console.log(`requested image width: ${outputImageWidth} mm`);
+    console.log(`requested dpi: ${dpi}`);
+    console.log(`svg width: ${svgPixelWidth}`);
+    console.log(`svg bounding box width: ${svg.getBBox().width}`);
+    console.log(`Output width: ${outputWidthInInches} inch`);
+    console.log(`Output width: ${targetPixelWidth} pixels`);
+    console.log(`Scale: ${scale}`);
+    */
+  }
+
+  // save the png:
+  saveSvgAsPng(newSvg, downloadFileName, {
+    scale: scale, 
+    backgroundColor: "white",
+  });
+};
 
 /**
  * Testing functionality to make a server fetch fail
@@ -567,6 +731,11 @@ function getMetaLabel(d, metaType) {
 
 
 export {
+  isChrome,
+  mergeChartSVGs,
+  injectBottomBarXAxis,
+  downloadSVG,
+  downloadPNG,
   getHighestValueInArrayOfObjects,
   calculateTooltipPos,
   cleanSearchPagination,

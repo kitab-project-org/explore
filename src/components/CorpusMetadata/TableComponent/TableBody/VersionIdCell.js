@@ -1,41 +1,83 @@
 import {
   Box,
-  Divider,
+  Chip,
   Stack,
   TableCell,
   Tooltip,
   Typography,
 } from "@mui/material";
 import { useContext } from "react";
-import { downloadGitHubRawFile } from "./MoreCell";
+import GitHubActions from "./GithubActions";
 import { Context } from "../../../../App";
 import CopyToClipboard from "../../../Common/CopyToClipboard";
 
+function downloadGitHubRawFile(row) {
+  /*let outputFilename = `${row?.version_uri}.txt`; */ 
+
+  fetch(row?.release_version?.url)
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error("Failed to download file.");
+      }
+      return response.blob();
+    })
+    .then((blob) => {
+      // Create a temporary anchor element
+      const anchor = document.createElement("a");
+      anchor.style.display = "none";
+      document.body.appendChild(anchor);
+
+      // Create a URL object from the blob
+      const url = window.URL.createObjectURL(blob);
+
+      // Set the anchor's href to the URL
+      anchor.href = url;
+
+      // Set the anchor's download attribute and filename
+      const outputFilename = new URL(`${row?.release_version?.ur}`).pathname.split('/').pop();
+      anchor.download = outputFilename;
+
+      // Trigger a click event on the anchor element to start the download
+      anchor.click();
+
+      // Clean up by revoking the URL object
+      window.URL.revokeObjectURL(url);
+
+      // Remove the temporary anchor element from the document
+      document.body.removeChild(anchor);
+    })
+    .catch((error) => {
+      console.error("Error:", error.message);
+    });
+}
+
 const VersionIdCell = ({ row, classes }) => {
-  const { toggleSidePanel } = useContext(Context);
+  const { toggleSidePanel, allReleasesInsights } = useContext(Context);
+  const allLanguages = allReleasesInsights.reduce(
+    (acc, r) => ({ ...acc, ...(r.languages ?? {}) }),
+    {}
+  );
   let versionUrl = row?.release_version?.url;
   let versionUri = versionUrl.split("/")[versionUrl.split("/").length - 1];
+  const languages = row?.language
+    ? row.language.split(",").map(l => l.trim()).filter(Boolean)
+    : [];
 
-  // get colors for annotation status
-  const getColored = () => {
-    if (row?.release_version?.annotation_status === "(not yet annotated)") {
-      return "conic-gradient(grey 360deg, #d1d5db 0deg)";
-    } else if (row?.release_version?.annotation_status === "inProgress") {
-      return "conic-gradient(#2863A5 90deg, #d1d5db 0deg)";
-    } else if (row?.release_version?.annotation_status === "completed") {
-      return "conic-gradient(#ea580c 180deg, #d1d5db 0deg)";
-    } else if (row?.release_version?.annotation_status === "mARkdown") {
-      return "conic-gradient(green 360deg, #d1d5db 0deg)";
-    }
+  const annotationIcons = {
+    "(not yet annotated)": { icon: "fa-regular fa-circle", color: "#d1d5db" },
+    inProgress:            { icon: "fa-solid fa-spinner",      color: "#ea580c" },
+    completed:             { icon: "fa-solid fa-circle",       color: "green" },
+    mARkdown:              { icon: "fa-solid fa-circle-check", color: "green" },
   };
+  const annotationIcon = annotationIcons[row?.release_version?.annotation_status];
 
   return (
     <TableCell
-      className={classes.tableCell}
+      className={`${classes.tableCell} version-id-cell`}
       sx={{
         width: {
           xs: "100%",
-          md: "15%",
+          md: "18%",
         },
         border: "none",
         display: {
@@ -49,6 +91,7 @@ const VersionIdCell = ({ row, classes }) => {
     >
       <Stack spacing={"2px"}>
         <Typography
+          className="tour-version-link"
           color={"#2863A5"}
           sx={{ cursor: "pointer" }}
           onClick={() => {
@@ -65,20 +108,14 @@ const VersionIdCell = ({ row, classes }) => {
           {row?.version_code}
         </Typography>
 
-        <Stack
-          direction={"row"}
-          spacing={1}
-          divider={<Divider orientation="vertical" flexItem />}
-          alignItems={"center"}
-        >
+        {/* Row 1: action icons */}
+        <Box display="flex" flexWrap="wrap" alignItems="center" gap={1}>
           <Tooltip
             placement="top"
             title="Warning: This is not the best version of the book! Choose another version unless you really want this one."
           >
-            <Box sx={{ pl: 1 }}>
-              {row?.release_version?.analysis_priority === "pri" ? (
-                ""
-              ) : (
+            <Box>
+              {row?.release_version?.analysis_priority !== "pri" && (
                 <i
                   className="fa-solid fa-triangle-exclamation"
                   style={{ color: "#eab308" }}
@@ -88,34 +125,46 @@ const VersionIdCell = ({ row, classes }) => {
           </Tooltip>
           <Tooltip placement="top" title={row?.release_version?.url}>
             <Box
+              className="tour-download-text"
               onClick={() => downloadGitHubRawFile(row)}
-              sx={{
-                color: "#94a3b8",
-                cursor: "pointer",
-              }}
+              sx={{ color: "#94a3b8", cursor: "pointer" }}
             >
               <Typography color={"#2863A5"}>
                 <i className="fa-solid fa-cloud-arrow-down"></i>
               </Typography>
             </Box>
           </Tooltip>
-          <Tooltip title={row?.release_version?.annotation_status}>
-            <Box
-              sx={{
-                borderRadius: "50px",
-                height: "16px",
-                width: "16px",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-              style={{
-                background: getColored(row?.release_version?.annotation_status),
-              }}
-            ></Box>
-          </Tooltip>
           <CopyToClipboard data={versionUri} />
-        </Stack>
+          <GitHubActions versionURI={row?.version_uri} />
+        </Box>
+
+        {/* Row 2: information icons */}
+        <Box display="flex" flexWrap="wrap" alignItems="center" gap={1}>
+          <Tooltip title={row?.release_version?.annotation_status}>
+            <Box display="flex" alignItems="center">
+              {annotationIcon && (
+                <i
+                  className={annotationIcon.icon}
+                  style={{ color: annotationIcon.color, fontSize: "16px" }}
+                />
+              )}
+            </Box>
+          </Tooltip>
+          {languages.length > 0 && (
+            <Box display="flex" gap={0.5} flexWrap="wrap">
+              {languages.map(lang => (
+                <Tooltip key={lang} title={allLanguages[lang] ?? lang} arrow>
+                  <Chip
+                    label={lang}
+                    size="small"
+                    variant="outlined"
+                    sx={{ height: "20px", fontSize: "15px", borderRadius: "4px" }}
+                  />
+                </Tooltip>
+              ))}
+            </Box>
+          )}
+        </Box>
       </Stack>
       <Typography
         sx={{

@@ -406,8 +406,37 @@ function parseDiffHtml(diffHtml, intoRows, arChars, refine_n) {
     console.log(wikiHtml);
   }
   var rootNode = wikiHtml.getElementsByTagName("pre")[0];
+  if (!rootNode) return ["", ""];
   if (VERBOSE) {
     console.log(rootNode);
+  }
+
+  // Pre-pass: build per-child A/B markup for each wikEdDiffBlock so that nested
+  // wikEdDiffInsert/Delete spans are shown as "added"/"removed" rather than "moved".
+  const blockMarkups = {};
+  for (let bi = 0; bi < rootNode.childNodes.length; bi++) {
+    const bc = rootNode.childNodes[bi];
+    if (bc.nodeType !== Node.ELEMENT_NODE || !bc.classList.contains("wikEdDiffBlock")) continue;
+    const num = (bc.getAttribute("id") || "").replace("wikEdDiffBlock", "");
+    if (!num) continue;
+    let aMarkup = "", bMarkup = "";
+    bc.childNodes.forEach(child => {
+      if (child.nodeType === Node.TEXT_NODE) {
+        if (child.textContent) {
+          aMarkup += `<span class="moved">${child.textContent}</span>`;
+          bMarkup += `<span class="moved">${child.textContent}</span>`;
+        }
+      } else if (child.classList && child.classList.contains("wikEdDiffInsert")) {
+        bMarkup += `<span class="added">${child.textContent}</span>`;
+      } else if (child.classList && child.classList.contains("wikEdDiffDelete")) {
+        aMarkup += `<span class="removed">${child.textContent}</span>`;
+      } else if (child.textContent) {
+        // wikEdDiffSpace, wikEdDiffNewline, etc. — common to both sides
+        aMarkup += `<span class="moved">${child.textContent}</span>`;
+        bMarkup += `<span class="moved">${child.textContent}</span>`;
+      }
+    });
+    blockMarkups[num] = { a: aMarkup, b: bMarkup };
   }
 
   // loop through all the child nodes
@@ -481,7 +510,9 @@ function parseDiffHtml(diffHtml, intoRows, arChars, refine_n) {
         }
       });
     } else if (c.classList.contains("wikEdDiffBlock")) {
-      // =>  position in text B of a text block that is in both texts but in a different location
+        // => destination in text B of a block moved from a different position in A;
+        //    may contain wikEdDiffInsert/Delete children marking edits within the moved block
+
 
       if (VERBOSE) {
         console.log("MOVED, B " + c.textContent);
@@ -502,7 +533,10 @@ function parseDiffHtml(diffHtml, intoRows, arChars, refine_n) {
         );
         // reset the pos_changes dictionary:
         pos_changes = { Old: "", New: "" };
-        bHtml += '<span class="moved">' + c.textContent + "</span>";
+        // Use the pre-built per-child markup so that wikEdDiffInsert/Delete within
+        // the block are shown as "added"/"removed" rather than all lumped as "moved".
+        const blockNum = (c.getAttribute("id") || "").replace("wikEdDiffBlock", "");
+        bHtml += blockMarkups[blockNum]?.b ?? "";
       }
     } else if (
       c.classList.contains("wikEdDiffMarkRight") ||
@@ -531,7 +565,10 @@ function parseDiffHtml(diffHtml, intoRows, arChars, refine_n) {
         );
         // reset the pos_changes dictionary:
         pos_changes = { Old: "", New: "" };
-        aHtml += '<span class="moved">' + c.getAttribute("title") + "</span>";
+        // Use the pre-built per-child markup so that deletions within the moved block
+        // are shown as "removed" rather than all lumped as "moved".
+        const markNum = (c.getAttribute("id") || "").replace("wikEdDiffMark", "");
+        aHtml += blockMarkups[markNum]?.a ?? '<span class="moved">' + c.getAttribute("title") + "</span>";
       }
     }
   }
@@ -579,6 +616,31 @@ async function kitabDiff(a, b, intoRows = false, arChars = 20, refine_n = 3) {
 
   // split the output of the WikEdDiff algorithm into two separate html strings:
   var [aHtml, bHtml] = parseDiffHtml(diffHtml, intoRows, arChars, refine_n);
+
+  // Integrity check: stripped output should match the original inputs.
+  const stripToPlain = (html) =>
+    html.replace(/###NEW_ROW###/g, ' ')
+        .replace(/<br\/?>/gi, ' ')
+        .replace(/<[^>]*?>/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+  const logFirstDiff = (label, original, diffed) => {
+    const o = stripToPlain(original);
+    const s = stripToPlain(diffed);
+    if (o === s) {
+      console.log("Integrity check: KitabDiff kept the strings intact");
+      return;
+    }
+    const len = Math.min(o.length, s.length);
+    let i = 0;
+    while (i < len && o[i] === s[i]) i++;
+    const start = Math.max(0, i - 40);
+    console.warn(`kitabDiff integrity mismatch in ${label} at char ${i}:`);
+    console.warn(`  input:  "...${o.substring(start, i + 60)}..."`);
+    console.warn(`  output: "...${s.substring(start, i + 60)}..."`);
+  };
+  logFirstDiff('a', a, aHtml);
+  logFirstDiff('b', b, bHtml);
 
   return [diffHtml, aHtml, bHtml];
 }

@@ -46,14 +46,19 @@ const AuthorDetails = ({ fullData }) => {
     },
   ];
 
+  const hasNameElements = author?.name_elements?.length > 0;
+
   return (
-    <Box sx={{ width: "100%" }}>
-      {data.map((item, index) => (
+    <Box sx={{ width: "100%" }} id="AuthorDetails">
+      {data.map((item, index) => {
+        if (item.header === "Name Elements" && !hasNameElements) return null;
+        return (
         <Box
           key={index}
           sx={{
             width: "100%",
             display: "flex",
+            flexDirection: { xs: "column", sm: "row" },
             margin: "5px 0px",
             borderBottom: "1px solid rgba(224, 224, 224, 1)",
             "&:last-child": {
@@ -62,14 +67,12 @@ const AuthorDetails = ({ fullData }) => {
           }}
         >
           {item.header === "Name Elements" ? (
-            author && (
-              <Box width={"100%"} margin={"5px 0px"}>
-                {item.header}
-                <NameElementsTable data={author?.name_elements} />
-              </Box>
-            )
+            <Box width={"100%"} margin={"5px 0px"}>
+              {item.header}
+              <NameElementsTable data={author?.name_elements} />
+            </Box>
           ) : (
-            <Box sx={{ width: "25%", margin: "5px 0px" }}>{item.header}</Box>
+            <Box sx={{ width: { xs: "100%", sm: "25%" }, margin: "5px 0px" }}>{item.header}</Box>
           )}
 
           {item.header === "Name Elements" ? (
@@ -77,7 +80,7 @@ const AuthorDetails = ({ fullData }) => {
           ) : (
             <Box
               sx={{
-                width: "75%",
+                width: { xs: "100%", sm: "75%" },
                 display: "flex",
                 flexWrap: "wrap",
                 alignItems: "center",
@@ -99,7 +102,8 @@ const AuthorDetails = ({ fullData }) => {
             </Box>
           )}
         </Box>
-      ))}
+      );
+      })}
 
       {author?.related_places && author?.related_places.length !== 0 && (
         <Box mt="30px">

@@ -74,20 +74,26 @@ const TextReuseTable = ({ b1Metadata, normalizedQuery, handleRedirectToChart, b1
      */
     const fetchData = async (b1Metadata) => {
       const versionID = b1Metadata?.version_uri?.split(".").pop();
-      console.log("Fetching data! "+versionID);
       const releaseCode = localStorage.getItem("release_code");
       const statsFile = await getOneBookReuseStats(
         JSON.parse(releaseCode),
         versionID
       );
-      if (!isMounted) return // don't update state if unmounted
+      if (!isMounted) return;
+      // downloadCsvData returns the Error object on CORS/network failure instead
+      // of throwing, so check explicitly before handing to Papa.parse.
+      if (!statsFile || statsFile instanceof Error) {
+        setIsError(true);
+        setIsLoading(false);
+        return;
+      }
       // parse the statsFile csv:
       Papa.parse(statsFile, {
         header: true,
         dynamicTyping: true, // should convert numeric fields to integers
         skipEmptyLines: true,
         complete: (result) => {
-          if (!isMounted) return // don't update state if unmounted
+          if (!isMounted) return;
           setTotal(result.data.length);
           // add a lowercase version of the book URI (to make filtering easier down the line)
           // and remove the ch_match key, which is not used here.
@@ -96,24 +102,27 @@ const TextReuseTable = ({ b1Metadata, normalizedQuery, handleRedirectToChart, b1
             book_lc: rest.book.toLowerCase()
           }));
           setStatsData(stats);
-        }
+          setIsLoading(false);
+        },
+        error: () => {
+          if (!isMounted) return;
+          setIsError(true);
+          setIsLoading(false);
+        },
       });
     };
 
     // fetch the text reuse stats data:
-    try {
-      fetchData(b1Metadata);
-      setIsLoading(false);
-      setIsError(false);
-    } catch {
+    fetchData(b1Metadata).catch(() => {
       if (isMounted) {
         setIsError(true);
         setIsLoading(false);
         setStatsData([]);
         setTotal(0);
       }
-    }
-  }, [b1Metadata, isOpenDrawer]);
+    });
+    setIsError(false);
+  }, [b1Metadata, isOpenDrawer]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // filter the data whenever the search query changes:
   // NB: the query has already been lowercased and trimmed!
@@ -220,7 +229,7 @@ const TextReuseTable = ({ b1Metadata, normalizedQuery, handleRedirectToChart, b1
   }
 
   return (
-    <Box sx={{ width: "100%" }}>
+    <Box id="TextReuseTable" sx={{ width: "100%" }}>
       <Box sx={{ float: "left", width: "100%" }}>
         <TableHeader
           sortingOrder={sortingOrder}
@@ -294,74 +303,85 @@ const TextReuseTable = ({ b1Metadata, normalizedQuery, handleRedirectToChart, b1
                     display={"flex"}
                     alignItems={"center"}
                   >
-                  { useGithubUrl === null || fullDataExists === null || liteDataExists === null ? (<CircularProgress size={"15px"} />)
-                    : (
+                  { useGithubUrl === null || fullDataExists === null || liteDataExists === null ? (
+                      <CircularProgress size={"15px"} />
+                    ) : (
                     <>
                     { useGithubUrl || liteDataExists ? (
-                    <Tooltip placement="top" title={"Visualization"}>
-                      <Typography>
-                        <button
-                          onClick={() => openViz(
-                            b1Metadata, 
-                            item, 
-                            handleRedirectToChart
-                          )}
-                          style={{
-                            background: "none",
-                            border: "0px",
-                            cursor: "pointer",
-                            fontSize: "18px",
-                            color: "#7593af",
-                            marginRight: "8px",
-                          }}
-                        >
-                          <i className="fa-solid fa-barcode"></i>
-                        </button>
-                      </Typography>
-                    </Tooltip>
-                    ) : null
+                        <Tooltip placement="top" title={"Visualization"}>
+                          <Typography >
+                            <button 
+                              className="tour-reuse-viz-icon"
+                              onClick={() => openViz(
+                                b1Metadata, 
+                                item, 
+                                handleRedirectToChart
+                              )}
+                              style={{
+                                background: "none",
+                                border: "0px",
+                                cursor: "pointer",
+                                fontSize: "18px",
+                                color: "#7593af",
+                                marginRight: "8px",
+                              }}
+                            >
+                              <i className="fa-solid fa-barcode"></i>
+                            </button>
+                          </Typography>
+                        </Tooltip>
+                      ) : null
                     }
-                    { fullDataExists ? (
-                    <Tooltip placement="top" title={"Download CSV (with text of alignments)"}>
-                      <Typography>
-                        <IconButton
-                          sx={{
-                            background: "none",
-                            border: "0px",
-                            cursor: "pointer",
-                            fontSize: "18px",
-                            color: "#7593af",
-                          }}
-                          onClick={() => downloadPairwiseCsv(b1Metadata, item.id)}
-                        >
-                          <i className="fa-solid fa-file"></i>
-                        </IconButton>
+                    <Box
+                      display={"flex"}
+                      alignItems={"center"}
+                      className="tour-reuse-download"
+                    >
+                      { fullDataExists ? (
+                          <Tooltip placement="top" title={"Download CSV (with text of alignments)"}>
+                            <Typography>
+                              <IconButton
+                                sx={{
+                                  background: "none",
+                                  border: "0px",
+                                  cursor: "pointer",
+                                  fontSize: "18px",
+                                  color: "#7593af",
+                                }}
+                                onClick={() => downloadPairwiseCsv(b1Metadata, item.id)}
+                              >
+                                <i className="fa-solid fa-file"></i>
+                              </IconButton>
 
-                      </Typography>
-                    </Tooltip>
-                    ) : null
-                    }
-                    { useGithubUrl || liteDataExists ? (
-                    <Tooltip placement="top" title={"Download Lite CSV (excluding text of alignments)"}>
-                      <Typography>
-                        <IconButton
-                          sx={{
-                            background: "none",
-                            border: "0px",
-                            cursor: "pointer",
-                            fontSize: "18px",
-                            color: "#7593af",
-                          }}
-                          onClick={() => downloadPairwiseCsv(b1Metadata, item.id, true, useGithubUrl)}
-                        >
-                          <i className="fa-solid fa-file-half-dashed"></i>
-                        </IconButton>
+                            </Typography>
+                          </Tooltip>
+                        ) : null
+                      }
+                      { useGithubUrl || liteDataExists ? (
+                          <Tooltip placement="top" title={"Download Lite CSV (excluding text of alignments)"}>
+                            <Typography>
+                              <IconButton
+                                sx={{
+                                  background: "none",
+                                  border: "0px",
+                                  cursor: "pointer",
+                                  fontSize: "18px",
+                                  color: "#7593af",
+                                }}
+                                onClick={() => downloadPairwiseCsv(b1Metadata, item.id, true, useGithubUrl)}
+                              >
+                                <i className="fa-solid fa-file-half-dashed"></i>
+                              </IconButton>
 
-                      </Typography>
-                    </Tooltip>
-                    ) : null}
+                            </Typography>
+                          </Tooltip>
+                        ) : null
+                      }
+                    </Box>
                     </>)
+                    
                   }
+                    
                   </Box>
                 </Box>
               )

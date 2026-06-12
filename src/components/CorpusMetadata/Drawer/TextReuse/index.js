@@ -33,7 +33,7 @@ const DownloadSrt = ({ fullData, fullDataLoading }) => {
   ];
 
   return (
-    <Box sx={{ width: "100%" }}>
+    <Box id="TextReuse-Drawer" sx={{ width: "100%" }}>
       
       <Box>
         {data.length !== 0 &&
@@ -68,7 +68,7 @@ const DownloadSrt = ({ fullData, fullDataLoading }) => {
           ))}
       </Box>
 
-      <Box>
+      <Box id="reuse-viz-all">
         {(data.length !== 0 && oneToAllFolders[releaseCode]) &&
           data.slice(1, 2).map((item, index) => (
             <Box
@@ -103,11 +103,11 @@ const DownloadSrt = ({ fullData, fullDataLoading }) => {
           ))}
       </Box>
 
-      <Box py={"30px"}>
+      <Box id="reuse-pairwise-section" py={"30px"}>
         <Box display="flex" alignItems="center" justifyContent="space-between">
           <Typography>Pairwise Text Reuse Data:</Typography>
           <TextField
-            id="outlined-search"
+            id="reuse-pairwise-search"
             label={"Search"}
             type="search"
             size="small"
@@ -122,7 +122,7 @@ const DownloadSrt = ({ fullData, fullDataLoading }) => {
         <TextReuseData fullData={fullData} query={query} setQuery={setQuery} fullDataLoading={fullDataLoading}/>
       </Box>
 
-      <Box>
+      <Box id="reuse-folder">
         {data.length !== 0 &&
           data.slice(0, 1).map((item, index) => (
             <Box

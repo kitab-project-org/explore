@@ -5,7 +5,7 @@ import { Context } from "../../../App";
 import { cleanSearchPagination } from "../../../utility/Helper"
 
 
-function MetaFilters() {
+function AnnotationFilters() {
   const { annotationFilter, setAnnotationFilter } = useContext(Context);
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -40,7 +40,7 @@ function MetaFilters() {
 
   return (
     <>
-      <FormControl my={0} fullWidth>
+      <FormControl id="filter-section-annotation" my={0} fullWidth>
         <FormLabel
           sx={{
             py: "10px",
@@ -50,7 +50,7 @@ function MetaFilters() {
         >
           Annotation Status:
         </FormLabel>
-        <Box display={"flex"} flexDirection={"column"} gap={1} mx={2}>
+        <Box display={"flex"} flexDirection={"column"} gap={1} ml={1}>
           <Box
             display={"flex"}
             alignItems={"center"}
@@ -68,7 +68,6 @@ function MetaFilters() {
               checked={annotationFilter?.notYetAnnotated}
               onChange={handleChange}
               name={"notYetAnnotated"}
-              color={"notYetAnnotated"}
             />
           </Box>
 
@@ -89,7 +88,6 @@ function MetaFilters() {
               checked={annotationFilter?.inProgress}
               onChange={handleChange}
               name={"inProgress"}
-              color={"inProgress"}
             />
           </Box>
 
@@ -110,7 +108,6 @@ function MetaFilters() {
               checked={annotationFilter?.completed}
               onChange={handleChange}
               name={"completed"}
-              color={"completed"}
             />
           </Box>
 
@@ -131,7 +128,6 @@ function MetaFilters() {
               checked={annotationFilter?.mARkdown}
               onChange={handleChange}
               name={"mARkdown"}
-              color={"mARkdown"}
             />
           </Box>
         </Box>
@@ -140,4 +136,4 @@ function MetaFilters() {
   );
 }
 
-export default MetaFilters;
+export default AnnotationFilters;

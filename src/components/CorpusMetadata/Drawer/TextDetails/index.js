@@ -33,7 +33,7 @@ const TextDetails = ({ fullData }) => {
   ];
 
   return (
-    <Box sx={{ width: "100%" }}>
+    <Box id="TextDetails" sx={{ width: "100%" }}>
       <Box>
         {data.map((item, index) => (
           <Box

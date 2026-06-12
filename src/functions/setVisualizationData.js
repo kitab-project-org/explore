@@ -131,25 +131,24 @@ function prepareMsData(
   for (let i = 0; i < msData.length; i++) {
     try {
       msData[i]["bookIndex"] = bookIndexDict[msData[i]["id2"]];
-      msData[i]["date"] = parseInt(
-        bookUriDict[msData[i]["id2"]][0].substring(0, 4)
-      );
+      const rawMsDate = parseInt(bookUriDict[msData[i]["id2"]][0].substring(0, 4));
+      msData[i]["date"] = isNaN(rawMsDate) ? null : rawMsDate;
     } catch (error) {}
   }
   return [msData, msStats, msBooks];
 }
 
 function prepareStats(stats, mainBookID, mainBookURI, mainBookMilestones) {
-  // add stats of the main book to the stats array:
-  stats.push({
-    id: mainBookID,
-    book: mainBookURI,
-    alignments: mainBookMilestones,
-    ch_match: 0,
-  });
 
   // sort the stats by book URI:
-  stats.sort((a, b) => (a.book > b.book ? 1 : b.book > a.book ? -1 : 0));
+  //stats.sort((a, b) => (a.book > b.book ? 1 : b.book > a.book ? -1 : 0));
+  stats.sort((a, b) => {
+    const aKey = a.book ?? a.id ?? '';
+    const bKey = b.book ?? b.id ?? '';
+    return aKey > bKey ? 1 : bKey > aKey ? -1 : 0;
+  });
+  console.log("prepareStats: sorted stats:");
+  console.log(stats);
 
   // add date and book_index fields and create dictionaries:
   var bookIndexDict = {}; // keys: versionID, values: bookIndex
@@ -157,10 +156,27 @@ function prepareStats(stats, mainBookID, mainBookURI, mainBookMilestones) {
   for (var i = 0; i < stats.length; i++) {
     stats[i]["bookIndex"] = i + 1;
     bookIndexDict[stats[i]["id"]] = stats[i]["bookIndex"];
-    bookUriDict[stats[i]["id"]] = [stats[i]["book"]];
-    let date = parseInt(stats[i]["book"].substring(0, 4));
-    stats[i]["date"] = date;
+    bookUriDict[stats[i]["id"]] = [stats[i]["book"] ?? stats[i]["id"]];
+    const rawDate = stats[i]["book"] ? parseInt(stats[i]["book"].substring(0, 4)) : NaN;
+    stats[i]["date"] = isNaN(rawDate) ? null : rawDate;
+    stats[i]["manuscript"] = stats[i]["book"] ? null : stats[i]["id"];
   }
+
+  // add stats of the main book to the stats array:
+  const rawDate = parseInt(mainBookURI.substring(0, 4));
+  const mainBookStats = {
+    id: mainBookID,
+    book: mainBookURI,
+    date: isNaN(rawDate) ? null : rawDate,
+    manuscript: isNaN(rawDate) ? mainBookID : null,
+    alignments: mainBookMilestones,
+    ch_match: 0,
+    bookIndex: 0,
+  };
+  stats = [mainBookStats, ...stats]
+  bookIndexDict[mainBookID] = 0
+  bookUriDict[mainBookID] = mainBookURI ?? mainBookID;
+
   return [stats, bookIndexDict, bookUriDict];
 }
 
@@ -321,6 +337,7 @@ export const setMultiVizData = (values) => {
   console.log("LOADING ONE TO MANY DATA");
   const {
     book1,
+    isUpload = false,
     msdataFile,
     statsFile,
     dataLoading,
@@ -341,12 +358,8 @@ export const setMultiVizData = (values) => {
 
       // Parse the CSV files and set the chart data:
       const parseCSVData = async (msdataFile, statsFile, book1) => {
-        // calculate the last milestone number in the main book:
-        let mainBookMilestones = Math.ceil(
-          book1.release_version.tok_length / 300
-        );
         let mainBookID = book1.version_code;
-        let mainBookURI = book1.text.text_uri;
+        let mainBookURI = book1.text?.text_uri ? book1.text.text_uri : book1.manuscript.manuscript_uri;
 
         // parse msdata csv file
         // (contains all text reuse data for book 1, arranged per milestone):
@@ -356,6 +369,17 @@ export const setMultiVizData = (values) => {
           dynamicTyping: true, // converts numeric fields to integers
           skipEmptyLines: true,
           complete: (result) => {
+            // for uploads, derive milestones from CSV data (no tok_length available);
+            // for regular books, use tok_length/300 for the actual full milestone count
+            const mainBookMilestonesFromData = result.data.reduce(
+              (max, r) => (Number.isFinite(r.ms1) && r.ms1 > max ? r.ms1 : max),
+              0
+            );
+            const mainBookMilestones = isUpload
+              ? mainBookMilestonesFromData
+              : (book1?.release_version?.tok_length
+                  ? Math.ceil(book1.release_version.tok_length / 300)
+                  : mainBookMilestonesFromData);
             // parse stats csv file
             // (contains text reuse stats for book 1, arranged per book2):
             Papa.parse(statsFile, {
@@ -384,7 +408,9 @@ export const setMultiVizData = (values) => {
                 // pass the one-to-many data to the Context:
                 setChartData({
                   versionCode: book1?.version_code,
-                  tokens: { first: book1?.release_version?.tok_length },
+                  isUpload: isUpload,
+                  mainBookMilestones: mainBookMilestones,
+                  tokens: { first: book1?.release_version?.tok_length ?? mainBookMilestones * 300 },
                   msData: msData,
                   msStats: msStats,
                   msBooks: msBooks,

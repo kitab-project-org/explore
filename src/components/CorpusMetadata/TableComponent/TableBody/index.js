@@ -1,22 +1,23 @@
 import { useContext } from "react";
-import { TableBody, TableCell, TableRow, Typography } from "@mui/material";
+import { Box, TableBody, TableCell, TableRow, Tooltip, Typography } from "@mui/material";
 import { Context } from "../../../../App";
 import VersionIdCell from "./VersionIdCell";
 import BookTitleCell from "./BookTitleCell";
 import AuthorCell from "./AuthorCell";
 import ReuseCell from "./ReuseCell";
 import MoreCell from "./MoreCell";
-import CountToken from "./CountToken";
+import TokenCountCell from "./TokenCountCell";
 
 const TableBodyComponent = ({ classes }) => {
   const { rows } = useContext(Context);
   return (
-    <TableBody>
+    <TableBody id="table-body">
       {rows.map((row, index) => (
         <TableRow
           key={index}
           className={classes.tableCell}
           sx={{
+            position: "relative",
             display: "flex",
             flexDirection: {
               xs: "column",
@@ -70,7 +71,7 @@ const TableBodyComponent = ({ classes }) => {
               boxSizing: "border-box",
             }}
           >
-            {row?.text.author[0]?.date && row?.text?.author[0]?.date}
+            <Typography>{row?.text?.author?.[0]?.date ?? ""}</Typography>
             <Typography
               sx={{
                 display: {
@@ -79,15 +80,28 @@ const TableBodyComponent = ({ classes }) => {
                 },
               }}
             >
-              Author Death
+              Author Death Date
             </Typography>
           </TableCell>
 
-          <CountToken classes={classes} row={row} />
+          <TokenCountCell classes={classes} row={row} />
 
           <ReuseCell classes={classes} row={row} />
 
           <MoreCell classes={classes} row={row} />
+          {row.manuscript !== null && (
+            <Tooltip title="Manuscript" placement="left" >
+              <Box sx={{
+                position: "absolute",
+                right: 0,
+                top: 0,
+                bottom: 0,
+                width: "3px",
+                bgcolor: "#2863A5",
+                cursor: "default",
+              }} />
+            </Tooltip>
+          )}
         </TableRow>
       ))}
     </TableBody>

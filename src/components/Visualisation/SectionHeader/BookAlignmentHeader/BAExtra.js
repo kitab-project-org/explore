@@ -36,7 +36,7 @@ const BAExtra = () => {
           borderTop: "1px solid white",
         }}
       >
-        {booksAlignment?.s1 && (
+        {booksAlignment[0]?.s1 && (
           <Box
             sx={{
               display: "flex",

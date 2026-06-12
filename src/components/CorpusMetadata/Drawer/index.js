@@ -14,9 +14,12 @@ import GetAppOutlinedIcon from "@mui/icons-material/GetAppOutlined";
 import PropTypes from "prop-types";
 
 import AuthorDetails from "./AuthorDetails";
+import ManuscriptHoldingDetails from "./ManuscriptHoldingDetails";
 import TextReuse from "./TextReuse";
 import TextDetails from "./TextDetails";
+import ManuscriptDetails from "./ManuscriptDetails";
 import VersionDetails from "./VersionDetails";
+import TextReuseTour from "../../GuidedTour/TextReuseTour";
 import { getSidePanelData } from "../../../services/CorpusMetaData";
 import { Context } from "../../../App";
 
@@ -30,6 +33,10 @@ export default function LeftSidePanel() {
   } = useContext(Context);
   const [fullData, setFullData] = useState({});
   const [fullDataLoading, setFullDataLoading] = useState(false);
+  const [textReuseTourRunning, setTextReuseTourRunning] = useState(false);
+
+  // true when the drawer is showing a manuscript version rather than a text version
+  const isManuscript = fullData?.manuscript != null;
 
 
   // download metadata function
@@ -104,9 +111,12 @@ export default function LeftSidePanel() {
         open={isOpenDrawer}
         onClose={() => setIsOpenDrawer(false)}
         anchor="right"
+        ModalProps={{ keepMounted: true }}
       >
+        <TextReuseTour run={textReuseTourRunning} onExit={() => setTextReuseTourRunning(false)} />
         {fullData && (
           <Box
+            id="CorpusMetadata-Drawer"
             sx={{
               width: {
                 xl: "850px",
@@ -173,12 +183,12 @@ export default function LeftSidePanel() {
                   scrollButtons="auto"
                 >
                   <Tab
-                    label="Author Details"
+                    label={isManuscript ? "Holding Details" : "Author Details"}
                     {...a11yProps(0)}
                     sx={{ padding: "0px 10px", fontSize: "12px" }}
                   />
                   <Tab
-                    label="Text Details"
+                    label={isManuscript ? "Manuscript Details" : "Text Details"}
                     {...a11yProps(1)}
                     sx={{ padding: "0px 10px", fontSize: "12px" }}
                   />
@@ -188,17 +198,38 @@ export default function LeftSidePanel() {
                     sx={{ padding: "0px 10px", fontSize: "12px" }}
                   />
                   <Tab
-                    label="Text Reuse"
+                    label={
+                      <Box display="flex" alignItems="center" gap={0.5}>
+                        Text Reuse
+                        <Tooltip title="Explain text reuse panel" arrow>
+                          <span
+                            id="text-reuse-drawer-info"
+                            onClick={(e) => { e.stopPropagation(); setTextReuseTourRunning(true); }}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              cursor: "pointer",
+                              visibility: tabIndex === 3 ? "visible" : "hidden",
+                              pointerEvents: tabIndex === 3 ? "auto" : "none",
+                            }}
+                          >
+                            <i className="fa-solid fa-circle-info" style={{ fontSize: "14px" }} />
+                          </span>
+                        </Tooltip>
+                      </Box>
+                    }
                     {...a11yProps(4)}
                     sx={{ padding: "0px 10px", fontSize: "12px" }}
                   />
                 </Tabs>
               </Box>
               <TabPanel value={tabIndex} index={0}>
-                {fullData && <AuthorDetails fullData={fullData} />}
+                {fullData && !isManuscript && <AuthorDetails fullData={fullData} />}
+                {fullData && isManuscript && <ManuscriptHoldingDetails fullData={fullData} />}
               </TabPanel>
               <TabPanel value={tabIndex} index={1}>
-                {fullData && <TextDetails fullData={fullData} />}
+                {fullData && !isManuscript && <TextDetails fullData={fullData} />}
+                {fullData && isManuscript && <ManuscriptDetails fullData={fullData} />}
               </TabPanel>
               <TabPanel value={tabIndex} index={2}>
                 {fullData && <VersionDetails fullData={fullData} />}

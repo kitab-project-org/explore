@@ -1,7 +1,7 @@
 import { useContext } from "react";
 import { Box, Grid, IconButton, Tooltip, Typography } from "@mui/material";
 import PaginationComponent from "../../Common/PaginationComponent";
-import DownloadData from "./DownloadData";
+import DownloadMetadata from "./DownloadMetadata";
 import FilterNavigation from "./FilterNavigation";
 import { Context } from "../../../App";
 // import {
@@ -34,7 +34,6 @@ const NavigationAndStats = () => {
     // setBooks,
     showFilters,
     totalRecords,
-    rows,
     status,
     rowsPerPage,
     page,
@@ -310,9 +309,9 @@ const NavigationAndStats = () => {
     <div>
       <FilterNavigation showFilters={showFilters} />
 
-      <Grid container>
+      <Grid container id="NavigationAndStats">
         <Grid
-          
+          id="results-and-selection"
           item
           container
           sm={12}
@@ -354,6 +353,7 @@ const NavigationAndStats = () => {
                 <Tooltip title={"Deselect All"} placement="top">
                   <span>
                     <IconButton
+                      id="deselect-all"
                       size="large"
                       variant="text"
                       sx={{ fontSize: "15px", color: "#d01f2f", padding: "10px" }}
@@ -386,7 +386,7 @@ const NavigationAndStats = () => {
             </>
           )}
           <>
-          <Box>{rows && <DownloadData data={rows} status={status} />}</Box>
+          <Box><DownloadMetadata status={status} /></Box>
 
           {checkedBooks.length === 0 ? (
             ""

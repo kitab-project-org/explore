@@ -4,9 +4,20 @@ import { Context } from "../../../../App";
 
 const BookTitleCell = ({ row, classes }) => {
   const { toggleSidePanel } = useContext(Context);
+
+  const isManuscript = row.manuscript !== null;
+
+  // for manuscripts: primary line = shelfmark, secondary lines = all titles;
+  // for texts: Latin title + Arabic title as usual
+  const primaryText = isManuscript
+    ? row.manuscript?.shelfmark
+    : row?.text?.title_lat_prefered;
+  const secondaryText = isManuscript ? null : row?.text?.title_ar_prefered;
+  const manuscriptTitles = isManuscript ? (row.manuscript?.titles ?? []) : [];
+
   return (
     <TableCell
-      className={classes.tableCell}
+      className={`${classes.tableCell} book-title-cell`}
       sx={{
         width: {
           xs: "100%",
@@ -31,6 +42,7 @@ const BookTitleCell = ({ row, classes }) => {
           my={0}
         >
           <Typography
+            className="tour-book-link"
             color={"#2863A5"}
             sx={{ cursor: "pointer" }}
             onClick={() => {
@@ -43,12 +55,19 @@ const BookTitleCell = ({ row, classes }) => {
               );
             }}
           >
-            {row?.text?.title_lat_prefered}
+            {primaryText}
           </Typography>
         </Box>
-        <Typography variant="body2" my={0}>
-          {row?.text?.title_ar_prefered}
-        </Typography>
+        {secondaryText && (
+          <Typography variant="body2" my={0}>
+            {secondaryText}
+          </Typography>
+        )}
+        {manuscriptTitles.map((t, i) => (
+          <Typography key={i} variant="body2" my={0}>
+            {t.title}
+          </Typography>
+        ))}
       </Stack>
       <Typography
         sx={{

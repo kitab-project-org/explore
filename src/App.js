@@ -1,8 +1,7 @@
-import { createContext, useRef, useState } from "react";
+import { createContext, useEffect, useRef, useState } from "react";
 import { HashRouter as Router, Routes, Route } from "react-router-dom";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { green, red } from "@mui/material/colors";
-import * as saveSvgAsPng from "save-svg-as-png";
 
 import "./App.css";
 import Insight from "./pages/Insight";
@@ -10,6 +9,7 @@ import Visualisation from "./pages/Visualisation";
 import CorpusMetadata from "./pages/CorpusMetadata";
 import DiffViewer from "./pages/DiffViewer";
 import LeftSidePanel from "./components/CorpusMetadata/Drawer";
+import { getAllReleasesInsights } from "./services/CorpusMetaData";
 
 const theme = createTheme({
   palette: {
@@ -53,6 +53,7 @@ const theme = createTheme({
   },
   typography: {
     fontFamily: [
+      "Gentium Plus",
       "Amiri",
       "Roboto",
       '"Helvetica Neue"',
@@ -69,14 +70,15 @@ function App() {
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [rows, setRows] = useState([]);
-  const [defaultReleaseCode, setDefaultReleaseCode] = useState("2023.1.8");
+  const [defaultReleaseCode, setDefaultReleaseCode] = useState("2025.1.9");
   const [releaseCode, setReleaseCode] = useState(defaultReleaseCode);
   const [status, setStatus] = useState(false);
   const [query, setQuery] = useState("");
   const [searchField, setSearchField] = useState("");
   const [normalizedSearch, setNormalizedSearch] = useState(true);
   const [sortingOrder, setOrderingOrder] = useState("");
-  const [analysisPriority, setAnalysisPriority] = useState(false);
+  const [showPrimary, setShowPrimary] = useState(true);
+  const [showSecondary, setShowSecondary] = useState(false);
   const [annotationFilter, setAnnotationFilter] = useState({
     completed: false,
     inProgress: false,
@@ -147,28 +149,12 @@ function App() {
   const focusMilestone1 = useRef();
   const focusMilestone2 = useRef();
   const [chartSpecificBar, setChartSpecificBar] = useState({});
-  // contains alignment string and start+end indices of alignment:
-  const [booksAlignment, setBooksAlignment] = useState({
-    // alignment strings:
-    s1: "",
-    s2: "",
-    // part of the milestones before the alignment:
-    beforeAlignment1: "",
-    beforeAlignment2: "",
-    // part of the milestones after the alignment:
-    afterAlignment1: "",
-    afterAlignment2: "",
-    // token (*w*ord) offset of *b*eginning and *e*nd of the alignment:
-    bw1: 0,
-    ew1: 0,
-    bw2: 0,
-    ew2: 0,
-    // *c*haracter offset of *b*eginning and *e*nd of the alignment:
-    bc1: 0,
-    ec1: 0,
-    bc2: 0,
-    ec2: 0,
-  });
+  // currently highlighted marker in the visualisation ({ms1, id2}):
+  const [selectedMarker, setSelectedMarker] = useState(null);
+  // contains alignment strings for all alignments of the selected dot/bar:
+  const [booksAlignment, setBooksAlignment] = useState([]);
+  // alignment index to restore when booksAlignment loads from a URL param (null = default to 0):
+  const [initialAlignmentIndex, setInitialAlignmentIndex] = useState(null);
   const [focusedDataIndex, setFocusedDataIndex] = useState(null);
   const [bookIntoRows, setBookIntoRows] = useState(false);
   const [selectedLine, setSelectedLine] = useState({});
@@ -176,9 +162,7 @@ function App() {
   const [isError, setIsError] = useState(false);
   const [errorType, setErrorType] =  useState(["We may not have text reuse data for these texts, or there might be another problem.", "Error Type: Unknown"])
   const [showOptions, setShowOptions] = useState(false);
-  const [showDownloadOptions, setShowDownloadOptions] = useState(false);
   const [url, setUrl] = useState("");
-  const [includeURL, setIncludeURL] = useState(false);
   const [defaultMargins, setDefaultMargins] = useState({ top: 40, right: 20, bottom: 20, left: 60 });
   const [visMargins, setVisMargins] = useState({ top: 40, right: 20, bottom: 20, left: 60 });
   const [yTickWidth, setYTickWidth] = useState(0);
@@ -235,55 +219,25 @@ function App() {
 
   const [selfReuseOnly, setSelfReuseOnly] = useState(false);
 
+  const [allReleasesInsights, setAllReleasesInsights] = useState([]);
+  // whether to include manuscript versions in the metadata table;
+  // only relevant for releases where has_manuscripts is true (2025.1.9+)
+  // text types shown in the metadata table; empty array means all types active
+  const [activeTextTypes, setActiveTextTypes] = useState([]);
+  // languages currently shown in the metadata table; empty array means all
+  // languages are active and no language param is sent to the API
+  const [activeLanguages, setActiveLanguages] = useState([]);
+
+  useEffect(() => {
+    getAllReleasesInsights().then(data => {
+      if (Array.isArray(data)) setAllReleasesInsights(data);
+    });
+  }, []);
+
   const toggleSidePanel = (val, tIndex) => {
     setTabIndex(tIndex);
     setVersionDetails(val);
     setIsOpenDrawer(true);
-  };
-
-  const downloadPNG = (downloadFileName, svgId) => {
-    //const downloadFileName = `${metaData?.book1?.versionCode}_${metaData?.book2?.versionCode}.png`;
-    const svg = document.getElementById(svgId);
-    const newSvg = svg.cloneNode(true);
-
-    let scale = 3; // default scale: 300 % 
-
-    if (outputImageWidth) {  // context variable!
-      const inchPerMM = 1 / 25.4;
-      const svgPixelWidth = svg.clientWidth;
-      const outputWidthInInches = outputImageWidth * inchPerMM;
-      const targetPixelWidth = outputWidthInInches * (dpi || 300); // dpi is also a context variable; use 300 if dpi is undefined
-      scale = targetPixelWidth / svgPixelWidth / window.devicePixelRatio;
-      console.log("window.devicePixelRatio: "+window.devicePixelRatio)
-
-      /*
-       NB: the save-svg-as-png library gets the width of the svg in one of these ways:
-       * - svg.viewBox.baseVal["width"] : returns 0 in our case
-       * - newSvg.getAttribute("width") : returns same value as svg.clientWidth
-       * - svg.getBoundingClientRect()["width"] : returns same value as svg.clientWidth
-       * - window.getComputedStyle(svg).getPropertyValue("width") : returns same value as svg.clientWidth
-      
-      console.log('svg.viewBox.baseVal["width"]: '+svg.viewBox.baseVal["width"]);
-      console.log('newSvg.getAttribute("width"): '+newSvg.getAttribute("width"));
-      console.log('svg.getBoundingClientRect()["width"]: '+svg.getBoundingClientRect()["width"]);
-      console.log('window.getComputedStyle(svg).getPropertyValue("width") '+window.getComputedStyle(svg).getPropertyValue("width"));
-      
-      
-      console.log(`requested image width: ${outputImageWidth} mm`);
-      console.log(`requested dpi: ${dpi}`);
-      console.log(`svg width: ${svgPixelWidth}`);
-      console.log(`svg bounding box width: ${svg.getBBox().width}`);
-      console.log(`Output width: ${outputWidthInInches} inch`);
-      console.log(`Output width: ${targetPixelWidth} pixels`);
-      console.log(`Scale: ${scale}`);
-      */
-    }
-
-    // save the png:
-    saveSvgAsPng.saveSvgAsPng(newSvg, downloadFileName, {
-      scale: scale, 
-      backgroundColor: "white",
-    });
   };
 
   return (
@@ -311,8 +265,10 @@ function App() {
         setNormalizedSearch,
         sortingOrder,
         setOrderingOrder,
-        analysisPriority,
-        setAnalysisPriority,
+        showPrimary,
+        setShowPrimary,
+        showSecondary,
+        setShowSecondary,
         annotationFilter,
         setAnnotationFilter,
         totalRecords,
@@ -362,8 +318,12 @@ function App() {
         focusMilestone2,
         chartSpecificBar,
         setChartSpecificBar,
+        selectedMarker,
+        setSelectedMarker,
         booksAlignment,
         setBooksAlignment,
+        initialAlignmentIndex,
+        setInitialAlignmentIndex,
         selectedLine,
         setSelectedLine,
         showWikiEdDiff,
@@ -383,12 +343,8 @@ function App() {
         setErrorType,
         showOptions,
         setShowOptions,
-        showDownloadOptions, 
-        setShowDownloadOptions,
-        textAvailable, 
+        textAvailable,
         setTextAvailable,
-        includeURL, 
-        setIncludeURL,
         url,
         setUrl,
         visMargins, 
@@ -435,9 +391,13 @@ function App() {
         setRemoveTags,
         selfReuseOnly,
         setSelfReuseOnly,
-        downloadPNG,
         advanceSearch,
         setAdvanceSearch,
+        allReleasesInsights,
+        activeTextTypes,
+        setActiveTextTypes,
+        activeLanguages,
+        setActiveLanguages,
       }}
     >
       <ThemeProvider theme={theme}>

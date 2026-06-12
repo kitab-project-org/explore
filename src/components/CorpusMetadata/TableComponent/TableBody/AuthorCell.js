@@ -5,13 +5,31 @@ import { Context } from "../../../../App";
 const AuthorCell = ({ row, classes }) => {
   const { toggleSidePanel } = useContext(Context);
 
+  const isManuscript = row.manuscript !== null;
+
+  // for manuscripts: primary line = English holding name, secondary = Arabic;
+  // for texts: Latin author name + Arabic author name as usual
+  const holding = row.manuscript?.manuscript_holding;
+  const holdingEn = holding?.names?.en ?? holding?.loc_uri;
+  const holdingAr = holding?.names?.ar ?? "";
+  
+  const cityEn = holding?.city?.display_names?.en ?? "";
+  const cityAr = holding?.city?.display_names?.ar ?? "";
+  const primaryText = isManuscript
+    ? [holdingEn, cityEn].filter(Boolean).join(", ") // add a comma only if both are present
+    : row?.text?.author?.[0]?.author_lat_prefered ?? "";
+  const secondaryText = isManuscript
+    ? [holdingAr, cityAr].filter(Boolean).join("، ")
+    : row?.text?.author?.[0]?.author_ar_prefered ?? "";
+
   return (
     <TableCell
-      className={classes.tableCell}
+      className={`${classes.tableCell} author-cell`}
       sx={{
         width: {
           xs: "100%",
-          md: "15%",
+          //md: "16%",
+          md: "18%",
         },
         border: "none",
         display: {
@@ -44,13 +62,11 @@ const AuthorCell = ({ row, classes }) => {
               );
             }}
           >
-            {row?.text.author[0]?.author_lat_prefered &&
-              row?.text.author[0]?.author_lat_prefered}
+            {primaryText}
           </Typography>
         </Box>
         <Typography variant="body2" my={0}>
-          {row?.text.author[0]?.author_lat_prefered &&
-            row?.text.author[0]?.author_ar_prefered}
+          {secondaryText}
         </Typography>
       </Stack>
 
