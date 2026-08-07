@@ -1,18 +1,18 @@
 {
   "files": {
-    "main.css": "./static/css/main.e027b100.css",
-    "main.js": "./static/js/main.98c9e47f.js",
-    "static/media/GentiumPlus-Regular.ttf": "./static/media/GentiumPlus-Regular.945cd08c203a847922c4.ttf",
-    "static/media/pairwise-screenshot.png": "./static/media/pairwise-screenshot.8c856de79a8c677c86ea.png",
-    "static/media/one-to-all-screenshot.png": "./static/media/one-to-all-screenshot.795e4b8e85a722d4c85e.png",
-    "static/media/ismc.jpg": "./static/media/ismc.97d3e6bb1d5a69021aa6.jpg",
-    "static/media/flag.jpg": "./static/media/flag.e85b5883a003971205df.jpg",
-    "index.html": "./index.html",
-    "main.e027b100.css.map": "./static/css/main.e027b100.css.map",
-    "main.98c9e47f.js.map": "./static/js/main.98c9e47f.js.map"
+    "main.css": "/explore/static/css/main.fb6616ec.css",
+    "main.js": "/explore/static/js/main.16ee427a.js",
+    "static/media/GentiumPlus-Regular.ttf": "/explore/static/media/GentiumPlus-Regular.945cd08c203a847922c4.ttf",
+    "static/media/pairwise-screenshot.png": "/explore/static/media/pairwise-screenshot.8c856de79a8c677c86ea.png",
+    "static/media/one-to-all-screenshot.png": "/explore/static/media/one-to-all-screenshot.795e4b8e85a722d4c85e.png",
+    "static/media/ismc.jpg": "/explore/static/media/ismc.97d3e6bb1d5a69021aa6.jpg",
+    "static/media/flag.jpg": "/explore/static/media/flag.e85b5883a003971205df.jpg",
+    "index.html": "/explore/index.html",
+    "main.fb6616ec.css.map": "/explore/static/css/main.fb6616ec.css.map",
+    "main.16ee427a.js.map": "/explore/static/js/main.16ee427a.js.map"
   },
   "entrypoints": [
-    "static/css/main.e027b100.css",
-    "static/js/main.98c9e47f.js"
+    "static/css/main.fb6616ec.css",
+    "static/js/main.16ee427a.js"
   ]
 }
