@@ -191,7 +191,7 @@ const MilestoneTextPanel = ({ text, loading, ms_id, versionCode, releaseCode, al
               Select text to filter
             </Typography>
           )}
-          <IconButton size="small" onClick={onClose}>
+          <IconButton id="milestone-text-close" size="small" onClick={onClose}>
             <i className="fa-solid fa-xmark" style={{ fontSize: "13px" }} />
           </IconButton>
         </Box>

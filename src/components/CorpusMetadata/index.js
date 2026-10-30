@@ -13,6 +13,9 @@ import PaginationComponent from "../Common/PaginationComponent";
 import { Context } from "../../App";
 import { cleanSearchPagination } from "../../utility/Helper";
 import CorpusMetadataTour, { TOUR_KEY } from "../GuidedTour/CorpusMetadataTour";
+import { DEMO_BOOKS } from "../GuidedTour/PairwiseVisualizationTour";
+import { DEMO_BOOKS as CORPUSWIDE_DEMO_BOOKS } from "../GuidedTour/CorpuswideVisualizationTour";
+import { MAIN_TOUR_REQUEST } from "../GuidedTour/TourMenu";
 
 // make custom style for material ui component
 const useStyles = makeStyles((theme) => ({
@@ -162,8 +165,21 @@ const MetadataTable = ({ isHome }) => {
     }
   }, [searchParams, setQuery]);
 
-  // auto-start tour on first visit
+  // auto-start tour on first visit, or when requested from the visualisation page
   useEffect(() => {
+    let requested = false;
+    try {
+      requested = sessionStorage.getItem(MAIN_TOUR_REQUEST) === "1";
+    } catch (e) { /* sessionStorage unavailable */ }
+    if (requested) {
+      // give the table time to render, so that the tour finds its targets
+      const timer = setTimeout(() => {
+        // (removed here rather than above, so that a re-run of this effect finds it)
+        try { sessionStorage.removeItem(MAIN_TOUR_REQUEST); } catch (e) { /* ignore */ }
+        setTourRunning(true);
+      }, 1200);
+      return () => clearTimeout(timer);
+    }
     if (!localStorage.getItem(TOUR_KEY)) {
       setTourRunning(true);
     }
@@ -329,7 +345,18 @@ const MetadataTable = ({ isHome }) => {
         setIsOpenDrawer={setIsOpenDrawer}
       />
       <Grid container id="corpus-metadata" className={classes.gridContainer}>
-        <CorpusHeader onStartTour={() => setTourRunning(true)} />
+        <CorpusHeader
+          onStartTour={(key) => {
+            if (key === "main") setTourRunning(true);
+            else if (key === "corpuswide") {
+              try { sessionStorage.setItem("kitab-start-corpuswide-tour", String(Date.now())); } catch (e) { /* ignore */ }
+              navigate(`/visualise/${releaseCode}/?books=${CORPUSWIDE_DEMO_BOOKS}&tour=corpuswide`);
+            } else if (key === "pairwise") {
+              try { sessionStorage.setItem("kitab-start-pairwise-tour", String(Date.now())); } catch (e) { /* ignore */ }
+              navigate(`/visualise/${releaseCode}/?books=${DEMO_BOOKS}&tour=pairwise`);
+            }
+          }}
+        />
 
         <Box
           width={"100%"}

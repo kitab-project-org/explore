@@ -2,6 +2,9 @@ import { useEffect, useRef } from "react";
 import introJs from "intro.js";
 import oneToAllScreenshot from "../../assets/img/one-to-all-screenshot.png";
 import "intro.js/introjs.css";
+import { DEMO_BOOKS as PAIRWISE_DEMO_BOOKS } from "./PairwiseVisualizationTour";
+import { DEMO_BOOKS as CORPUSWIDE_DEMO_BOOKS } from "./CorpuswideVisualizationTour";
+import { installTourLinks } from "./tourLinks";
 
 const TOUR_KEY = "kitab-corpus-tour-seen";
 
@@ -53,7 +56,7 @@ const steps = [
     element: ".tour-corpus-viz",
     title: "Corpus-Wide Visualisation",
     intro:
-      `Click this icon to open a visualisation of corpus-wide text reuse for this book — showing all books that share passages with it. <br><a href="https://kitab-project.org/data/viz#scatter-viz" target="_blank"><img src="${oneToAllScreenshot}" style="max-width:100%"/></a><br>Click the image to learn more about the visualization.`,
+      `Click this icon to open a visualisation of corpus-wide text reuse for this book — showing all books that share passages with it. <br><a href="https://kitab-project.org/data/viz#scatter-viz" target="_blank"><img src="${oneToAllScreenshot}" style="max-width:100%"/></a><br>Click the image to learn more about the visualization. <br>Or <a href="#" target="_blank" data-tour-link="corpuswide" style="color:#2862a5; text-decoration:underline;">take the Corpuswide Visualization Tour</a> (opens in a new tab).`,
   },
   
   {
@@ -67,7 +70,7 @@ const steps = [
     element: "#results-and-selection",
     title: "Select Texts for Pairwise Comparison",
     intro:
-      "When two rows rows are selected, buttons will appear above the table. <br>Click the <b>barcode</b> icon to see a pairwise visualization of their text reuse, <br>the <b>file</b> icon to download their text reuse data, <br>or the <b>table</b> icon to download their metadata.",
+      "When two rows rows are selected, buttons will appear above the table. <br>Click the <b>barcode</b> icon to see a pairwise visualization of their text reuse, <br>the <b>file</b> icon to download their text reuse data, <br>or the <b>table</b> icon to download their metadata. <br>Curious how the pairwise visualization works? <a href=\"#\" target=\"_blank\" data-tour-link=\"pairwise\" style=\"color:#2862a5; text-decoration:underline;\">Take the Pairwise Visualization Tour</a> (opens in a new tab).",
     position: "right",
   },
   {
@@ -261,7 +264,13 @@ const CorpusMetadataTour = ({ run, onExit, setFilterPanel, toggleSidePanel, setI
 
     introRef.current.start();
 
+    // links to the visualization tours in the step texts (see tourLinks.js)
+    const removeTourLinks = installTourLinks({
+      demoBooks: { pairwise: PAIRWISE_DEMO_BOOKS, corpuswide: CORPUSWIDE_DEMO_BOOKS },
+    });
+
     return () => {
+      removeTourLinks();
       introRef.current?.exit(true);
     };
   }, [run]); // eslint-disable-line react-hooks/exhaustive-deps

@@ -8,6 +8,7 @@ const VisualizationHeader = ({ restoreCanvas, isPairwiseViz, showFilterPanel, se
     <Box sx={{ postion: "relative" }} id="visualization-header">
       <Box display="flex" justifyContent="space-between" alignItems="center">
         <Link
+          id="viz-help-link"
           href={isPairwiseViz
             ? "https://kitab-project.org/data/viz#the-pairwise-text-reuse-visualisation"
             : "https://kitab-project.org/data/viz#scatter-viz"
@@ -42,6 +43,7 @@ const VisualizationHeader = ({ restoreCanvas, isPairwiseViz, showFilterPanel, se
         <Box display="flex" alignItems="center">
           <Tooltip title="Reset Chart" placement="top">
             <Button
+              id="viz-reset-btn"
               color="primary"
               variant="outlined"
               onClick={restoreCanvas}
@@ -58,6 +60,7 @@ const VisualizationHeader = ({ restoreCanvas, isPairwiseViz, showFilterPanel, se
           {isPairwiseViz && setZoomMode && (
             <Tooltip title={zoomMode ? "Exit zoom mode (shortcut: Z)" : "Zoom mode (shortcut: Z)"} placement="top">
               <Button
+                id="viz-zoom-btn"
                 onClick={() => setZoomMode(v => !v)}
                 color="primary"
                 variant="outlined"
@@ -78,6 +81,7 @@ const VisualizationHeader = ({ restoreCanvas, isPairwiseViz, showFilterPanel, se
           {setShowFilterPanel && (
             <Tooltip title={isPairwiseViz ? "Filter by table of contents" : "Filter options and settings"} placement="top">
               <Button
+                id="viz-filter-btn"
                 onClick={() => setShowFilterPanel(v => !v)}
                 color="primary"
                 variant="outlined"
@@ -97,6 +101,7 @@ const VisualizationHeader = ({ restoreCanvas, isPairwiseViz, showFilterPanel, se
           )}
           <Tooltip title="Download Chart and select download options" placement="top">
             <Button
+              id="viz-download-btn"
               onClick={() => setShowDownloadOptions(!showDownloadOptions)}
               color="primary"
               variant="outlined"

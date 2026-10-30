@@ -18,6 +18,7 @@ const FlipButton = () => {
   return (
     <Tooltip title="Flip books" placement="top">
       <Button
+        id="viz-flip-btn"
         onClick={handleFlipBooks}
         color="primary"
         variant="outlined"
