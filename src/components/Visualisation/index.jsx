@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Box, Typography } from "@mui/material";
 import Header from "./Header";
@@ -16,6 +16,9 @@ import { downloadCsvData, getOneBookReuseStats, getOneBookMsData } from "../../s
 import { getMetaLabel, measureSvgText, wrapTextToSvgWidth, checkPairwiseCsvResponse } from "../../utility/Helper";
 // import { lightSrtFolders, srtFoldersGitHub } from "../../assets/srtFolders";
 import { Context } from "../../App";
+import PairwiseVisualizationTour, { DEMO_BOOKS } from "../GuidedTour/PairwiseVisualizationTour";
+import CorpuswideVisualizationTour, { DEMO_BOOKS as CORPUSWIDE_DEMO_BOOKS } from "../GuidedTour/CorpuswideVisualizationTour";
+import { MAIN_TOUR_REQUEST } from "../GuidedTour/TourMenu";
 
 
 // Check the metadata response from a URL - return an array of failed books
@@ -146,7 +149,8 @@ const VisualisationPage = () => {
     metaPositionInDownload,
     axisLabelFontSize,
     tickFontSize, 
-    setYTickWidth
+    setYTickWidth,
+    setIsOpenDrawer,
   } = useContext(Context);
 
   const [isPairwiseViz, setIsPairwiseViz] = useState(false);
@@ -154,7 +158,95 @@ const VisualisationPage = () => {
 
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+
+  // Remove the ?tour=... parameter (used to start a tour automatically) from the URL
+  // once a tour has ended. The tours call this from a closure that may be older than the
+  // current parameters (e.g. ms1/id2, added by the chart), so the current URL is read
+  // from the window instead of from searchParams.
+  // `alsoRemove`: other parameters to remove (those that the tour itself has added).
+  const removeTourParam = (alsoRemove = []) => {
+    const hash = window.location.hash; // e.g. "#/visualise/2025.1.9/?books=...&tour=pairwise"
+    // (a tour is also exited when the user leaves this page: do not navigate back then)
+    if (!hash.startsWith("#/visualise")) return;
+    const queryStart = hash.indexOf("?");
+    if (queryStart < 0) return;
+    const params = new URLSearchParams(hash.slice(queryStart + 1));
+    const toRemove = ["tour", ...alsoRemove].filter((name) => params.has(name));
+    if (!toRemove.length) return;
+    toRemove.forEach((name) => params.delete(name));
+    navigate(`${hash.slice(1, queryStart)}?${params.toString()}`, { replace: true });
+  };
   const { version } = useParams();
+
+  const [pairwiseTourRunning, setPairwiseTourRunning] = useState(false);
+  const [corpuswideTourRunning, setCorpuswideTourRunning] = useState(false);
+  const tourAutoStarted = useRef(false);
+  const anyTourRunningRef = useRef(false);
+  anyTourRunningRef.current = pairwiseTourRunning || corpuswideTourRunning;
+
+  // When another visualisation is loaded (e.g. with the back button), a tour that is
+  // still running belongs to the old chart: end it.
+  const booksParam = searchParams.get("books");
+  const previousBooksParam = useRef(booksParam);
+  useEffect(() => {
+    if (previousBooksParam.current === booksParam) return;
+    previousBooksParam.current = booksParam;
+    setPairwiseTourRunning(false);
+    setCorpuswideTourRunning(false);
+  }, [booksParam]);
+
+  // Start the pairwise tour automatically when arriving from the "Take a tour" dropdown
+  // on the landing page, once the chart has been drawn. The request is passed as a
+  // ?tour=pairwise URL parameter and as a sessionStorage flag (the parameter can get lost
+  // when the landing page rewrites the URL while it unmounts).
+  // The same goes for the corpuswide tour (?tour=corpuswide).
+  useEffect(() => {
+    if (tourAutoStarted.current) return;
+    const requested = (name) => {
+      let found = searchParams.get("tour") === name;
+      try {
+        // (the flag is a time stamp: an old one, e.g. from a navigation that never
+        // reached this page, must not start a tour later)
+        const flagTime = Number(sessionStorage.getItem(`kitab-start-${name}-tour`));
+        found = found || (flagTime > 0 && Date.now() - flagTime < 2 * 60 * 1000);
+      } catch (e) { /* sessionStorage unavailable */ }
+      return found;
+    };
+    let which = null;
+    if (isPairwiseViz && requested("pairwise")) which = "pairwise";
+    else if (!isPairwiseViz && requested("corpuswide")) which = "corpuswide";
+    if (!which || !isFileUploaded) return;
+    // the data must be there, and the chart drawn (up to 20 seconds):
+    const dataReady = which === "pairwise"
+      ? chartData?.dataSets?.length
+      : chartData?.msData?.length;
+    if (!dataReady) return;
+    const drawnSelector = which === "pairwise"
+      ? "#firstchart .bar"
+      : "#scatterChart circle.dot";
+    let waited = 0;
+    const timer = setInterval(() => {
+      waited += 300;
+      const drawn = document.querySelector(drawnSelector);
+      if (!drawn && waited < 20000) return;
+      clearInterval(timer);
+      setTimeout(() => {
+        // never start a tour while another one is running (e.g. after the back button)
+        if (tourAutoStarted.current || anyTourRunningRef.current) return;
+        tourAutoStarted.current = true;
+        try { sessionStorage.removeItem(`kitab-start-${which}-tour`); } catch (e) { /* ignore */ }
+        // the request is consumed: remove it from the URL, so that going back or forward
+        // to this URL does not start the tour again
+        removeTourParam();
+        if (which === "pairwise") setPairwiseTourRunning(true);
+        else setCorpuswideTourRunning(true);
+      }, 800);
+    }, 300);
+    return () => clearInterval(timer);
+    // removeTourParam is deliberately not a dependency: it is a new function on every
+    // render, which would restart this effect (and its polling) all the time.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, isPairwiseViz, isFileUploaded, chartData]);
 
   // update the margins of the graphs, based on 
   // * label font size
@@ -632,7 +724,33 @@ const VisualisationPage = () => {
       loadChartFromUrl();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [releaseCode]);
+  }, [releaseCode, searchParams.get("books")]);
+  // Start one of the tours (also used by the links to other tours inside a tour)
+  const handleStartTour = (key) => {
+    if (key === "pairwise") {
+      if (isPairwiseViz) {
+        setPairwiseTourRunning(true);
+      } else {
+        // not on a pairwise chart: open the demo pair, which starts the tour
+        try { sessionStorage.setItem("kitab-start-pairwise-tour", String(Date.now())); } catch (e) { /* ignore */ }
+        tourAutoStarted.current = false;
+        navigate(`/visualise/${releaseCode}/?books=${DEMO_BOOKS}&tour=pairwise`);
+      }
+    } else if (key === "corpuswide") {
+      if (!isPairwiseViz && chartData?.msData?.length) {
+        setCorpuswideTourRunning(true);
+      } else {
+        // not on a corpus-wide chart: open the demo book, which starts the tour
+        try { sessionStorage.setItem("kitab-start-corpuswide-tour", String(Date.now())); } catch (e) { /* ignore */ }
+        tourAutoStarted.current = false;
+        navigate(`/visualise/${releaseCode}/?books=${CORPUSWIDE_DEMO_BOOKS}&tour=corpuswide`);
+      }
+    } else if (key === "main") {
+      try { sessionStorage.setItem(MAIN_TOUR_REQUEST, "1"); } catch (e) { /* ignore */ }
+      navigate(`/${releaseCode}/`);
+    }
+  };
+
   return (
     <Box
       mx={"auto"}
@@ -652,7 +770,27 @@ const VisualisationPage = () => {
         position: "relative",
       }}
     >
-      <Header isPairwiseViz={isPairwiseViz} />
+      <Header
+        isPairwiseViz={isPairwiseViz}
+        onStartTour={handleStartTour}
+      />
+      <PairwiseVisualizationTour
+        run={pairwiseTourRunning}
+        setIsOpenDrawer={setIsOpenDrawer}
+        onExit={() => {
+          setPairwiseTourRunning(false);
+          removeTourParam();
+        }}
+      />
+      <CorpuswideVisualizationTour
+        run={corpuswideTourRunning}
+        onSwitchTour={handleStartTour}
+        onExit={() => {
+          setCorpuswideTourRunning(false);
+          // the tour selects a dot (ms1, id2) and opens its DiffViewer (align_no)
+          removeTourParam(["ms1", "id2", "align_no"]);
+        }}
+      />
       {isError ? (
         <Box
           height="200px"
@@ -700,6 +838,10 @@ const VisualisationPage = () => {
               {chartData?.dataSets?.length || chartData?.msData?.length ? (
                 isPairwiseViz ? (
                   <Visual isPairwiseViz={isPairwiseViz} includeURL={includeURL} setIncludeURL={setIncludeURL} />
+                ) : !chartData?.msData?.length ? (
+                  // stale pairwise data from an earlier visualisation, while the
+                  // one in the URL is still being loaded: do not render it as one-to-many
+                  <CircularInterminate />
                 ) : (
                   <MultiVisual isPairwiseViz={isPairwiseViz} handleUpload={handleUpload} includeURL={includeURL} setIncludeURL={setIncludeURL} />
                 )
