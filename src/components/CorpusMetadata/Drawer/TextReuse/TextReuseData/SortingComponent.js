@@ -20,6 +20,7 @@ const SortingComponent = ({
 
   return (
     <Box
+      className="TextReuseData-SortingComponent"
       display={"flex"}
       flexDirection={"column"}
       alignItems={"center"}

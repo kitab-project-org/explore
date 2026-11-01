@@ -1,8 +1,7 @@
-import { Button } from "@mui/material";
-import { TextField, Tooltip, ClickAwayListener } from "@mui/material";
+import { useContext, useEffect, useRef } from "react";
+import { Button, TextField, Tooltip, ClickAwayListener } from "@mui/material";
 import * as d3 from "d3";
 import { Context } from "../../../../App";
-import React, { useContext, useEffect, useRef } from "react";
 
 
 const TickFontSizeControl = ({ svgSelector = '#svgChart' }) => {

@@ -1,11 +1,11 @@
 import { Box } from "@mui/material";
-import React from "react";
 import { Typography } from "@mui/material";
 import SortingComponent from "./SortingComponent";
 
 const TableHeader = ({ sortingOrder, setSortingOrder }) => {
   return (
     <Box
+      id="TextReuseData-TableHeader"
       sx={{
         width: "100%",
         display: "flex",
@@ -23,19 +23,18 @@ const TableHeader = ({ sortingOrder, setSortingOrder }) => {
       <Box
         display={"flex"}
         alignItems={"center"}
-        width={"30%"}
+        width={"70%"}
         padding={"0px 15px"}
       >
-        Author
+        Work
+        <SortingComponent
+          ascending={"book"}
+          descending={"-book"}
+          sortingOrder={sortingOrder}
+          setSortingOrder={setSortingOrder}
+        />
       </Box>
-      <Box
-        display={"flex"}
-        alignItems={"center"}
-        width={"50%"}
-        padding={"0px 15px"}
-      >
-        Title
-      </Box>
+
       <Box
         display={"flex"}
         alignItems={"center"}
@@ -51,7 +50,7 @@ const TableHeader = ({ sortingOrder, setSortingOrder }) => {
           setSortingOrder={setSortingOrder}
         />
       </Box>
-      <Typography width={"10%"} padding={"0px 15px"}></Typography>
+      <Typography id="reuse-actions-header" width={"20%"} padding={"0px 15px"}>Actions</Typography>
     </Box>
   );
 };

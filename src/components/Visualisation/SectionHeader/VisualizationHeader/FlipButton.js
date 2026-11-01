@@ -1,7 +1,6 @@
-import { Button } from "@mui/material";
-import { Tooltip } from "@mui/material";
+import { useContext } from "react";
+import { Button, Tooltip } from "@mui/material";
 import { Context } from "../../../../App";
-import React, { useContext } from "react";
 
 const FlipButton = () => {
   const { isFlipped, setIsFlipped, setFlipTimeLoading } = useContext(Context);
@@ -19,6 +18,7 @@ const FlipButton = () => {
   return (
     <Tooltip title="Flip books" placement="top">
       <Button
+        id="viz-flip-btn"
         onClick={handleFlipBooks}
         color="primary"
         variant="outlined"

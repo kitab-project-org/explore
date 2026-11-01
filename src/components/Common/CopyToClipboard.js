@@ -1,5 +1,5 @@
 import { Box, Tooltip } from "@mui/material";
-import React, { useState } from "react";
+import { useState } from "react";
 
 const CopyToClipboard = ({ data }) => {
   const [isCopied, setIsCopied] = useState(false);
@@ -16,12 +16,12 @@ const CopyToClipboard = ({ data }) => {
     }
   };
   return (
-    <Tooltip title="Copy to Clipboard">
+    <Tooltip title="Copy URI to Clipboard">
       <Box
         sx={{
           bgcolor: "none",
           p: "0px",
-          ml: "15px",
+          ml: "0px",
           width: "22px",
           height: "22px",
           display: "flex",

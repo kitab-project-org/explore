@@ -7,14 +7,9 @@ export const srtFolders = {
     "2022.1.6": `${KITAB_DEV_URL}/2022.1.6-pairwise`,
     "2022.2.7": `${KITAB_DEV_URL}/2022.2.7-pairwise`,
     "2023.1.8": `${KITAB_DEV_URL}/2023.1.8-pairwise`,
+    "2025.1.9": `${KITAB_DEV_URL}/passim2025.1.9-pairwise`,
 };
 
-export const srtFoldersGitHub = {
-    "2021.2.5": `${GITHUB_PAIRWISE_URL}/v2021.2.5-pri/data`,
-    "2022.1.6": `${GITHUB_PAIRWISE_URL}/v2022.1.6-pri/data`,
-    "2022.2.7": `${GITHUB_PAIRWISE_URL}/v2022.2.7-pri/data`,
-    "2023.1.8": `${GITHUB_PAIRWISE_URL}/v2023.1.8-pri/data`,
-};
 
 // folders containing the "light" srt files (without alignment strings):
 export const lightSrtFolders = {
@@ -22,13 +17,24 @@ export const lightSrtFolders = {
     "2022.1.6": `${KITAB_DEV_URL}/2022.1.6-pairwise`,  // light folder doesn't exist
     "2022.2.7": `${KITAB_DEV_URL}/2022.2.7-pairwise-light`,
     "2023.1.8": `${KITAB_DEV_URL}/2023.1.8-pairwise-light`,
+    "2025.1.9": `${KITAB_DEV_URL}/passim2025.1.9-pairwise-light`,
 };
 
+export const srtFoldersGitHub = {
+    "2021.2.5": `${GITHUB_PAIRWISE_URL}-v5/data`,
+    "2022.1.6": `${GITHUB_PAIRWISE_URL}-v6/data`,
+    "2022.2.7": `${GITHUB_PAIRWISE_URL}-v7/data`,
+    "2023.1.8": `${GITHUB_PAIRWISE_URL}/v2023.1.8-pri/data`,
+    "2025.1.9": `${GITHUB_PAIRWISE_URL}/v2025.1.9-pri/data`,
+};
+
+// folders containing the data for the one-to-all visualization
 export const oneToAllFolders = {
     "2021.2.5": `${ONE_TO_ALL_URL}/v2021.2.5`,
     "2022.1.6": `${ONE_TO_ALL_URL}/v2022.1.6`,
     "2022.2.7": `${ONE_TO_ALL_URL}/v2022.2.7`,
-    "2023.1.8": `${ONE_TO_ALL_URL}/v2023.1.8`
+    "2023.1.8": `${ONE_TO_ALL_URL}/v2023.1.8`,
+    "2025.1.9": `${ONE_TO_ALL_URL}/v2025.1.9`
 }
 
 

@@ -1,16 +1,19 @@
-import { Box, IconButton, Modal, Typography } from "@mui/material";
-import React from "react";
-import { useContext } from "react";
-import { useState } from "react";
+import { useContext, useState } from "react";
+import { 
+  Box, 
+  FormControlLabel, 
+  IconButton, 
+  Modal, 
+  Switch, 
+  Table, 
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableRow,
+  Typography
+} from "@mui/material";
 import { Context } from "../../../App";
-import { Switch } from "@mui/material";
-import { FormControlLabel } from "@mui/material";
 import { imechToHtml } from "../../../utility/Helper";
-import { TableRow } from "@mui/material";
-import { TableCell } from "@mui/material";
-import { TableBody } from "@mui/material";
-import { Table } from "@mui/material";
-import { TableContainer } from "@mui/material";
 
 // open the reader (read 300 milestones at once)
 const ExpandView = ({ open, handleClose, rows, spCol, nextLoad, prevLoad }) => {

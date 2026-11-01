@@ -103,12 +103,37 @@ ARCHARS.forEach((el) => (arCharsStr += el[0]));
 var arCharRegex = new RegExp("([" + arCharsStr + "])", "g");
 var arTokRegex = new RegExp("([" + arCharsStr + "]+)", "g");
 // all unicode characters between space and Arabic letters:
-var arCharRegexWithSpace = new RegExp("([" + arCharsStr + "]| [ -؟]*)", "g"); 
+//var arCharRegexWithSpace = new RegExp("([" + arCharsStr + "\d]| [ -؟]*)", "g"); 
+// all unicode characters between space 0 (excl) and between 9 (excl) and Arabic letters:
+var arCharRegexWithSpace = new RegExp("([" + arCharsStr + "0-9]| [ -/:-؟]*)", "g"); 
+var digits = "0123456789";
+var arCharRegexWithSpaceInclDigits = new RegExp("([" + arCharsStr + digits + "]| [ -/:-؟]*)", "g"); 
+var anyLetterOrDigitRegexWithSpace = new RegExp("([\\p{L}\\p{N}]| [ -/:-؟]*)", "gu"); 
+
+var transcription_chars = "0-9a-zA-ZāĀăĂēĒĕĔṭṬṯṮūŪīĪĭĬİıōŌṣṢšŠḍḌḏḎǧǦġĠğĞḫḪḥḤḳḲẓẒžŽčČçÇñÑãÃáÁàÀäÄéÉèÈêÊëËïÏîÎôÔóÓòÒōÕöÖüÜûÛúÚùÙʿʾ' ";
 
 var arCharsExtStr = arCharsStr;
 noise.forEach((el) => (arCharsExtStr += el[1]));
 var arCharExtRegex = new RegExp("([" + arCharsExtStr + "])", "g");
 var arTokExtRegex = new RegExp("([" + arCharsExtStr + "]+)", "g");
+
+var notTokRegexes = [
+    // structural tags like ### |EDITOR|, ### |PARATEXT|:
+    "[|$][A-Z]+[|$]",
+    //semantic tags:
+    "\\bY[A-Z]?\\d+\\b",
+    // page number tags:
+    "(?:Folio|Page)(?:Beg|Beginning|End)?V[^P]+P\\d+[A-Z]*",
+    // milestone tags:
+    "\\bms[A-Z]?\\d+",
+    // markdown image links and urls:
+    "!?\\[[^\\]]*\\]\\([^)]*\\)",
+    // numbers only should be counted as token,
+    // but not number+non-letter character (e.g., 1., (1), ...):
+    "[\\]\\[(){}]*\\d+[\\]\\[(){}.\\-]+$"
+    ]
+var doNotCountRegex = new RegExp(notTokRegexes.join("|"), "g");
+
 
 // tokenize a string using a regex that defines a token:
 
@@ -144,6 +169,10 @@ export {
   arCharsStr,
   arCharRegex,
   arCharRegexWithSpace,
+  arCharRegexWithSpaceInclDigits,
+  anyLetterOrDigitRegexWithSpace,
+  transcription_chars,
+  doNotCountRegex,
   arTokRegex,
   arCharsExtStr,
   arCharExtRegex,

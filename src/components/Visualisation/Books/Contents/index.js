@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import {
   Box,
   Button,
@@ -5,7 +6,6 @@ import {
   Typography,
   Divider,
 } from "@mui/material";
-import React, { useEffect, useRef, useState } from "react";
 import MileStone from "./MileStone";
 import ParsedBook from "../../BooksAlignment/ParsedBook";
 import { imechToHtml } from "../../../../utility/Helper";

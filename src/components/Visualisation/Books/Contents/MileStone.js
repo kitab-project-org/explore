@@ -1,5 +1,5 @@
+import { useContext, useRef, useState } from "react";
 import { Box, Typography } from "@mui/material";
-import React, { useContext, useRef, useState } from "react";
 import { Context } from "../../../../App";
 
 const MileStone = ({

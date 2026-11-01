@@ -2,6 +2,7 @@ import { useCallback, useContext, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   Box,
+  Button,
   Grid,
   IconButton,
   TextField,
@@ -9,12 +10,11 @@ import {
   Typography,
 } from "@mui/material";
 import FilterAltOffIcon from "@mui/icons-material/FilterAltOff";
-import FilterClose from "@mui/icons-material/FilterListOff";
 import FilterOpen from "@mui/icons-material/FilterList";
+
+import AdvanceSearch from "./AdvanceSearch";
 import SetSearchField from "./SetSearchField";
 import { Context } from "../../../App";
-import AdvanceSearch from "./AdvanceSearch";
-import { Button } from "@mui/material";
 import { cleanSearchPagination } from "../../../utility/Helper"
 
 const SearchFilters = ({ handleResetFilters, getQuery }) => {
@@ -120,7 +120,7 @@ const SearchFilters = ({ handleResetFilters, getQuery }) => {
     let newArr = [];
     for (let i = 0; i < arr.length; i++) {
       if (searchParams.has(arr[i]) && isExist(Object.keys(paramMappings)[i])) {
-        newArr = [...newArr, paramMappings[arr[i]]];
+        newArr = [...newArr, `${paramMappings[arr[i]]}: ${searchParams.get(arr[i])}`];
       }
     }
     setAdvanceParams(newArr);
@@ -150,7 +150,7 @@ const SearchFilters = ({ handleResetFilters, getQuery }) => {
   }, [updateText]);
 
   return (
-    <Box display={"flex"} justifyContent={"space-between"} gap={2} my={2}>
+    <Box id="search-filter" display={"flex"} justifyContent={"space-between"} gap={2} my={2}>
       <Grid container item md={12} xs={12}>
         <AdvanceSearch />
         <SetSearchField />
@@ -171,20 +171,24 @@ const SearchFilters = ({ handleResetFilters, getQuery }) => {
             right: "0px",
           }}
         >
-          <>
-            <Tooltip title="Toggle Filter Sidebar">
-              <IconButton
-                onClick={handleFilterPanel}
-                sx={{
-                  display: "flex",
-                }}
-              >
-                {showFilters ? <FilterClose /> : <FilterOpen />}
-              </IconButton>
-            </Tooltip>
-          </>
+          <Tooltip title="Show Filter Sidebar">
+            <IconButton
+              id="filter-sidebar-toggle"
+              onClick={handleFilterPanel}
+              sx={{
+                display: "flex",
+                visibility: showFilters ? "hidden" : "visible",
+                pointerEvents: showFilters ? "none" : "auto",
+              }}
+            >
+              <FilterOpen />
+            </IconButton>
+          </Tooltip>
 
-          {searchParams.size ? (
+          {!showFilters && (searchParams.size > 3 ||
+            (searchParams.get("version") && searchParams.get("version") !== "pri") ||
+            (searchParams.get("text_type") && searchParams.get("text_type") !== "all") ||
+            (searchParams.get("language") && searchParams.get("language") !== "all")) ? (
             <Tooltip title="Clear Filters">
               <IconButton onClick={handleResetFilters}>
                 <FilterAltOffIcon />
@@ -201,11 +205,12 @@ const SearchFilters = ({ handleResetFilters, getQuery }) => {
                 <TextField
                   id="outlined-search"
                   label={
-                    searchField
-                      ? searchField === "author"
-                        ? "Search by author"
-                        : "Search by title"
-                      : "Search by author, title or attributes"
+                    {
+                      author: "Search by author",
+                      title: "Search by title",
+                      shelfmark: "Search by shelfmark",
+                      holding: "Search by manuscript holding",
+                    }[searchField] ?? "Search by author, title or other attributes"
                   }
                   type="search"
                   size="small"
@@ -214,38 +219,10 @@ const SearchFilters = ({ handleResetFilters, getQuery }) => {
                   fullWidth={true}
                 />
               </form>
-              {advanceParams.length !== 0 && (
-                <Box
-                  sx={{
-                    width: "100%",
-                    height: "50px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <Typography variant="body1">Advanced Search:</Typography>
-                  {advanceParams &&
-                    advanceParams.map((item, i) => (
-                      <Typography
-                        key={i}
-                        variant="body2"
-                        sx={{ ml: "4px", color: "#2863A5" }}
-                      >
-                        {item}
-                        {advanceParams.length === i + 1 ? "" : ", "}
-                      </Typography>
-                    ))}
-                  <Button
-                    sx={{ color: "red" }}
-                    onClick={clearAllAdvanceSearchFilter}
-                  >
-                    Clear All
-                  </Button>
-                </Box>
-              )}
+             
               {(searchParams.get("search") || text || searchField) && (
                 <Typography
+                  id="search-clear-btn"
                   sx={{
                     cursor: "pointer",
                     position: "absolute",
@@ -262,6 +239,36 @@ const SearchFilters = ({ handleResetFilters, getQuery }) => {
             </Box>
           </Grid>
         </Grid>
+        {advanceParams.length !== 0 && (
+              <Box
+                sx={{
+                  width: "100%",
+                  height: "50px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Typography variant="body1">Advanced Search:</Typography>
+                {advanceParams &&
+                  advanceParams.map((item, i) => (
+                    <Typography
+                      key={i}
+                      variant="body2"
+                      sx={{ ml: "4px", color: "#2863A5" }}
+                    >
+                      {item}
+                      {advanceParams.length === i + 1 ? "" : ", "}
+                    </Typography>
+                  ))}
+                <Button
+                  sx={{ color: "red" }}
+                  onClick={clearAllAdvanceSearchFilter}
+                >
+                  Clear All
+                </Button>
+              </Box>
+            )}
       </Grid>
     </Box>
   );

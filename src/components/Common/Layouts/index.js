@@ -1,8 +1,7 @@
-import * as React from "react";
-import Box from "@mui/material/Box";
-import Grid from "@mui/material/Grid";
+import { Box, Grid } from "@mui/material";
 import NavigationBar from "../NavigationBar";
 import Footer from "../Footer";
+import Analytics from "../Analytics";
 
 const Layout = ({ children }) => {
   return (
@@ -18,6 +17,7 @@ const Layout = ({ children }) => {
           <Footer />
         </Grid>
       </Grid>
+      <Analytics />
     </Box>
   );
 };

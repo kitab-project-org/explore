@@ -1,8 +1,8 @@
-import React, { useContext, useEffect } from "react";
+import { useContext, useEffect } from "react";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { Context } from "../App";
 import Layout from "../components/Common/Layouts";
 import VisualisationPage from "../components/Visualisation/index";
-import { useNavigate, useParams, useLocation } from "react-router-dom";
 
 const Visualisation = () => {
   console.log("render Visualisation");

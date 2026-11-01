@@ -1,177 +1,164 @@
-import React from "react";
-import { useContext, useRef, useEffect } from "react";
-import { Context } from "../../../../App";
-import { Box } from "@mui/material";
-import { Button, TextField, Typography, Tooltip } from "@mui/material";
+import { useContext, useEffect } from "react";
+import { Alert, Box, Button, Typography, Tooltip } from "@mui/material";
 import * as d3 from "d3";
-//import TickFontSizeControl from "./TickFontSizeControl";
+import IncludeMetaDropdown from "./IncludeMetaDropdown";
+import OutputDimensions from "./OutputDimensions";
+import { downloadPNG, downloadSVG, isChrome, mergeChartSVGs, injectBottomBarXAxis } from "../../../../utility/Helper";
+import { Context } from "../../../../App";
 
+const rowSx = {
+  display: "flex",
+  flexWrap: "wrap",
+  alignItems: "center",
+  gap: "6px",
+  px: "10px",
+  py: "4px",
+};
 
-const DownloadPanel = ( {isPairwiseViz, downloadFileName} ) => {
-  const { 
-    downloadPNG, 
-    tickFontSize, 
-    setTickFontSize,
+const CheckButton = ({ label, checked, onClick }) => (
+  <Button onClick={onClick} size="small">
+    <Box display="flex" alignItems="center">
+      <Typography sx={{ textTransform: "none", color: "#333", fontSize: "0.875rem" }}>
+        {label}&nbsp;
+      </Typography>
+      <Typography sx={{ mt: "2px", fontSize: "0.875rem" }}>
+        {checked
+          ? <i className="fa-solid fa-square-check"></i>
+          : <i className="fa-regular fa-square"></i>}
+      </Typography>
+    </Box>
+  </Button>
+);
+
+const DownloadPanel = ( {isPairwiseViz, downloadFileName, includeURL, setIncludeURL, includeMetadata = true, setIncludeMetadata, includeTocMarkers = true, setIncludeTocMarkers, includeLegend = false, setIncludeLegend, includeSidebar = false, setIncludeSidebar, includeBottomBar = false, setIncludeBottomBar} ) => {
+  const {
+    tickFontSize,
     outputImageWidth,
-    setOutputImageWidth,
-    dpi, 
-    setDpi,
-    includeURL,
-    setIncludeURL
+    dpi
   } = useContext(Context);
-  const tickInputRef = useRef(null);
-  const widthInputRef = useRef(null);
-  const dpiInputRef = useRef(null);
-  const svgSelector = isPairwiseViz ? '#svgChart' : '#scatter-chart';
 
-  const handleInputChange = (e) => {
-    setTickFontSize(parseInt(e.target.value) || 12);
-  };
+  const svgSelector = isPairwiseViz ? 'svgChart' : 'scatterChart';
 
-  const handleWidthInputChange = (e) => {
-    setOutputImageWidth(parseInt(e.target.value) || 120);
-  }
+  const CHROME_PIXEL_THRESHOLD = 130_000_000;
+  const showChromeWarning = (() => {
+    if (!outputImageWidth || !isChrome()) return false;
+    const svgEl = document.getElementById(svgSelector);
+    if (!svgEl) return false;
+    const svgPixelWidth = svgEl.clientWidth || 1;
+    const svgPixelHeight = svgEl.clientHeight || 1;
+    const targetPixelWidth = (outputImageWidth / 25.4) * (dpi || 300);
+    const scale = targetPixelWidth / svgPixelWidth / (window.devicePixelRatio || 1);
+    const targetPixelHeight = svgPixelHeight * scale;
+    return targetPixelWidth * targetPixelHeight > CHROME_PIXEL_THRESHOLD;
+  })();
 
-  const handleDpiInputChange = (e) => {
-    setDpi(parseInt(e.target.value) || 300);
-  }
-
-  const handleIncludeURL = () => {
-    setIncludeURL((prev) => !prev);
-  }
-
-  // Apply font size when it changes
-    useEffect(() => {
-      // TODO: fix the font size for one-to-many chart!
-      console.log(`${svgSelector} .tick text`);
-      d3.selectAll(`${svgSelector} .tick text`).style("font-size", `${tickFontSize}px`);
-    }, [tickFontSize, svgSelector]);
-
-  const handleDownload = () => {
-    if (isPairwiseViz) {
-      downloadPNG(downloadFileName, "svgChart", includeURL);
-    } else {
-      downloadPNG(downloadFileName, "scatter-chart", includeURL);
+  const getSvgTarget = () => {
+    if (isPairwiseViz && (includeURL || includeMetadata)) {
+      const ids = [];
+      if (includeURL)      ids.push('url-label-svg');       // above metadata
+      if (includeMetadata) ids.push('metadata-top-svg');    // between url and chart
+      ids.push('svgChart');
+      if (includeMetadata) ids.push('metadata-bottom-svg'); // below chart
+      const merged = mergeChartSVGs(ids);
+      if (merged) return merged;
     }
+    if (!isPairwiseViz && (includeURL || includeLegend || includeSidebar || includeBottomBar)) {
+      const ids = ['scatterChart'];
+      if (includeURL)       ids.push('url-label-svg');
+      if (includeLegend)    ids.push('legend-svg');
+      if (includeSidebar)   ids.push('side-bar');
+      if (includeBottomBar) ids.push('bottom-bar');
+      const merged = mergeChartSVGs(ids);
+      if (!merged) return svgSelector;
+      if (!includeBottomBar) injectBottomBarXAxis(merged, ids);
+      return merged;
+    }
+    return svgSelector;
   };
-  console.log("downloadFileName: "+downloadFileName);
-  console.log("isPairwiseViz: "+isPairwiseViz);
-  
+
+  // Apply tick font size when it changes.
+  // NB: For the pairwise viz this is overridden by the chart redraw.
+  useEffect(() => {
+    d3.selectAll("#chartBox .tick text").style("font-size", `${tickFontSize}px`);
+  }, [tickFontSize]);
 
   return (
     <>
+      {showChromeWarning && (
+        <Alert severity="warning" sx={{ mb: 1 }}>
+          The requested PNG is very large. Google Chrome may produce a corrupt file at this size.
+          Try reducing the width or DPI, or download using Firefox instead.
+        </Alert>
+      )}
       <Box
-        display={"flex"}
-        justifyContent={"right"}
+        id="download-panel"
         sx={{
-          alignItems: "center",
-          
-          px: {
-            xs: "25px",
-            sm: "25px",
-          },
-          gap: "10px",
           bgcolor: "#F0F0F5",
           borderRadius: "5px",
-          position: "relative",
           borderTop: "1px solid white",
         }}
-      > 
-        <Typography>Download options:</Typography>
-        <Tooltip placement="top" title={"Set the width of the output image"}>
-          <Box display="flex" alignItems="center">
-            <Typography>Width:</Typography>
-            <TextField
-              inputRef={widthInputRef}
-              type="text"
-              value={outputImageWidth}
-              onChange={handleWidthInputChange}
-              size="small"
-              variant="standard"
-              sx={{
-                width: 40,
-                ml: 1,
-                "& .MuiInputBase-input": {
-                  padding: "6px 8px",
-                  fontSize: "0.85rem",
-                },
-              }}
-            />
-            <Typography>mm</Typography>
+      >
+        {/* Row 1: dimension / font size controls */}
+        <Box sx={rowSx}>
+          <Typography sx={{ fontWeight: "bold", whiteSpace: "nowrap" }}>
+            Download options:
+          </Typography>
+          <OutputDimensions />
+          {isPairwiseViz && <IncludeMetaDropdown />}
+        </Box>
+
+        {/* Row 2: include checkboxes + download buttons */}
+        <Box sx={{ ...rowSx }}>
+          <Typography sx={{ fontWeight: "bold", whiteSpace: "nowrap" }}>
+            Include:
+          </Typography>
+          <Tooltip placement="top" title="Include the URL of this visualization in the downloaded image">
+            <span>
+              <CheckButton label="URL" checked={includeURL} onClick={() => setIncludeURL(v => !v)} />
+            </span>
+          </Tooltip>
+          {isPairwiseViz && setIncludeMetadata && (
+            <Tooltip placement="top" title="Include the book metadata (title, author, word count) in the downloaded image">
+              <span>
+                <CheckButton label="Metadata" checked={includeMetadata} onClick={() => setIncludeMetadata(v => !v)} />
+              </span>
+            </Tooltip>
+          )}
+          {isPairwiseViz && setIncludeTocMarkers && (
+            <Tooltip placement="top" title="Include the table of contents markers in the downloaded image">
+              <span>
+                <CheckButton label="TOC markers" checked={includeTocMarkers} onClick={() => setIncludeTocMarkers(v => !v)} />
+              </span>
+            </Tooltip>
+          )}
+          {!isPairwiseViz && (
+            <>
+              <Tooltip placement="top" title="Include the color legend in the downloaded image">
+                <span><CheckButton label="Legend" checked={includeLegend} onClick={() => setIncludeLegend(v => !v)} /></span>
+              </Tooltip>
+              <Tooltip placement="top" title="Include the sidebar (characters reused per milestone) in the downloaded image">
+                <span><CheckButton label="Sidebar" checked={includeSidebar} onClick={() => setIncludeSidebar(v => !v)} /></span>
+              </Tooltip>
+              <Tooltip placement="top" title="Include the bottom bar (characters reused per book) in the downloaded image">
+                <span><CheckButton label="Bottom bar" checked={includeBottomBar} onClick={() => setIncludeBottomBar(v => !v)} /></span>
+              </Tooltip>
+            </>
+          )}
+          <Box sx={{ ml: "auto", display: "flex", gap: "6px" }}>
+            <Button
+              onClick={() => downloadPNG(getSvgTarget(), downloadFileName, outputImageWidth, dpi)}
+              color="primary" variant="outlined" style={{ textTransform: "none" }}
+            >
+              Download PNG
+            </Button>
+            <Button
+              onClick={() => downloadSVG(getSvgTarget(), downloadFileName)}
+              color="primary" variant="outlined" style={{ textTransform: "none" }}
+            >
+              Download SVG
+            </Button>
           </Box>
-        </Tooltip>
-        <Tooltip placement="top" title={"Set the resolution of the output image"}>
-          <Box display="flex" alignItems="center">
-            <Typography>Resolution:</Typography>
-            <TextField
-              inputRef={dpiInputRef}
-              type="text"
-              value={dpi}
-              onChange={handleDpiInputChange}
-              size="small"
-              variant="standard"
-              sx={{
-                width: 40,
-                ml: 1,
-                "& .MuiInputBase-input": {
-                  padding: "6px 8px",
-                  fontSize: "0.85rem",
-                },
-              }}
-            />
-            <Typography>dpi</Typography>
-          </Box>
-        </Tooltip>
-        <Tooltip placement="top" title={"Change the size of the X and Y axis tick labels"}>
-          <Box display="flex" alignItems="center">
-            <Typography>Axis labels size:</Typography>
-            <TextField
-              inputRef={tickInputRef}
-              type="number"
-              value={tickFontSize}
-              onChange={handleInputChange}
-              size="small"
-              variant="standard"
-              sx={{
-                width: 60,
-                ml: 1,
-                "& .MuiInputBase-input": {
-                  padding: "6px 8px",
-                  fontSize: "0.85rem",
-                },
-              }}
-            />
-            <Typography>px</Typography>
-          </Box>
-        </Tooltip>
-        <Tooltip placement="top" title={"Include URL of this visualization in the downloaded image?"}>
-          <Button onClick={handleIncludeURL}>
-            <Box display="flex" alignItems="center">
-              <Typography
-                ariant="body2"
-                sx={{ textTransform: "none", color: "#333" }}
-              >
-                Include URL:&nbsp;
-              </Typography>
-              <Typography sx={{ mr: "8px", mt: "2px" }}>
-                {includeURL ? (
-                    <i className="fa-solid fa-square-check"></i>
-                ) : (
-                    <i className="fa-regular fa-square"></i>
-                )}
-              </Typography>
-            </Box>
-          </Button>
-        </Tooltip>
-        <Button
-          onClick={() => handleDownload()}
-          color="primary"
-          variant="text"
-          rel="noreferrer"
-          target="_blank"
-        >
-          Download PNG
-        </Button>
+        </Box>
       </Box>
     </>
   );

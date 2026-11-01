@@ -1,10 +1,9 @@
+import { useContext } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Box } from "@mui/material";
 import ArrowDropUp from "@mui/icons-material/ArrowDropUp";
 import ArrowDropDown from "@mui/icons-material/ArrowDropDown";
-import React from "react";
-import { useContext } from "react";
 import { Context } from "../../../../../App";
-import { useSearchParams } from "react-router-dom";
 import { cleanSearchPagination } from "../../../../../utility/Helper"
 
 const SortingComponent = ({ ascending, descending }) => {

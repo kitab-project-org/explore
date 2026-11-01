@@ -1,12 +1,11 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Box, Typography } from "@mui/material";
 import { Link } from "react-router-dom";
 import TextReuseData from "./TextReuseData/index.js";
 import { TextField } from "@mui/material";
 import { srtFolders, oneToAllFolders } from "../../../../assets/srtFolders";
-import AlertComponent from "../../../Common/AlertComponent.js";
 
-const DownloadSrt = ({ fullData }) => {
+const DownloadSrt = ({ fullData, fullDataLoading }) => {
   const [query, setQuery] = useState("");
   const releaseCode = fullData?.release_version?.release_code;
   const passim_folder = srtFolders[releaseCode];
@@ -34,8 +33,7 @@ const DownloadSrt = ({ fullData }) => {
   ];
 
   return (
-    <Box sx={{ width: "100%" }}>
-      <AlertComponent forDrawer />
+    <Box id="TextReuse-Drawer" sx={{ width: "100%" }}>
       
       <Box>
         {data.length !== 0 &&
@@ -70,7 +68,7 @@ const DownloadSrt = ({ fullData }) => {
           ))}
       </Box>
 
-      <Box>
+      <Box id="reuse-viz-all">
         {(data.length !== 0 && oneToAllFolders[releaseCode]) &&
           data.slice(1, 2).map((item, index) => (
             <Box
@@ -105,11 +103,11 @@ const DownloadSrt = ({ fullData }) => {
           ))}
       </Box>
 
-      <Box py={"30px"}>
+      <Box id="reuse-pairwise-section" py={"30px"}>
         <Box display="flex" alignItems="center" justifyContent="space-between">
           <Typography>Pairwise Text Reuse Data:</Typography>
           <TextField
-            id="outlined-search"
+            id="reuse-pairwise-search"
             label={"Search"}
             type="search"
             size="small"
@@ -121,10 +119,10 @@ const DownloadSrt = ({ fullData }) => {
             }}
           />
         </Box>
-        <TextReuseData fullData={fullData} query={query} setQuery={setQuery} />
+        <TextReuseData fullData={fullData} query={query} setQuery={setQuery} fullDataLoading={fullDataLoading}/>
       </Box>
 
-      <Box>
+      <Box id="reuse-folder">
         {data.length !== 0 &&
           data.slice(0, 1).map((item, index) => (
             <Box

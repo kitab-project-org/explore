@@ -1,14 +1,15 @@
-import "./App.css";
+import { createContext, useEffect, useRef, useState } from "react";
+import { HashRouter as Router, Routes, Route } from "react-router-dom";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { green, red } from "@mui/material/colors";
-import { HashRouter as Router, Routes, Route } from "react-router-dom";
+
+import "./App.css";
 import Insight from "./pages/Insight";
 import Visualisation from "./pages/Visualisation";
 import CorpusMetadata from "./pages/CorpusMetadata";
-import { createContext, useRef, useState } from "react";
 import DiffViewer from "./pages/DiffViewer";
 import LeftSidePanel from "./components/CorpusMetadata/Drawer";
-import * as saveSvgAsPng from "save-svg-as-png";
+import { getAllReleasesInsights } from "./services/CorpusMetaData";
 
 const theme = createTheme({
   palette: {
@@ -52,6 +53,7 @@ const theme = createTheme({
   },
   typography: {
     fontFamily: [
+      "Gentium Plus",
       "Amiri",
       "Roboto",
       '"Helvetica Neue"',
@@ -68,14 +70,15 @@ function App() {
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [rows, setRows] = useState([]);
-  const [defaultReleaseCode, setDefaultReleaseCode] = useState("2023.1.8");
+  const [defaultReleaseCode, setDefaultReleaseCode] = useState("2025.1.9");
   const [releaseCode, setReleaseCode] = useState(defaultReleaseCode);
   const [status, setStatus] = useState(false);
   const [query, setQuery] = useState("");
   const [searchField, setSearchField] = useState("");
   const [normalizedSearch, setNormalizedSearch] = useState(true);
   const [sortingOrder, setOrderingOrder] = useState("");
-  const [analysisPriority, setAnalysisPriority] = useState(false);
+  const [showPrimary, setShowPrimary] = useState(true);
+  const [showSecondary, setShowSecondary] = useState(false);
   const [annotationFilter, setAnnotationFilter] = useState({
     completed: false,
     inProgress: false,
@@ -135,45 +138,35 @@ function App() {
   const bookSectionRef = useRef();
   const [isFileUploaded, setIsFileUploaded] = useState(false);
   const [showTickSizeInput, setShowTickSizeInput] = useState(false);
-  const [tickFontSize, setTickFontSize] = useState(12);
+  const [tickFontSize, setTickFontSize] = useState(16);
+  const [axisLabelFontSize, setAxisLabelFontSize] = useState(16);
   const [outputImageWidth, setOutputImageWidth] = useState(120);
   const [dpi, setDpi] = useState(300);
+  const [includeMetaInDownload, setIncludeMetaInDownload] = useState("no");
+  const [metaPositionInDownload, setMetaPositionInDownload] = useState("left");
   const [isFlipped, setIsFlipped] = useState(false);
   const [flipTimeLoading, setFlipTimeLoading] = useState(false);
   const focusMilestone1 = useRef();
   const focusMilestone2 = useRef();
   const [chartSpecificBar, setChartSpecificBar] = useState({});
-  // contains alignment string and start+end indices of alignment:
-  const [booksAlignment, setBooksAlignment] = useState({
-    // alignment strings:
-    s1: "",
-    s2: "",
-    // part of the milestones before the alignment:
-    beforeAlignment1: "",
-    beforeAlignment2: "",
-    // part of the milestones after the alignment:
-    afterAlignment1: "",
-    afterAlignment2: "",
-    // token (*w*ord) offset of *b*eginning and *e*nd of the alignment:
-    bw1: 0,
-    ew1: 0,
-    bw2: 0,
-    ew2: 0,
-    // *c*haracter offset of *b*eginning and *e*nd of the alignment:
-    bc1: 0,
-    ec1: 0,
-    bc2: 0,
-    ec2: 0,
-  });
+  // currently highlighted marker in the visualisation ({ms1, id2}):
+  const [selectedMarker, setSelectedMarker] = useState(null);
+  // contains alignment strings for all alignments of the selected dot/bar:
+  const [booksAlignment, setBooksAlignment] = useState([]);
+  // alignment index to restore when booksAlignment loads from a URL param (null = default to 0):
+  const [initialAlignmentIndex, setInitialAlignmentIndex] = useState(null);
   const [focusedDataIndex, setFocusedDataIndex] = useState(null);
   const [bookIntoRows, setBookIntoRows] = useState(false);
   const [selectedLine, setSelectedLine] = useState({});
   const [showWikiEdDiff, setWikiEdDiff] = useState(false);
   const [isError, setIsError] = useState(false);
+  const [errorType, setErrorType] =  useState(["We may not have text reuse data for these texts, or there might be another problem.", "Error Type: Unknown"])
   const [showOptions, setShowOptions] = useState(false);
-  const [showDownloadOptions, setShowDownloadOptions] = useState(false);
-  const [includeURL, setIncludeURL] = useState(true);
   const [url, setUrl] = useState("");
+  const [defaultMargins, setDefaultMargins] = useState({ top: 40, right: 20, bottom: 20, left: 60 });
+  const [visMargins, setVisMargins] = useState({ top: 40, right: 20, bottom: 20, left: 60 });
+  const [yTickWidth, setYTickWidth] = useState(0);
+  const [textAvailable, setTextAvailable] = useState(true);
   const [highlightMode, setHighlightMode] = useState("diff");
   const [nSharedChars, setNSharedChars] = useState(50);
   const [nRefineChars, setNRefineChars] = useState(3);
@@ -226,44 +219,25 @@ function App() {
 
   const [selfReuseOnly, setSelfReuseOnly] = useState(false);
 
+  const [allReleasesInsights, setAllReleasesInsights] = useState([]);
+  // whether to include manuscript versions in the metadata table;
+  // only relevant for releases where has_manuscripts is true (2025.1.9+)
+  // text types shown in the metadata table; empty array means all types active
+  const [activeTextTypes, setActiveTextTypes] = useState([]);
+  // languages currently shown in the metadata table; empty array means all
+  // languages are active and no language param is sent to the API
+  const [activeLanguages, setActiveLanguages] = useState([]);
+
+  useEffect(() => {
+    getAllReleasesInsights().then(data => {
+      if (Array.isArray(data)) setAllReleasesInsights(data);
+    });
+  }, []);
+
   const toggleSidePanel = (val, tIndex) => {
     setTabIndex(tIndex);
     setVersionDetails(val);
     setIsOpenDrawer(true);
-  };
-
-  const downloadPNG = (downloadFileName, svgId, includeURL=false) => {
-    //const downloadFileName = `${metaData?.book1?.versionCode}_${metaData?.book2?.versionCode}.png`;
-    const svg = document.getElementById(svgId);
-    const newSvg = svg.cloneNode(true);
-
-    if (includeURL) {
-      // create a text element in the svg that shows the URL:
-      var textElement = document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        "text"
-      );
-      textElement.setAttribute(
-        "x",
-        svg.clientWidth - (window.location.origin + url).length * 7.5
-      ); // X-coordinate
-      textElement.setAttribute("y", 20); // Y-coordinate
-      textElement.setAttribute("font-size", "14px"); // Font size
-      textElement.setAttribute("fill", "black"); // Fill color
-      // Create a text node with the URL
-      var textNode = document.createTextNode(window.location.origin + url);
-      // Append the text node to the <text> element
-      textElement.appendChild(textNode);
-      // Append the <text> element to the SVG
-      newSvg.appendChild(textElement);
-    }
-
-    // save the png:
-    saveSvgAsPng.saveSvgAsPng(newSvg, downloadFileName, {
-      // TODO: set the scale based on the output size and dpi values:
-      scale: 3, // 300 % 
-      backgroundColor: "white",
-    });
   };
 
   return (
@@ -291,8 +265,10 @@ function App() {
         setNormalizedSearch,
         sortingOrder,
         setOrderingOrder,
-        analysisPriority,
-        setAnalysisPriority,
+        showPrimary,
+        setShowPrimary,
+        showSecondary,
+        setShowSecondary,
         annotationFilter,
         setAnnotationFilter,
         totalRecords,
@@ -324,10 +300,16 @@ function App() {
         setShowTickSizeInput,
         tickFontSize, 
         setTickFontSize,
+        axisLabelFontSize, 
+        setAxisLabelFontSize,
         outputImageWidth,
         setOutputImageWidth,
         dpi, 
         setDpi,
+        includeMetaInDownload,
+        setIncludeMetaInDownload,
+        metaPositionInDownload,
+        setMetaPositionInDownload,
         isFlipped,
         setIsFlipped,
         flipTimeLoading,
@@ -336,8 +318,12 @@ function App() {
         focusMilestone2,
         chartSpecificBar,
         setChartSpecificBar,
+        selectedMarker,
+        setSelectedMarker,
         booksAlignment,
         setBooksAlignment,
+        initialAlignmentIndex,
+        setInitialAlignmentIndex,
         selectedLine,
         setSelectedLine,
         showWikiEdDiff,
@@ -353,14 +339,20 @@ function App() {
         setFocusedDataIndex,
         isError,
         setIsError,
+        errorType,
+        setErrorType,
         showOptions,
         setShowOptions,
-        showDownloadOptions, 
-        setShowDownloadOptions,
-        includeURL, 
-        setIncludeURL,
+        textAvailable,
+        setTextAvailable,
         url,
         setUrl,
+        visMargins, 
+        setVisMargins,
+        yTickWidth, 
+        setYTickWidth,
+        defaultMargins,
+        setDefaultMargins,
         highlightMode,
         setHighlightMode,
         nSharedChars,
@@ -399,9 +391,13 @@ function App() {
         setRemoveTags,
         selfReuseOnly,
         setSelfReuseOnly,
-        downloadPNG,
         advanceSearch,
         setAdvanceSearch,
+        allReleasesInsights,
+        activeTextTypes,
+        setActiveTextTypes,
+        activeLanguages,
+        setActiveLanguages,
       }}
     >
       <ThemeProvider theme={theme}>

@@ -1,6 +1,5 @@
+import { useContext } from "react";
 import { TableCell, Tooltip, Link, Typography } from "@mui/material";
-import React, { useContext } from "react";
-//import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
 import { Context } from "../../../../App";
 import { oneToAllFolders } from "../../../../assets/srtFolders";
 import { REPO_NAME } from "../../../Common/NavigationBar";
@@ -10,92 +9,110 @@ const ReuseCell = ({ classes, row }) => {
 
   return (
     <TableCell
-      className={classes.tableCell}
+      className={`${classes.tableCell} reuse-cell`}
       sx={{
         width: {
           xs: "100%",
           md: "10%",
         },
         border: "none",
+        display: "flex",
         justifyContent: {
           xs: "space-between",
           md: "flex-end !important",
         },
-        display: "flex",
         boxSizing: "border-box",
+        alignItems: "center",
+        flexWrap: {
+          xs: "wrap",
+          md: "wrap",
+          lg: "nowrap"
+        }
       }}
     >
-      <Tooltip
-        placement="top"
-        title={"View pairwise text reuse data and statistics"}
-      >
-        <Typography
-          onClick={() => {
-            toggleSidePanel(
-              {
-                version_id: row?.version_code,
-                release_code: row?.release_version?.release_code,
-              },
-              3
-            );
-          }}
-          size={"small"}
-          color={"neutral"}
+      {!row?.release_version?.reuse_stats ? (
+        <Typography 
           sx={{
-            ml: "5px",
-            fontSize: "16px",
-            fontFamily: `Amiri,Roboto,"Helvetica Neue",Arial,sans-serif`,
-            color: "rgba(0, 0, 0, 0.87)",
-            cursor: "pointer",
+            color: "rgba(0,0,0,0.4)", 
+            fontStyle: "italic",
+            ml: "0px",
+            textAlign: "left"
           }}
         >
-          {row?.release_version?.n_reuse_instances}
-          <i
-            className="fa-solid fa-up-right-from-square"
-            style={{
-              fontSize: "14px",
-              width: "25px",
-              textAlign: "left",
-              color: "#2863A5",
-            }}
-          ></i>
+          No reuse data
         </Typography>
-      </Tooltip>
-      {oneToAllFolders[releaseCode] ? (
-        <Tooltip placement="top" title={"Visualise corpus-wide text reuse"}>
-          <Typography
-            sx={{
-              cursor: "pointer",
-            }}
-          >
-            <Link
-              href={`${!REPO_NAME ? "" : `/${REPO_NAME}`}/#/visualise/${
-                row?.release_version?.release_code
-              }/?books=${row?.release_version?.url
-                .split("/")
-                .slice(-1)[0]
-                .split(".")
-                .slice(2)
-                .join(".")}`}
-              style={{ textDecoration: "none" }}
-              target={"_blank"}
-              rel="noreferrer"
-            >
-              <i
-                className="fa-solid fa-magnifying-glass-chart"
-                style={{
-                  fontSize: "14px",
-                  width: "25px",
-                  textAlign: "left",
-                  color: "#2863A5",
-                }}
-              ></i>
-            </Link>
-          </Typography>
-        </Tooltip>
       ) : (
-        ""
+        <>
+          <Tooltip
+            placement="top"
+            title={`${row.release_version.reuse_stats.n_instances} text reuse instances found in the corpus, across ${row.release_version.reuse_stats.n_versions} text versions. Click to view pairwise text reuse data and statistics`}
+          >
+            <Typography
+              className="tour-reuse-count"
+              onClick={() => {
+                toggleSidePanel(
+                  {
+                    version_id: row?.version_code,
+                    release_code: row?.release_version?.release_code,
+                  },
+                  3
+                );
+              }}
+              size={"small"}
+              color={"#2863A5"}
+              sx={{
+                ml: "0px",
+                cursor: "pointer",
+                textAlign: "center"
+              }}
+            >
+              {row.release_version.reuse_stats.n_instances}
+            </Typography>
+          </Tooltip>
+
+          {oneToAllFolders[releaseCode] ? (
+            <Tooltip placement="top" title={"Visualise corpus-wide text reuse"}>
+              <Typography className="tour-corpus-viz" sx={{ cursor: "pointer" }}>
+                <Link
+                  href={`${!REPO_NAME ? "" : `/${REPO_NAME}`}/#/visualise/${
+                    row?.release_version?.release_code
+                  }/?books=${row?.release_version?.url
+                    .split("/")
+                    .slice(-1)[0]
+                    .split(".")
+                    .slice(2)
+                    .join(".")}`}
+                  style={{ textDecoration: "none" }}
+                  target={"_blank"}
+                  rel="noreferrer"
+                >
+                  <i
+                    className="fa-solid fa-magnifying-glass-chart"
+                    style={{
+                      fontSize: "14px",
+                      width: "25px",
+                      textAlign: "left",
+                      color: "#2863A5",
+                    }}
+                  ></i>
+                </Link>
+              </Typography>
+            </Tooltip>
+          ) : (
+            ""
+          )}
+        </>
       )}
+      <Typography
+        sx={{
+          display: {
+            xs: "block",
+            md: "none",
+          },
+        }}
+      >
+        Text Reuse
+      </Typography>
     </TableCell>
   );
 };

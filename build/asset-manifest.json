@@ -1,0 +1,18 @@
+{
+  "files": {
+    "main.css": "./static/css/main.e027b100.css",
+    "main.js": "./static/js/main.a8edc8da.js",
+    "static/media/GentiumPlus-Regular.ttf": "./static/media/GentiumPlus-Regular.945cd08c203a847922c4.ttf",
+    "static/media/pairwise-screenshot.png": "./static/media/pairwise-screenshot.8c856de79a8c677c86ea.png",
+    "static/media/one-to-all-screenshot.png": "./static/media/one-to-all-screenshot.795e4b8e85a722d4c85e.png",
+    "static/media/ismc.jpg": "./static/media/ismc.97d3e6bb1d5a69021aa6.jpg",
+    "static/media/flag.jpg": "./static/media/flag.e85b5883a003971205df.jpg",
+    "index.html": "./index.html",
+    "main.e027b100.css.map": "./static/css/main.e027b100.css.map",
+    "main.a8edc8da.js.map": "./static/js/main.a8edc8da.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.e027b100.css",
+    "static/js/main.a8edc8da.js"
+  ]
+}

@@ -1,7 +1,5 @@
-import * as React from "react";
-import Box from "@mui/material/Box";
-import Slider from "@mui/material/Slider";
-import { Typography } from "@mui/material";
+import { useState } from "react";
+import { Box, Slider, Typography } from "@mui/material";
 
 function valuetext(value) {
   return `${value}°C`;
@@ -11,7 +9,7 @@ const minDistance = 10;
 const maxTokCount = 5000000;
 
 export default function MultiSlider({ min, max, handler, label }) {
-  const [value2, setValue2] = React.useState([
+  const [value2, setValue2] = useState([
     min ? min : 0,
     max ? max : maxTokCount,
   ]);
@@ -39,6 +37,7 @@ export default function MultiSlider({ min, max, handler, label }) {
     <Box sx={{ width: "100%", boxSizing: "border-box" }}>
       <Typography gutterBottom>{label}</Typography>
       <Slider
+        className="multi-slider"
         getAriaLabel={() => "Minimum distance shift"}
         value={value2}
         onChange={handleChange2}

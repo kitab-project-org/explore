@@ -1,13 +1,11 @@
-import * as React from "react";
-import Box from "@mui/material/Box";
-import TextField from "@mui/material/TextField";
+import { Box, TextField } from "@mui/material";
 
 export default function CustomTextInput({ label, value, handler, name }) {
   return (
     <Box sx={{ py: "10px" }}>
       <TextField
         name={name}
-        id="outlined-basic"
+        className="custom-text-input"
         label={label}
         variant="outlined"
         sx={{ width: "100%" }}

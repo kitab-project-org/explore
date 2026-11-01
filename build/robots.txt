@@ -1,0 +1,14 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Disallow: /
+
+# Please don't scrape the OpenITI or KITAB data using this website.
+# All data is available in easily downloadable format on GitHub and Zenodo: 
+# * OpenITI corpus metadata: https://github.com/OpenITI/kitab-metadata-automation/tree/master/releases
+# * OpenITI corpus texts: 
+#   - primary versions only (best solution for most): https://doi.org/10.5281/zenodo.7764025
+#   - all versions: https://doi.org/10.5281/zenodo.10021513
+# * KITAB text reuse data:
+#   - pairwise csv files: https://doi.org/10.5281/zenodo.4362368
+#   - one-to-all csv files: https://github.com/kitab-project-org/one_to_all
+# For more info on the data, check https://kitab-project.org/corpus-and-data

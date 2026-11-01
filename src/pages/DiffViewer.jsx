@@ -1,4 +1,3 @@
-import React from "react";
 import Layout from "../components/Common/Layouts";
 import DiffViewerComponent from "../components/DiffViewer";
 

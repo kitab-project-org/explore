@@ -1,6 +1,5 @@
-import React from "react";
-import Layout from "../components/Common/Layouts";
 import { Box, Typography } from "@mui/material";
+import Layout from "../components/Common/Layouts";
 
 const HomePage = () => {
   return (

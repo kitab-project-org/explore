@@ -1,12 +1,9 @@
-import * as React from "react";
-import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
-import { useContext } from "react";
-import { Context } from "../../../../App";
-import CustomTextInput from "./CustomTextInput";
-import { Button, Drawer } from "@mui/material";
+import { useContext, useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
+import { Button, Drawer, Box, Typography } from "@mui/material";
+import CustomTextInput from "./CustomTextInput";
 import MultiSlider from "./MultiSlider";
+import { Context } from "../../../../App";
 import { cleanSearchPagination } from "../../../../utility/Helper"
 
 
@@ -27,7 +24,7 @@ export default function AdvanceSearch() {
   } = useContext(Context);
 
   const [searchParams, setSearchParams] = useSearchParams();
-  const [tempAdvanceSearch, setTempAdvanceSearch] = React.useState({
+  const [tempAdvanceSearch, setTempAdvanceSearch] = useState({
     max_tok_count: "",
     min_tok_count: "",
     editor: "",
@@ -64,6 +61,7 @@ export default function AdvanceSearch() {
       max_tok_count: tempAdvanceSearch?.max_tok_count,
       min_tok_count: tempAdvanceSearch?.min_tok_count,
       editor: tempAdvanceSearch?.editor,
+      edition_place: tempAdvanceSearch?.edition_place,
       publisher: tempAdvanceSearch?.publisher,
       edition_date: tempAdvanceSearch?.edition_date,
       died_before_AH: tempAdvanceSearch?.died_before_AH,
@@ -85,7 +83,7 @@ export default function AdvanceSearch() {
     setAdvanceSearchModal(false);
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     setAdvanceSearch({
       max_tok_count: searchParams.get("max_tok_count")
         ? searchParams.get("max_tok_count")
@@ -114,6 +112,7 @@ export default function AdvanceSearch() {
 
   return (
     <Drawer
+      id="advanced-search"
       open={advanceSearchModal}
       onClose={() => setAdvanceSearchModal(false)}
       sx={{

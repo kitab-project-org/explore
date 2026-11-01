@@ -1,22 +1,21 @@
-import { useEffect, useCallback, useContext } from "react";
-import { getCorpusMetaData } from "../../services/CorpusMetaData";
+import { useEffect, useCallback, useContext, useState } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Grid, Typography } from "@mui/material";
+import { Box } from "@mui/system"; // CHECK: Should this be imported from @mui/material?
 import { makeStyles } from "@mui/styles";
-import { Grid } from "@mui/material";
-import { Box } from "@mui/system";
-import {
-  useLocation,
-  useNavigate,
-  useParams,
-  useSearchParams,
-} from "react-router-dom";
-import PaginationComponent from "../Common/PaginationComponent";
+import { getCorpusMetaData } from "../../services/CorpusMetaData";
 import FilterSidebar from "./FilterSidebar";
 import TableComponent from "./TableComponent";
 import CorpusHeader from "./CorpusHeader";
 import NavigationAndStats from "./NavigationAndStats";
 import SearchFilters from "./SearchFilter";
-import { Typography } from "@mui/material";
+import PaginationComponent from "../Common/PaginationComponent";
 import { Context } from "../../App";
+import { cleanSearchPagination } from "../../utility/Helper";
+import CorpusMetadataTour, { TOUR_KEY } from "../GuidedTour/CorpusMetadataTour";
+import { DEMO_BOOKS } from "../GuidedTour/PairwiseVisualizationTour";
+import { DEMO_BOOKS as CORPUSWIDE_DEMO_BOOKS } from "../GuidedTour/CorpuswideVisualizationTour";
+import { MAIN_TOUR_REQUEST } from "../GuidedTour/TourMenu";
 
 // make custom style for material ui component
 const useStyles = makeStyles((theme) => ({
@@ -37,7 +36,10 @@ const useStyles = makeStyles((theme) => ({
     [theme.breakpoints.down("sm")]: {
       padding: "20px",
     },
-    [theme.breakpoints.up("sm")]: {
+    [theme.breakpoints.between("sm", "lg")]: {
+      padding: "0px 3%",
+    },
+    [theme.breakpoints.up("lg")]: {
       padding: "0px 100px",
     },
   },
@@ -45,8 +47,9 @@ const useStyles = makeStyles((theme) => ({
 
 const MetadataTable = ({ isHome }) => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const [tourRunning, setTourRunning] = useState(false);
   const { version } = useParams();
-  const location = useLocation();
+  //const location = useLocation();
   const navigate = useNavigate();
   const classes = useStyles();
   const {
@@ -66,17 +69,25 @@ const MetadataTable = ({ isHome }) => {
     setNormalizedSearch,
     sortingOrder,
     setOrderingOrder,
-    analysisPriority,
-    setAnalysisPriority,
+    showPrimary,
+    setShowPrimary,
+    showSecondary,
+    setShowSecondary,
     annotationFilter,
     setAnnotationFilter,
     totalRecords,
     setTotal,
     checkedNotification,
     setCheckedNotification,
-    showFilters,
     advanceSearch,
     setAdvanceSearch,
+    activeTextTypes,
+    setActiveTextTypes,
+    activeLanguages,
+    setActiveLanguages,
+    setFilterPanel,
+    toggleSidePanel,
+    setIsOpenDrawer
   } = useContext(Context);
 
   // update orders
@@ -118,10 +129,11 @@ const MetadataTable = ({ isHome }) => {
 
   // function for reset filters
   const handleResetFilters = () => {
-    setQuery("");
+    //setQuery("");
     setOrderingOrder("");
     setOrderingOrder("");
-    setAnalysisPriority(true);
+    setShowPrimary(true);
+    setShowSecondary(false);
     setPage(1);
     setNormalizedSearch(true);
     setRowsPerPage(10);
@@ -131,7 +143,9 @@ const MetadataTable = ({ isHome }) => {
       mARkdown: false,
       notYetAnnotated: false,
     });
-    setSearchParams({ version: "all" });
+    setActiveTextTypes([]);
+    setActiveLanguages([]);
+    setSearchParams({ version: 'pri', text_type: 'all', language: 'all' });
     setAdvanceSearch({
       // max_char_count: "",
       // min_char_count: "",
@@ -150,6 +164,52 @@ const MetadataTable = ({ isHome }) => {
       setQuery(searchParams.get("search"));
     }
   }, [searchParams, setQuery]);
+
+  // auto-start tour on first visit, or when requested from the visualisation page
+  useEffect(() => {
+    let requested = false;
+    try {
+      requested = sessionStorage.getItem(MAIN_TOUR_REQUEST) === "1";
+    } catch (e) { /* sessionStorage unavailable */ }
+    if (requested) {
+      // give the table time to render, so that the tour finds its targets
+      const timer = setTimeout(() => {
+        // (removed here rather than above, so that a re-run of this effect finds it)
+        try { sessionStorage.removeItem(MAIN_TOUR_REQUEST); } catch (e) { /* ignore */ }
+        setTourRunning(true);
+      }, 1200);
+      return () => clearTimeout(timer);
+    }
+    if (!localStorage.getItem(TOUR_KEY)) {
+      setTourRunning(true);
+    }
+  }, []);
+
+  const updateVersion = useCallback(() => {
+    const v = searchParams.get("version");
+    if (v === "all") { setShowPrimary(true); setShowSecondary(true); }
+    else if (v === "sec") { setShowPrimary(false); setShowSecondary(true); }
+    else if (v === "none") { setShowPrimary(false); setShowSecondary(false); }
+    else { setShowPrimary(true); setShowSecondary(false); } // "pri" or missing
+  }, [searchParams, setShowPrimary, setShowSecondary]);
+
+  useEffect(() => { updateVersion(); }, [updateVersion]);
+
+  const updateTextTypes = useCallback(() => {
+    const tt = searchParams.get("text_type");
+    if (!tt || tt === "all") { setActiveTextTypes([]); }
+    else { setActiveTextTypes(tt.split(",")); }
+  }, [searchParams, setActiveTextTypes]);
+
+  useEffect(() => { updateTextTypes(); }, [updateTextTypes]);
+
+  const updateLanguages = useCallback(() => {
+    const lang = searchParams.get("language");
+    if (!lang || lang === "all") { setActiveLanguages([]); }
+    else { setActiveLanguages(lang.split(",")); }
+  }, [searchParams, setActiveLanguages]);
+
+  useEffect(() => { updateLanguages(); }, [updateLanguages]);
 
   useEffect(() => {
     if (version) {
@@ -202,6 +262,10 @@ const MetadataTable = ({ isHome }) => {
 
   useEffect(() => {
     setStatus("loading");
+    // only send the subcorpora param when some are excluded; when all are
+    // active (activeSubcorpora matches the full release list) send nothing
+    // only send language param when a subset is selected; [] means all active
+    const languageQuery = activeLanguages.length > 0 ? activeLanguages.join(",") : "";
     const getData = async () => {
       const data = await getCorpusMetaData(
         page,
@@ -211,9 +275,12 @@ const MetadataTable = ({ isHome }) => {
         normalizedSearch,
         annotationFilter,
         sortingOrder,
-        analysisPriority,
+        showPrimary,
+        showSecondary,
         releaseCode,
-        advanceSearch
+        advanceSearch,
+        activeTextTypes,
+        languageQuery
       );
       setRows(data.results);
       setStatus("loaded");
@@ -229,7 +296,8 @@ const MetadataTable = ({ isHome }) => {
     normalizedSearch,
     annotationFilter,
     sortingOrder,
-    analysisPriority,
+    showPrimary,
+    showSecondary,
     releaseCode,
     checkedNotification,
     setCheckedNotification,
@@ -237,38 +305,71 @@ const MetadataTable = ({ isHome }) => {
     setStatus,
     setTotal,
     advanceSearch,
+    activeTextTypes,
+    activeLanguages,
   ]);
   useEffect(() => {
+    /*// always reset filters when switching releases so the user starts clean;
+    // the toggles are rendered in FilterSidebar based on the release's fields
+    setShowPrimary(true);
+    setShowSecondary(false);
+    setActiveTextTypes([]);
+    setActiveLanguages([]);
+    setPage(1);
+    // combine path + default search params in a single navigate to avoid conflicts;
+    // preserve the current search query if present
+    const currentQuery = searchParams.get("search");
+    const queryPart = currentQuery ? `&search=${encodeURIComponent(currentQuery)}` : "";
+    const search = `?version=pri&text_type=all&language=all${queryPart}`;
+    */
+    // reset only the page filter when changing release version:
+    const params = cleanSearchPagination(searchParams); // strips page
+    const search = Object.entries(params).map(([k, v]) => `${encodeURIComponent(k)}=${v}`).join("&");
+
     if (!isHome) {
-      navigate(`/metadata/${releaseCode}/${location.search}`);
+      navigate(`/metadata/${releaseCode}/?${search}`);
     } else {
-      navigate(`/${releaseCode}/${location.search}`);
+      navigate(`/${releaseCode}/?${search}`);
     }
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [releaseCode]);
 
   return (
     <>
-      <Grid container className={classes.gridContainer}>
-        <CorpusHeader />
+      <CorpusMetadataTour 
+        run={tourRunning} 
+        onExit={() => setTourRunning(false)} 
+        setFilterPanel={setFilterPanel} 
+        toggleSidePanel={toggleSidePanel}
+        setIsOpenDrawer={setIsOpenDrawer}
+      />
+      <Grid container id="corpus-metadata" className={classes.gridContainer}>
+        <CorpusHeader
+          onStartTour={(key) => {
+            if (key === "main") setTourRunning(true);
+            else if (key === "corpuswide") {
+              try { sessionStorage.setItem("kitab-start-corpuswide-tour", String(Date.now())); } catch (e) { /* ignore */ }
+              navigate(`/visualise/${releaseCode}/?books=${CORPUSWIDE_DEMO_BOOKS}&tour=corpuswide`);
+            } else if (key === "pairwise") {
+              try { sessionStorage.setItem("kitab-start-pairwise-tour", String(Date.now())); } catch (e) { /* ignore */ }
+              navigate(`/visualise/${releaseCode}/?books=${DEMO_BOOKS}&tour=pairwise`);
+            }
+          }}
+        />
 
         <Box
           width={"100%"}
           display={"flex"}
-          justifyContent={"right"}
-          overflow={"hidden"}
-          position={"relative"}
+          alignItems={"flex-start"}
         >
-          <FilterSidebar />
+          <FilterSidebar handleResetFilters={handleResetFilters} />
 
           <Box
             sx={{
-              transition: ".3s",
-              float: "right",
-              width: {
-                xs: "100%",
-                sm: showFilters ? "80%" : "100%",
-              },
+              transition: "width .3s",
+              flex: 1,
+              minWidth: 0,
             }}
           >
             <Box

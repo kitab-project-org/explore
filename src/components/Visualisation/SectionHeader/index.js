@@ -1,9 +1,7 @@
-import React from "react";
-import SectionHeaderLayout from "./SectionHeaderLayout";
-import MetadataHeader from "./MetadataHeader";
-import VisualizationHeader from "./VisualizationHeader";
 import BookAlignmentHeader from "./BookAlignmentHeader";
-/*import BooksHeader from "./BooksHeader";*/
+import MetadataHeader from "./MetadataHeader";
+import SectionHeaderLayout from "./SectionHeaderLayout";
+import VisualizationHeader from "./VisualizationHeader";
 
 const SectionHeader = ({ item, component, toggle, setToggle }) => {
   const getHeaderContents = () => {

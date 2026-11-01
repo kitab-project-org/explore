@@ -1,4 +1,3 @@
-import React from "react";
 import { getGHRepo } from "../../../../utility/Helper";
 import { displayNamesText } from "../ColumnDisplayName";
 import { Box } from "@mui/material";
@@ -34,7 +33,7 @@ const TextDetails = ({ fullData }) => {
   ];
 
   return (
-    <Box sx={{ width: "100%" }}>
+    <Box id="TextDetails" sx={{ width: "100%" }}>
       <Box>
         {data.map((item, index) => (
           <Box

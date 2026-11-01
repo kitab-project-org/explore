@@ -1,9 +1,291 @@
-import { srtFolders, lightSrtFolders} from "../assets/srtFolders"
+import { saveSvgAsPng, svgAsDataUri } from "save-svg-as-png";
+import { srtFolders, lightSrtFolders, srtFoldersGitHub} from "../assets/srtFolders"
 import { config } from "../config";
+
+
 const { GITHUB_BASE_URL, GITHUB_BASE_RAW_URL } = config;
 
+// Returns true for Chrome and other Chromium-based browsers (excludes Firefox, Safari).
+// These browsers have a ~5MB limit on data URIs used for downloads, which can corrupt
+// very large PNG exports.
+const isChrome = () =>
+  typeof navigator !== "undefined" &&
+  /Chrome/.test(navigator.userAgent) &&
+  /Google Inc/.test(navigator.vendor);
+
+// Merge several SVG elements into one, using their current DOM positions to
+// determine the layout. The first id in the array is treated as the origin.
+const mergeChartSVGs = (svgIds) => {
+  const ns = "http://www.w3.org/2000/svg";
+  const elements = svgIds.map(id => document.getElementById(id)).filter(Boolean);
+  if (!elements.length) return null;
+
+  const rects = elements.map(el => el.getBoundingClientRect());
+  const left   = Math.min(...rects.map(r => r.left));
+  const top    = Math.min(...rects.map(r => r.top));
+  const right  = Math.max(...rects.map(r => r.right));
+  const bottom = Math.max(...rects.map(r => r.bottom));
+  const totalWidth  = right  - left;
+  const totalHeight = bottom - top;
+
+  const combined = document.createElementNS(ns, "svg");
+  combined.setAttribute("xmlns", ns);
+  combined.setAttribute("width",  totalWidth);
+  combined.setAttribute("height", totalHeight);
+
+  const bg = document.createElementNS(ns, "rect");
+  bg.setAttribute("width",  totalWidth);
+  bg.setAttribute("height", totalHeight);
+  bg.setAttribute("fill",   "white");
+  combined.appendChild(bg);
+
+  elements.forEach((el, i) => {
+    const g = document.createElementNS(ns, "g");
+    g.setAttribute("transform",
+      `translate(${rects[i].left - left}, ${rects[i].top - top})`);
+    Array.from(el.childNodes).forEach(child => g.appendChild(child.cloneNode(true)));
+    combined.appendChild(g);
+  });
+
+  return combined;
+};
+
+// When the bottom bar is not included in the merged SVG, inject its X axis
+// (date ticks + axis label) at the same position it would normally occupy.
+const injectBottomBarXAxis = (mergedSvg, includedIds) => {
+  const ns = "http://www.w3.org/2000/svg";
+  const bottomBarEl = document.getElementById('bottom-bar');
+  const innerBarG   = bottomBarEl?.querySelector('.bottom-bar');
+  const bbXAxisEl   = innerBarG?.querySelector('.xAxis');
+  if (!bottomBarEl || !innerBarG || !bbXAxisEl) return;
+
+  const includedRects = includedIds
+    .map(id => document.getElementById(id)).filter(Boolean)
+    .map(el => el.getBoundingClientRect());
+  if (!includedRects.length) return;
+  const minLeft = Math.min(...includedRects.map(r => r.left));
+  const minTop  = Math.min(...includedRects.map(r => r.top));
+
+  // Compute y-shift: move bottom bar axis up to align with the scatterplot's
+  // own axis line (which sits at the bottom of the chart area).
+  const scatterXAxisEl  = document.querySelector('#scatterChart .scatter-plot .xAxis');
+  const bbAxisRect      = bbXAxisEl.getBoundingClientRect();
+  const scatterAxisRect = scatterXAxisEl?.getBoundingClientRect();
+  const yShift = scatterAxisRect ? scatterAxisRect.top - bbAxisRect.top : 0;
+
+  const bbRect = bottomBarEl.getBoundingClientRect();
+  const outerG = document.createElementNS(ns, "g");
+  outerG.setAttribute("transform",
+    `translate(${bbRect.left - minLeft}, ${bbRect.top - minTop + yShift})`);
+
+  // Shallow-clone the inner group (preserves its translate transform) then
+  // only copy .xAxis and .xLabel into it, leaving out bars and yAxis.
+  const innerG = innerBarG.cloneNode(false);
+  ['.xAxis', '.xLabel'].forEach(sel =>
+    innerBarG.querySelectorAll(sel).forEach(el =>
+      innerG.appendChild(el.cloneNode(true))
+    )
+  );
+  outerG.appendChild(innerG);
+  mergedSvg.appendChild(outerG);
+
+  // Remove the scatterplot's blank xAxis so only the labelled one remains.
+  mergedSvg.querySelectorAll('.scatter-plot .xAxis').forEach(el => el.remove());
+
+  // Extend the merged SVG height to include the xLabel below the axis.
+  const neededHeight = bbRect.bottom - minTop + yShift;
+  const currentHeight = parseFloat(mergedSvg.getAttribute("height")) || 0;
+  if (neededHeight > currentHeight) {
+    mergedSvg.setAttribute("height", neededHeight);
+    const bg = mergedSvg.querySelector("rect");
+    if (bg) bg.setAttribute("height", neededHeight);
+  }
+};
+
+const getSvgEl = (svgIdOrEl) =>
+  typeof svgIdOrEl === "string" ? document.getElementById(svgIdOrEl) : svgIdOrEl;
+
+const downloadSVG = (svgIdOrEl, downloadFileName) => {
+  const svg = getSvgEl(svgIdOrEl);
+
+  svgAsDataUri(svg)
+    .then(uri => {
+      const link = document.createElement('a');
+      link.download = downloadFileName.replace(".png", ".svg");
+      link.href = uri;                     // data URI
+      document.body.appendChild(link);     // required for Firefox
+      link.click();                        // trigger download
+      document.body.removeChild(link);     // cleanup
+    })
+    .catch(err => {
+      console.error("Failed to download SVG:", err);
+    });
+}
+
+const downloadPNG = (svgIdOrEl, downloadFileName, outputImageWidth, dpi) => {
+  const svg = getSvgEl(svgIdOrEl);
+  const newSvg = svg.cloneNode(true);
+
+  let scale = 3; // default scale: 300 %
+
+  if (outputImageWidth) {  // context variable!
+    const inchPerMM = 1 / 25.4;
+    // Use the width attribute as fallback for off-DOM elements (e.g. merged SVGs):
+    const svgPixelWidth = svg.clientWidth || parseFloat(svg.getAttribute("width")) || 1;
+    const outputWidthInInches = outputImageWidth * inchPerMM;
+    const targetPixelWidth = outputWidthInInches * (dpi || 300); // dpi is also a context variable; use 300 if dpi is undefined
+    scale = targetPixelWidth / svgPixelWidth / window.devicePixelRatio;
+    console.log("window.devicePixelRatio: "+window.devicePixelRatio)
+
+    /*
+      NB: the save-svg-as-png library gets the width of the svg in one of these ways:
+      * - svg.viewBox.baseVal["width"] : returns 0 in our case
+      * - newSvg.getAttribute("width") : returns same value as svg.clientWidth
+      * - svg.getBoundingClientRect()["width"] : returns same value as svg.clientWidth
+      * - window.getComputedStyle(svg).getPropertyValue("width") : returns same value as svg.clientWidth
+    
+    console.log('svg.viewBox.baseVal["width"]: '+svg.viewBox.baseVal["width"]);
+    console.log('newSvg.getAttribute("width"): '+newSvg.getAttribute("width"));
+    console.log('svg.getBoundingClientRect()["width"]: '+svg.getBoundingClientRect()["width"]);
+    console.log('window.getComputedStyle(svg).getPropertyValue("width") '+window.getComputedStyle(svg).getPropertyValue("width"));
+    
+    
+    console.log(`requested image width: ${outputImageWidth} mm`);
+    console.log(`requested dpi: ${dpi}`);
+    console.log(`svg width: ${svgPixelWidth}`);
+    console.log(`svg bounding box width: ${svg.getBBox().width}`);
+    console.log(`Output width: ${outputWidthInInches} inch`);
+    console.log(`Output width: ${targetPixelWidth} pixels`);
+    console.log(`Scale: ${scale}`);
+    */
+  }
+
+  // save the png:
+  saveSvgAsPng(newSvg, downloadFileName, {
+    scale: scale, 
+    backgroundColor: "white",
+  });
+};
+
+/**
+ * Testing functionality to make a server fetch fail
+ * To use - call enableMockFetch({ failForMatch: srtFolders[releaseCode] }) to fail for a specific release code
+ */
+let originalFetch = null;
+
+function enableMockFetch({ failForMatch = "" } = {}) {
+  if (originalFetch) return; // already mocked
+  console.log(`[MockFetch] Mocking fetch to fail for: ${failForMatch}`);
+  originalFetch = global.fetch;
+
+  global.fetch = async (url, options) => {
+    if (failForMatch && url.includes(failForMatch)) {
+      console.warn(`[MockFetch] Forcing failure for: ${url}`);
+      throw new Error("Simulated fetch failure");
+    }
+
+    // fallback behavior: all URLs fail
+    if (!failForMatch) {
+      console.warn(`[MockFetch] Forcing global failure: ${url}`);
+      throw new Error("Simulated fetch failure");
+    }
+
+    return originalFetch(url, options); // fallback to real fetch
+  };
+}
+
+/**
+ * Help to try catch to ensure we return false in all cases of invalid urls
+ * @param {String} url The URL to check
+ * @returns {Boolean} True if the URL is valid, false otherwise
+ */
+
+const urlExists = async (url) => {
+  try {
+    const response = await fetch(url, { method: "HEAD" });
+    return response.ok;
+  } catch (error) {
+    return false;
+  }
+};
+
+/**
+ * Check the response for a pairwise csv - fallback to GitHub if not found
+ * @param {String} releaseCode OpenITI release version code
+ * @param {String} book1 metadata obj book 1
+ * @param {String} book2 metadata obj book 2 (if no book2 is provided, it will just check for the parent folder)
+ * @param {Boolean} full If true, check for full text reuse data
+ *  
+ * @returns {Object} {"pairwiseUrl": String, "pairwiseLiteUrl": String, "githubUrl": boolean}
+ * If the response fails for either URL, it will return null for that field. If it returns a githubUrl, then githubUrl will be true
+ */
+
+const checkPairwiseCsvResponse = async (releaseCode, book1, book2=null, full=false) => {
+  // Set pairwise lite URL as null - in case we do not find it
+  let pairwiseLiteUrl = null;
+  // If full is true check for full and set full and lite URLs accordingly
+  if (full || book2 === null) {
+    let pairwiseFullUrl
+    if (book2 === null) {
+      console.log(book1)
+      const b1ID = getVersionIDfromURL(book1.release_version.url, true);
+      const baseURL = srtFolders[releaseCode];
+      pairwiseFullUrl = `${baseURL}/${b1ID}/`;
+    } else {
+      pairwiseFullUrl = await buildPairwiseCsvURL(releaseCode, book1, book2, false);
+    }
+    const urlRes = await urlExists(pairwiseFullUrl);
+    if (urlRes) {
+      console.log("Full text reuse data found at: " + pairwiseFullUrl);
+      if (book2 === null) {
+        // If there is no book2, then we check a response on the tree, not the raw
+        const b1ID = getVersionIDfromURL(book1.release_version.url, true);
+        const baseURL = lightSrtFolders[releaseCode];
+        pairwiseLiteUrl = `${baseURL}/${b1ID}/`;
+      } else {
+        pairwiseLiteUrl = await buildPairwiseCsvURL(releaseCode, book1, book2, true);
+      }
+      return { pairwiseUrl: pairwiseFullUrl, pairwiseLiteUrl: pairwiseLiteUrl, githubUrl: false};
+    }
+  } else {
+    // Otherwise just check pairwise URL
+    const pairwiseLiteUrl = await buildPairwiseCsvURL(releaseCode, book1, book2, true);
+    const urlRes = await urlExists(pairwiseLiteUrl);
+    if (urlRes) {
+      return { pairwiseUrl: null, pairwiseLiteUrl: pairwiseLiteUrl, githubUrl: false};
+    }
+  }
+  // If we have not returned yet, the response failed so we check GitHub (just lite URL)
+  let githubUrl;
+  if (book2 === null) {
+    // If there is no book2, then we just return - as we cannot check the GitHub URL without a book2
+    return { pairwiseUrl: null, pairwiseLiteUrl: null, githubUrl: true };
+  } else {
+    githubUrl = await buildPairwiseCsvURL(releaseCode, book1, book2, false, true);
+  }
+  // Check the GitHub URL
+  const githubRes = await urlExists(githubUrl);
+  if (githubRes) {
+    return { pairwiseUrl: null, pairwiseLiteUrl: githubUrl, githubUrl: true };
+  } else {
+    // If both responses fail, return null for both URLs}
+    return { pairwiseUrl: null, pairwiseLiteUrl: pairwiseLiteUrl, githubUrl: false };
+  }
+
+};
 
 
+/** Load the pairwise visualisation through a URL - builds the URL and opens it in a new tab
+   * @param {String} releaseCode OpenITI release version code
+   * @param {String} idPair The pair of book IDs to visualise, e.g. "book1_book2"
+*/
+const loadChartFromUrl = async (releaseCode, idPair) => {
+  
+  const baseUrl = window.location.origin;
+  const vizUrl = `${baseUrl}/explore/#/visualise/${releaseCode}/?books=${idPair}`;
+  window.open(vizUrl, "_blank");
+  
+}
 
 const pad = (n, width, z) => {
   z = z || "0";
@@ -31,16 +313,28 @@ const getVersionIDfromURL = (versionURL, includeExt=true) => {
    * @param {Object} b1Data full metadata for book 1
    * @param {Object} b2Data full metadata for book 2
    * @param {Boolean} light Download the light or full text reuse data csv
+   * @param {Boolean} githubUrl If true, use the GitHub URL instead of the KITAB webserver URL
    * 
    * @returns String (URL of the pairwise CSV file)
   */
-  const buildPairwiseCsvURL = async (releaseCode, b1Data, b2Data, light=false) => {
+  const buildPairwiseCsvURL = async (releaseCode, b1Data, b2Data, light=false, githubUrl = false) => {
     // get the IDs (incl. extension) for both books:
     const b1ID = getVersionIDfromURL(b1Data.release_version.url, true);
     const b2ID = getVersionIDfromURL(b2Data.release_version.url, true);
-    const baseURL = light ? lightSrtFolders[releaseCode] : srtFolders[releaseCode];
-    // build the URL:
-    return `${baseURL}/${b1ID}/${b1ID}_${b2ID}.csv`;
+
+    // if githubUrl is true then we use that for the base URL - otherwise base URL is from webserver
+    if (githubUrl) {
+      const baseURL = srtFoldersGitHub[releaseCode];
+      
+      // build the URL:
+      return `${baseURL}/${b1ID}/${b1ID}_${b2ID}.csv`;
+    } else {
+      const baseURL = light ? lightSrtFolders[releaseCode] : srtFolders[releaseCode];
+      
+      // build the URL:
+      return `${baseURL}/${b1ID}/${b1ID}_${b2ID}.csv`;
+    } 
+
   }
 
 /**
@@ -339,7 +633,109 @@ function bisectLeft(array, value) {
 	return low;
 }
 
+/**
+ * Get the width and height of a text
+ * if rendered at a specific font size and font in an svg
+ * 
+ * @param {String} text the text to be wrapped
+ * @param {Number} fontSize 
+ * @param {String} fontFamily 
+ * @returns {Object} boundingbox (x,y,width,height)
+ */
+function measureSvgText(text, fontSize, fontFamily=null) {
+  // Create a temporary, hidden SVG
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("width", "0");
+  svg.setAttribute("height", "0");
+  svg.style.position = "absolute";
+  svg.style.visibility = "hidden";
+
+  // Create a text element
+  const textElement = document.createElementNS("http://www.w3.org/2000/svg", "text");
+  textElement.setAttribute("x", "0");
+  textElement.setAttribute("y", "0");
+  textElement.style.fontSize = `${fontSize}px`;
+  if (fontFamily){
+    textElement.style.fontFamily = fontFamily;
+  }
+  textElement.textContent = text;
+
+  // Append and measure
+  svg.appendChild(textElement);
+  document.body.appendChild(svg);
+  const bbox = textElement.getBBox();
+
+  // Clean up
+  document.body.removeChild(svg);
+
+  return bbox;
+}
+
+/**
+ * Divide a text string into lines that are max. `maxWidth` wide
+ * (based on svg measurement - text in svg does not wrap automatically)
+ * 
+ * @param {String} text the text to be wrapped
+ * @param {Number} maxWidth width of the container that will contain the text
+ * @param {Number} fontSize 
+ * @param {String} fontFamily 
+ * @returns 
+ */
+function wrapTextToSvgWidth(text, maxWidth, fontSize, fontFamily=null) {
+  // split the text into words on space and hyphen (keeping both)
+  const words = text.split(/( |-)/);
+
+  // divide the text into lines:
+  const lines = [];
+  let currentLine = "";
+  for (let i=0; i<words.length; i++) {
+    const word = words[i];
+    // measure the line after adding the new word:
+    const lineWidth = measureSvgText(currentLine+word.trim(), fontSize, fontFamily).width;
+
+    if (lineWidth > maxWidth){
+      // if the line is now too long, finalize the line without the new word...
+      lines.push(currentLine.trim());
+      // ...and start a new line
+      currentLine = word;
+    } else {
+      currentLine += word
+    }
+  }
+  // Push the last line:
+  if (currentLine.trim().length > 0) {
+    lines.push(currentLine.trim());
+  }
+  return lines;
+}
+
+
+/*
+ * get the metadata label to be displayed
+ * in the pairwise visualisation
+ */
+function getMetaLabel(d, metaType) {
+  switch (metaType) {
+    case "author":
+      return d?.bookAuthor;
+    case "title":
+      return d?.bookTitle?.label;
+    case "author+title":
+      return `${d?.bookAuthor}, ${d?.bookTitle?.label}`;
+    case "versionCode":
+      return d?.versionCode;
+    default:
+      console.log("unexpected value: "+metaType);
+  }
+}
+
+
 export {
+  isChrome,
+  mergeChartSVGs,
+  injectBottomBarXAxis,
+  downloadSVG,
+  downloadPNG,
   getHighestValueInArrayOfObjects,
   calculateTooltipPos,
   cleanSearchPagination,
@@ -358,5 +754,11 @@ export {
   bisectLeft, 
   getVersionIDfromURI,
   getVersionIDfromURL,
-  buildPairwiseCsvURL
+  buildPairwiseCsvURL,
+  measureSvgText,
+  wrapTextToSvgWidth,
+  loadChartFromUrl,
+  getMetaLabel,
+  checkPairwiseCsvResponse,
+  enableMockFetch
 };

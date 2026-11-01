@@ -1,20 +1,20 @@
-import { Box, Button } from "@mui/material";
-import React, { useContext, useState, useEffect } from "react";
-import { Context } from "../../../App";
+import { Box, Button, IconButton, Typography } from "@mui/material";
+import { useContext, useState, useEffect, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import DiffGrid from "./DiffGrid";
+import WikiEdDiffModal from "../BooksAlignment/WikiEdDiffModal";
 import CircularInterminate from "../CircularIndeterminate";
 import SectionHeaderLayout from "../SectionHeader/SectionHeaderLayout";
-import WikiEdDiffModal from "../BooksAlignment/WikiEdDiffModal";
+import BookAlignmentHeader from "../SectionHeader/BookAlignmentHeader";
 import { kitabDiff } from "../../../assets/js/kitabDiff";
 import { cleanBeforeDiff } from "../../../utility/Helper";
-import BookAlignmentHeader from "../SectionHeader/BookAlignmentHeader";
+import { Context } from "../../../App";
 
 const Books = ({ chartSpecificBar }) => {
   const {
     bookSectionRef,
     dataLoading,
     booksAlignment,
-    setBooksAlignment,
     bookIntoRows,
     nRefineChars,
     nSharedChars,
@@ -23,8 +23,13 @@ const Books = ({ chartSpecificBar }) => {
     normalizeHa,
     removePunct,
     removeTags,
+    textAvailable,
+    initialAlignmentIndex,
+    setInitialAlignmentIndex,
   } = useContext(Context);
+  const [, setSearchParams] = useSearchParams();
   const [toggle, setToggle] = useState(true);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [wikiDiffBook, setWikiDiffBook] = useState("");
   const [parsedBookAlignment, setParsedBookAlignment] = useState({
     s1: "",
@@ -44,7 +49,7 @@ const Books = ({ chartSpecificBar }) => {
   // variables and functions related to the modal and resizer:
   // (temporarily disabled)
   /*
-  const [open, setOpen] = React.useState(false);
+  const [open, setOpen] = useState(false);
   const [expandViewData, setExpandViewData] = useState({
     data: {},
     bookNumber: null,
@@ -108,15 +113,46 @@ const Books = ({ chartSpecificBar }) => {
   };
   */
 
+  // Reset to first alignment on new dot click, or to the URL-requested index on initial load:
+  useEffect(() => {
+    if (initialAlignmentIndex !== null) {
+      setCurrentIndex(initialAlignmentIndex);
+      setInitialAlignmentIndex(null);
+    } else {
+      setCurrentIndex(0);
+    }
+    console.log("RESETTING currentIndex to 0 in Books/index.js");
+  }, [booksAlignment]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Sync currentIndex → URL param (align_no) on user navigation.
+  useEffect(() => {
+    if (booksAlignment.length === 0) return;
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      if (currentIndex > 0) {
+        next.set("align_no", (currentIndex + 1).toString());
+      } else {
+        next.delete("align_no");
+      }
+      return next;
+    }, { replace: true });
+  }, [currentIndex]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const currentAlignment = useMemo(
+    () => booksAlignment[currentIndex] ?? {},
+    [booksAlignment, currentIndex]
+  );
+
   useEffect(() => {
     // get the html representation of the diff:
+    let cancelled = false;
     const getData = async () => {
       /* eslint-disable no-unused-vars */
 
-      let [wikEdDiffHtml, aHtml, bHtml] = booksAlignment?.s1
+      let [wikEdDiffHtml, aHtml, bHtml] = currentAlignment?.s1
         ? await kitabDiff(
             cleanBeforeDiff(
-              booksAlignment?.s1,
+              currentAlignment?.s1,
               normalizeAlif,
               normalizeYa,
               normalizeHa,
@@ -124,7 +160,7 @@ const Books = ({ chartSpecificBar }) => {
               removeTags
             ),
             cleanBeforeDiff(
-              booksAlignment?.s2,
+              currentAlignment?.s2,
               normalizeAlif,
               normalizeYa,
               normalizeHa,
@@ -137,21 +173,22 @@ const Books = ({ chartSpecificBar }) => {
           )
         : ["", "", ""];
 
+      if (cancelled) return;
       // store the kitabDiff output in the state:
       setWikiDiffBook(wikEdDiffHtml);
       setParsedBookAlignment({
         s1: aHtml,
         s2: bHtml,
-        beforeAlignment1: booksAlignment?.beforeAlignment1,
-        afterAlignment1: booksAlignment?.afterAlignment1,
-        beforeAlignment2: booksAlignment?.beforeAlignment2,
-        afterAlignment2: booksAlignment?.afterAlignment2,
+        beforeAlignment1: currentAlignment?.beforeAlignment1 ?? "",
+        afterAlignment1: currentAlignment?.afterAlignment1 ?? "",
+        beforeAlignment2: currentAlignment?.beforeAlignment2 ?? "",
+        afterAlignment2: currentAlignment?.afterAlignment2 ?? "",
       });
     };
     getData();
+    return () => { cancelled = true; };
   }, [
-    setBooksAlignment,
-    booksAlignment,
+    currentAlignment,
     bookIntoRows,
     nRefineChars,
     nSharedChars,
@@ -180,14 +217,9 @@ const Books = ({ chartSpecificBar }) => {
             ref={bookSectionRef}
             id="bookSectionRef"
             position={"relative"}
-            display={"flex"}
-            justifyContent={"space-between"}
             sx={{
-              p: {
-                xs: "0px",
-                md: "20px",
-              },
-              py: "20px",
+              px: { xs: "0px", md: "20px" },
+              pb: "20px",
             }}
           >
             {dataLoading?.books ? (
@@ -199,25 +231,62 @@ const Books = ({ chartSpecificBar }) => {
                 {/* The modal in which the inline diff is displayed: */}
                 <WikiEdDiffModal data={wikiDiffBook} />
 
+                {/* Navigation between multiple alignments for the same dot,
+                    styled to sit flush above the DiffGrid header */}
+                {booksAlignment.length > 1 && (
+                  <Box sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 1,
+                    bgcolor: "#f0f0f5",
+                  }}>
+                    <IconButton
+                      onClick={() => setCurrentIndex(i => i - 1)}
+                      disabled={currentIndex === 0}
+                      size="small"
+                    >
+                      <i className="fa-solid fa-chevron-left" />
+                    </IconButton>
+                    <Typography variant="body2">
+                      Alignment {currentIndex + 1} of {booksAlignment.length}
+                    </Typography>
+                    <IconButton
+                      onClick={() => setCurrentIndex(i => i + 1)}
+                      disabled={currentIndex === booksAlignment.length - 1}
+                      size="small"
+                    >
+                      <i className="fa-solid fa-chevron-right" />
+                    </IconButton>
+                  </Box>
+                )}
+
                 {/* The table in which the split diff is displayed: */}
                 <DiffGrid
                   chartSpecificBar={chartSpecificBar}
                   parsedBookAlignment={parsedBookAlignment}
                   isLeft={false}
                   alignmentOnly={alignmentOnly}
+                  currentMs2={currentAlignment?.ms2}
+                  bc1={currentAlignment?.bc1}
+                  ec1={currentAlignment?.ec1}
+                  bc2={currentAlignment?.bc2}
+                  ec2={currentAlignment?.ec2}
                 />
               </>
             )}
           </Box>
           {/* Button for showing / hiding the context of the alignment */}
-          <Box>
-            <Button
-              sx={{ width: "100%", mt: "5px" }}
-              onClick={loadMilestoneContext}
-            >
-              {alignmentOnly ? "LOAD CONTEXT" : "HIDE CONTEXT"}
-            </Button>
-          </Box>
+          {textAvailable &&
+            (<Box>
+              <Button
+                sx={{ width: "100%", mt: "5px" }}
+                onClick={loadMilestoneContext}
+              >
+                {alignmentOnly ? "LOAD CONTEXT" : "HIDE CONTEXT"}
+              </Button>
+            </Box>)
+          }
         </>
       )}
     </>

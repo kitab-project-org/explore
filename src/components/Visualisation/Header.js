@@ -1,7 +1,6 @@
-import React from "react";
-import { Box, Button, Typography } from "@mui/material";
+import { Box, Button, Tooltip, Typography } from "@mui/material";
+import TourMenu from "../GuidedTour/TourMenu";
 import VersionDropdown from "../Common/VersionDropdown";
-import { Tooltip } from "@mui/material";
 
 const Header = (props) => {
   //console.log("Rendering visualisation header");
@@ -69,7 +68,16 @@ const Header = (props) => {
             </Button>
           </Tooltip>
         </Box>
-        <VersionDropdown/>
+        <Box display="flex" alignItems="center" gap={1}>
+          {props.onStartTour && (
+            <TourMenu
+              buttonId="take-viz-tour-btn"
+              current={props.isPairwiseViz ? "pairwise" : "corpuswide"}
+              onStartTour={props.onStartTour}
+            />
+          )}
+          <VersionDropdown/>
+        </Box>
       </Box>
     </div>
   );

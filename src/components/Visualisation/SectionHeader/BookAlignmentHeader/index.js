@@ -1,15 +1,14 @@
-import React from "react";
-import { IconButton, Link, Box, Tooltip } from "@mui/material";
 import { useContext } from "react";
-import { Context } from "../../../../App";
+import { IconButton, Link, Box, Tooltip } from "@mui/material";
 import ColorKeys from "../../BooksAlignment/ColorKeys";
+import { Context } from "../../../../App";
 
 const BookAlignmentHeader = () => {
   const { booksAlignment, showOptions, setShowOptions } = useContext(Context);
 
   return (
     <Box sx={{ postion: "relative" }}>
-      {booksAlignment?.s1 && (
+      {booksAlignment[0]?.s1 && (
         <Box display="flex" justifyContent="space-between">
           <Link
             href="https://kitab-project.org/data/viz#diff-viewer"

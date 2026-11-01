@@ -1,18 +1,26 @@
+import { useContext, useEffect, useState } from "react";
+import { 
+  AppBar, 
+  Box,
+  Drawer,
+  IconButton, 
+  Stack, 
+  Tab,
+  Tabs,
+  Tooltip,
+  Typography } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import GetAppOutlinedIcon from "@mui/icons-material/GetAppOutlined";
-import { AppBar, IconButton, Stack, Typography } from "@mui/material";
-import Box from "@mui/material/Box";
-import Drawer from "@mui/material/Drawer";
-import Tab from "@mui/material/Tab";
-import Tabs from "@mui/material/Tabs";
-import Tooltip from "@mui/material/Tooltip";
 import PropTypes from "prop-types";
-import { useContext, useEffect, useState } from "react";
-import { getSidePanelData } from "../../../services/CorpusMetaData";
+
 import AuthorDetails from "./AuthorDetails";
+import ManuscriptHoldingDetails from "./ManuscriptHoldingDetails";
 import TextReuse from "./TextReuse";
 import TextDetails from "./TextDetails";
+import ManuscriptDetails from "./ManuscriptDetails";
 import VersionDetails from "./VersionDetails";
+import TextReuseTour from "../../GuidedTour/TextReuseTour";
+import { getSidePanelData } from "../../../services/CorpusMetaData";
 import { Context } from "../../../App";
 
 export default function LeftSidePanel() {
@@ -24,6 +32,12 @@ export default function LeftSidePanel() {
     setIsOpenDrawer,
   } = useContext(Context);
   const [fullData, setFullData] = useState({});
+  const [fullDataLoading, setFullDataLoading] = useState(false);
+  const [textReuseTourRunning, setTextReuseTourRunning] = useState(false);
+
+  // true when the drawer is showing a manuscript version rather than a text version
+  const isManuscript = fullData?.manuscript != null;
+
 
   // download metadata function
   const handleDownloadJsonClick = () => {
@@ -83,7 +97,11 @@ export default function LeftSidePanel() {
       setFullData(data ? data : {});
     };
     if (isOpenDrawer) {
+      // reset the fullData first:
+      setFullData({});
+      setFullDataLoading(true);
       fetchData();
+      setFullDataLoading(false);
     }
   }, [versionDetail, isOpenDrawer]);
 
@@ -93,9 +111,12 @@ export default function LeftSidePanel() {
         open={isOpenDrawer}
         onClose={() => setIsOpenDrawer(false)}
         anchor="right"
+        ModalProps={{ keepMounted: true }}
       >
+        <TextReuseTour run={textReuseTourRunning} onExit={() => setTextReuseTourRunning(false)} />
         {fullData && (
           <Box
+            id="CorpusMetadata-Drawer"
             sx={{
               width: {
                 xl: "850px",
@@ -162,12 +183,12 @@ export default function LeftSidePanel() {
                   scrollButtons="auto"
                 >
                   <Tab
-                    label="Author Details"
+                    label={isManuscript ? "Holding Details" : "Author Details"}
                     {...a11yProps(0)}
                     sx={{ padding: "0px 10px", fontSize: "12px" }}
                   />
                   <Tab
-                    label="Text Details"
+                    label={isManuscript ? "Manuscript Details" : "Text Details"}
                     {...a11yProps(1)}
                     sx={{ padding: "0px 10px", fontSize: "12px" }}
                   />
@@ -177,23 +198,44 @@ export default function LeftSidePanel() {
                     sx={{ padding: "0px 10px", fontSize: "12px" }}
                   />
                   <Tab
-                    label="Text Reuse"
+                    label={
+                      <Box display="flex" alignItems="center" gap={0.5}>
+                        Text Reuse
+                        <Tooltip title="Explain text reuse panel" arrow>
+                          <span
+                            id="text-reuse-drawer-info"
+                            onClick={(e) => { e.stopPropagation(); setTextReuseTourRunning(true); }}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              cursor: "pointer",
+                              visibility: tabIndex === 3 ? "visible" : "hidden",
+                              pointerEvents: tabIndex === 3 ? "auto" : "none",
+                            }}
+                          >
+                            <i className="fa-solid fa-circle-info" style={{ fontSize: "14px" }} />
+                          </span>
+                        </Tooltip>
+                      </Box>
+                    }
                     {...a11yProps(4)}
                     sx={{ padding: "0px 10px", fontSize: "12px" }}
                   />
                 </Tabs>
               </Box>
               <TabPanel value={tabIndex} index={0}>
-                {fullData && <AuthorDetails fullData={fullData} />}
+                {fullData && !isManuscript && <AuthorDetails fullData={fullData} />}
+                {fullData && isManuscript && <ManuscriptHoldingDetails fullData={fullData} />}
               </TabPanel>
               <TabPanel value={tabIndex} index={1}>
-                {fullData && <TextDetails fullData={fullData} />}
+                {fullData && !isManuscript && <TextDetails fullData={fullData} />}
+                {fullData && isManuscript && <ManuscriptDetails fullData={fullData} />}
               </TabPanel>
               <TabPanel value={tabIndex} index={2}>
                 {fullData && <VersionDetails fullData={fullData} />}
               </TabPanel>
               <TabPanel value={tabIndex} index={3}>
-                {fullData && <TextReuse fullData={fullData} />}
+                {fullData && <TextReuse fullData={fullData} fullDataLoading={fullDataLoading}/>}
               </TabPanel>
             </Box>
           </Box>

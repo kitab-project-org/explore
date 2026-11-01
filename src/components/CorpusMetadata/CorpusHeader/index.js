@@ -1,10 +1,11 @@
 import { Box, Typography } from "@mui/material";
-import React from "react";
+import TourMenu from "../../GuidedTour/TourMenu";
 import VersionDropdown from "../../Common/VersionDropdown";
 
-const CorpusHeader = () => {
+const CorpusHeader = ({ onStartTour }) => {
   return (
     <Box
+      id="CorpusHeader"
       display={"flex"}
       justifyContent={"space-between"}
       alignItems={"center"}
@@ -30,7 +31,10 @@ const CorpusHeader = () => {
       >
         OpenITI Corpus Metadata
       </Typography>
-      <VersionDropdown />
+      <Box display="flex" alignItems="center" gap={1}>
+        <TourMenu buttonId="take-a-tour-btn" current="main" onStartTour={onStartTour} />
+        <VersionDropdown />
+      </Box>
     </Box>
   );
 };

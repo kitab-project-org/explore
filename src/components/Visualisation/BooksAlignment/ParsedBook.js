@@ -1,5 +1,5 @@
+import { useContext } from "react";
 import { Box } from "@mui/material";
-import React, { useContext } from "react";
 import { Context } from "../../../App";
 
 const ParsedBook = ({ parsedBookAlignment, isLeft }) => {
